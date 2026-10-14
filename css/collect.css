@@ -1,0 +1,88 @@
+/* ===== 收藏夹（方案B · 画廊）=====
+   页题排印 + 分段凹槽 + 查找/分类行 + 双列瀑布卡片（图片优先，按月分组） */
+
+.fav-page{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 10px) 18px calc(26px + env(safe-area-inset-bottom,0px))}
+.fav-page::-webkit-scrollbar{width:0;height:0;display:none}
+
+/* 页题：排印（与信箱/收藏设计稿同族） */
+.fav-head-page{display:flex;align-items:flex-end;justify-content:space-between;padding:2px 4px 12px}
+.fav-head-page h2{font-family:Georgia,'Songti SC','SimSun',serif;font-size:30px;font-weight:700;letter-spacing:3px;color:var(--ink)}
+.fav-en{display:block;font-size:11px;letter-spacing:3px;color:var(--muted);margin-top:5px}
+.fav-tools-btn{width:34px;height:34px;border-radius:50%;background:var(--ctl-glass);border:1px solid var(--ctl-hair);color:var(--ink);display:grid;place-items:center;box-shadow:none}
+.fav-tools-btn:active{opacity:.7}
+/* 页头右列：查找与设置两枚同族圆钮并排（不设容器会把它们被 space-between 摊到两端） */
+.fav-head-acts{display:flex;align-items:center;gap:10px;flex:none}
+
+/* 分段：玻璃凹槽 + 白岛激活 */
+.fav-seg{display:flex;background:var(--ctl-glass);box-shadow:inset 0 0 0 1px var(--ctl-hair);border-radius:14px;padding:4px;gap:4px}
+.fav-seg-btn{flex:1;text-align:center;font-size:12.5px;color:var(--muted);padding:8px 0;border-radius:11px;letter-spacing:1px}
+.fav-seg-btn.sel{background:var(--island-grad);color:var(--ink);font-weight:650;box-shadow:inset 0 1px 0 #fff}
+
+/* 查找行 */
+.fav-search-row{padding:10px 0 8px}
+.fav-search{width:100%;background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:12px;box-shadow:none;padding:9px 14px;font-size:12.5px;color:var(--ink);outline:none}
+.fav-search:focus{background:var(--surface);border-color:var(--ctl-on-ring)}
+.fav-search::placeholder{color:var(--muted)}
+
+/* 分类行：小文字 chips，选中下划线（排印口径）
+   ⚠ 旧类名 .fav-kind-row／.fav-kind 是收藏页重做时留下的无宿主规则（屏上那一排当时叫 .kchips），
+   于是这一排从来没有 gap 也没有横滑保护——四枚 chip 紧挨着排，行高只有 22px。一并改回有宿主的类名。 */
+.kchips{display:flex;gap:14px;padding:12px 2px 10px;overflow-x:auto;scrollbar-width:none}
+.kchips::-webkit-scrollbar{display:none}
+.kchip{flex:none;font-size:11.5px;color:var(--muted);letter-spacing:.5px;padding:3px 1px}
+.kchip i{font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:11px;margin-left:2px;opacity:.7}
+.kchip.on{color:var(--ink);font-weight:650;border-bottom:1.5px solid var(--ink)}
+
+/* 问答卡（问问TA／TA 想问你）在窄卡里的形状：不复用聊天那张 .ask-opt——它按全宽气泡排，塞进 170px 一列会撑破 */
+.fav-ask-opts{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.fav-ask-opt{font-size:11px;line-height:1.5;color:var(--muted);background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:6px;padding:2px 6px;word-break:break-word}
+.fav-ask-opt.on{color:var(--ink);font-weight:650;box-shadow:inset 0 0 0 1px var(--ctl-on-ring)}
+.fav-ask-note{margin-top:6px;font-size:11px;line-height:1.5;color:var(--muted)}
+/* 改版前存下的图片收藏补不回图，留一行实话而不是一张空白卡 */
+.fav-void{color:var(--muted);font-size:11px}
+
+/* 瀑布：双列，卡片白底圆角 */
+.fav-scroll{columns:2;column-gap:10px}
+/* 卡面（底／边／影）不在这里写，由 css/glass.css 末位那条「列表项玻璃卡」名单供（与 .card-item 同族）。
+   ⚠ 这一族原本叫 .gcard，与当时 css/games.css 的聊天游戏卡同名，而 games 加载更晚（css_order 3 ∶ 24），
+   于是收藏卡片被顶上一枚 .gcard{min-width:226px}：两列瀑布每列只有 137~172px，每张因此向右撑出
+   54~89px 压进隔壁列（＝重叠）并画到屏外（＝显示不全），两列比例也和字卡库那 170px 对不上。
+   改回 .fav-card 之后 glass 那条才第一次真命中它，js/search.js 的收藏直达（一直在找
+   #collectList .fav-card[data-cts]）也一并接回来 —— 一处只有一个面，不留第二份实现。 */
+.fav-card{break-inside:avoid;margin-bottom:10px;border-radius:var(--r-card);overflow:hidden}
+.g-img{width:100%;display:block;max-height:220px;object-fit:cover}
+.gt{padding:10px 12px 11px}
+.g-txt{font-size:12.5px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.g-txt img{max-width:100%;border-radius:8px;margin:4px 0}
+.gm{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.5px;color:var(--muted);margin-top:7px}
+
+/* 月份头：衬线 + mono 计数（跨双列的普通块） */
+.fav-month{display:flex;align-items:baseline;gap:8px;padding:14px 2px 8px;column-span:all}
+.fav-month b{font-family:Georgia,'Songti SC','SimSun',serif;font-size:17px;color:var(--ink);letter-spacing:2.5px;font-weight:650}
+.fav-month span{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--muted);letter-spacing:.5px}
+
+/* TA 理由 */
+.fav-reason{margin-top:6px;font-size:11px;line-height:1.5;color:var(--muted)}
+.fav-reason.sys{opacity:.8}
+/* 「我」给这一条留的话：有写的时候走上那条 .fav-reason（同一件事只差主语，不留第二套行式），
+   没写的时候那一行就是入口——一条虚线说它点得动，不加底不加边框盒＝卡片里不再多一枚控件感。
+   热区由 css/base.css 那条 28px 补偿供（这一行字只有 17px 高，按文字盒点会常落空）。 */
+.fav-note{cursor:pointer}
+.fav-note.todo{display:inline-block;border-bottom:1px dashed color-mix(in srgb,var(--ink) 26%,transparent)}
+
+/* 空态 */
+.fav-empty{padding:56px 20px;text-align:center;font-size:12.5px;color:var(--muted);line-height:2;column-span:all}
+.fav-empty-sub{display:block;font-size:11px;opacity:.75}
+
+/* ===== TA 的 · 联系人 chips + 卡片名标 ===== */
+.fchips{display:flex;gap:7px;padding:10px 0 4px;overflow-x:auto;scrollbar-width:none}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{flex:none;font-size:11px;color:var(--muted);background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:99px;padding:5px 13px;letter-spacing:.5px}
+.fchip.on{background:var(--island-grad);color:var(--ink);font-weight:650;border-color:rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff}
+/* 名标＝这一条「是谁收的」的唯一落点，必须一眼可读（BUGS #162）。
+   旧写法的 border 是 rgba(255,255,255,.95) —— 素雪纯白底下等于没有边，整枚标签看着只是
+   一行飘着的 11px 小字；两本各收过同一句话时，两张卡除了这行小字没有任何分别。改走
+   --ctl-hair 那档墨色发丝线，字号提到 12px 并压一档字色，让它明确是「标签」不是正文。 */
+.who{display:inline-block;font-size:12px;letter-spacing:.3px;color:color-mix(in srgb,var(--ink) 82%,transparent);background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:5px;padding:1px 6px;margin-bottom:6px}
+.who-from{color:var(--muted)}
+.gt .who{display:inline-block;margin-right:0}

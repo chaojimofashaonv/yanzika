@@ -1,0 +1,127 @@
+/* ===== 聊天统计 · 写信统计（两个独立功能视图共用这一族样式）=====
+   版式＝**一行 tag + 当前那一档的一张卡**：三枚大数字格（.stats-grid/.stats-tile）常驻（它们答的是
+   「选谁一共多少」，与切到哪一档无关），下面 .stats-tabs 五档、.stats-panel 只画选中那一档的一张
+   .stats-sec。两面原先是五节一屏平铺，用户判「缺少 tag 分类，太杂」→ 收成可切换的五档。
+   节标（.sec-label）自此不画＝tag 上已经写着这件事的名字，再画一条节标＝同一件事说两遍；
+   卡内还有两段时才给 .stats-hour-label（一段一个名字）。
+   卡内四种件＝大数字格∶柱（.stats-hours＋.stats-hours-x 刻度行）∶排行榜一行（.ck-row＝序号∶句子∶
+   细条∶数值）∶折线（.stats-trend）。两面骨架逐件相同，故样式只写一份＝改一处两面同变；
+   写信统计（js/letterstats.js）**不为本页新写选择器**。
+   ⚠ .stats-tabs / .stats-tab / .stats-panel / .scope-chip 四族**不许删也不许只给统计页改**：
+     播放器（js/player.js∶html/view-player.html 的 #plTabs）复用同一份（css/player.css:16 只改内距），
+     两面统计页自此也用它＝一件东西全站一份实现，改这一族要同时想清楚那三面。
+   ⚠ .stats-tabs 的 sticky 止点必须落在顶栏之下（top＝顶栏高＋安全区）∶顶栏是 absolute·z 6 压在
+     这一面之上，`top:0` 会把 tag 行藏到顶栏底下、透明底让下面卡片文字与它叠成两层字（#032∶#155 那一族）；
+     底色取 --page（现与画布 --shell-bg 同值）＝贴上去看不出一条带。
+   ⚠ 顶栏让位内距挂在**滚动容器的第一个子块**上、不挂 `.stats-list` 自己身上（实测）：sticky 的止点按滚动
+     容器**内容盒**算，容器自己的 padding-top 会把止点整体下推那么多＝滚到底时那一行读得 118 而不是 56，
+     顶栏与它之间留一条 62px 的缝、卡片文字从缝里穿过（正是上一条要避免的样子）。
+   ⚠ 一切引令牌，不写死色值：卡面三件套与 css/mono.css ② 那份名单同值（--glass-grad/--glass-border/
+     --r-card），这里直接引令牌本体＝一处只有一个说法，不往 mono 的名单里再塞一个类名。
+   ⚠ 字号一律 ≥11px（全站地板，A 批钉过、tools/_audit_static.js 会扫）：参考稿刻度写的 10px 不照抄。 */
+
+.stats-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;padding:0 16px calc(25px + env(safe-area-inset-bottom,0px))}
+.stats-list>div:first-child{padding-top:calc(var(--topbar-h,52px) + env(safe-area-inset-top,0px) + 6px)}
+.stats-list::-webkit-scrollbar{width:0;height:0;display:none}
+
+/* 卡：一张＝一块内容。实白面 + 一条浅灰线 + 极浅影，与 mono ② 同值（见文件头那条铁律） */
+.stats-sec{background:var(--glass-grad);border:var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r-card);padding:16px}
+
+/* 大数字格：参考稿三枚一排、数字 23px/800、标签 11px 灰。
+   ⚠ span 必须 display:block——序数记号 #225 那条硬约束：给它挂行内件会被这一行拉成独立一行。 */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stats-tile{background:var(--glass-grad);border:var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r-card);padding:18px 12px;text-align:center}
+.stats-tile b{display:block;font-size:23px;line-height:1.2;font-weight:800;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.stats-tile span{display:block;font-size:11px;line-height:1.3;color:var(--muted);margin-top:3px}
+
+/* 柱：底部对齐、细柱只圆上两角、最热那一根实心墨。刻度另起一行（旧版把标签绝对定位在柱底，
+   窄屏会互相压字，参考稿那行 space-between 的刻度读得清） */
+.stats-hours{display:flex;align-items:flex-end;gap:3px;height:88px;padding-top:6px}
+.stats-hours.sm{height:64px}
+.stats-hour{flex:1;min-width:0;display:flex;align-items:flex-end;height:100%}
+.stats-hour i{display:block;width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--line)}
+.stats-hour.hi i{background:var(--ink)}
+.stats-hours-x{display:flex;justify-content:space-between;font-size:11px;line-height:1.2;color:var(--muted);margin-top:7px;font-variant-numeric:tabular-nums}
+.stats-hours-x span{min-width:0;text-align:center}
+/* 卡内第二段的小标（近 7 天∶按月∶是哪一类），与节标分开：它只在一张卡内部领起一段 */
+.stats-hour-label{font-size:11px;line-height:1.4;color:var(--muted);margin:16px 0 4px;letter-spacing:.5px}
+
+/* 一行读数（左标签右数值，发丝线分行） */
+.stats-lines{display:flex;flex-direction:column;margin-top:4px}
+.stats-lines>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.stats-lines>div:last-child{border-bottom:0}
+.stats-lines span{color:var(--muted);flex:none}
+.stats-lines b{color:var(--ink);font-weight:600;text-align:right;word-break:break-all;font-variant-numeric:tabular-nums}
+
+/* 横向条（构成/占比一族，与柱状不是一回事：这里有名字有百分比） */
+.stats-bars{display:flex;flex-direction:column;gap:9px}
+.stats-bar-row{display:flex;align-items:center;gap:8px}
+.stats-bar-label{flex:none;width:76px;font-size:11px;color:var(--ink)}
+.stats-bar-track{flex:1;height:6px;border-radius:3px;background:var(--well);overflow:hidden}
+.stats-bar-track i{display:block;height:100%;background:var(--bar-ink);border-radius:3px}
+.stats-bar-row b{flex:none;min-width:42px;text-align:right;font-size:11px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.stats-bar-row b em{font-style:normal;color:var(--muted);margin-left:2px;font-weight:400}
+.stats-note{font-size:11px;line-height:1.6;color:var(--muted);margin:11px 0 0}
+
+/* 陪伴那一句：自本批起它是「概览」那张卡的第一段——不再自己是一块卡（卡里套卡＝这一面「太杂」的
+   形状版本，与外层 setting-card 那一次同样的道理），只留一句居中的话＋一条分段线 */
+.stats-accompany{padding:2px 0 12px;border-bottom:1px solid var(--line);text-align:center;font-size:12px;line-height:1.8;color:var(--muted)}
+.stats-accompany b{display:inline-block;font-size:26px;color:var(--ink);line-height:1;margin:4px;vertical-align:middle;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* 排行榜：参考稿 rankrow＝序号∶句子∶细条∶数值 一行读完（旧版分两行：句子一行、条另一行）。
+   分类小标签留在句子前面（它在库里属于哪一组是唯一一处说这件事的地方，不能丢）。
+   参考稿这一族**行与行之间没有分隔线**（靠 8px 上下内距分行），描边留着会让一屏出现十道规线∶
+   序号色也不照抄——参考稿用 #D6D3D1（对比 1.5∶1＝12px 数字直接看不见），这里取 --muted（≥4.5） */
+.ck-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.ck-rk{flex:none;width:18px;font-size:12px;font-weight:800;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.ck-head{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.ck-tag{flex:none;font-size:11px;line-height:1;padding:2px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted)}
+.ck-tag.hist{border-style:dashed}
+.ck-text{font-size:14px;line-height:1.4;color:var(--ink);word-break:break-all;font-weight:400;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ck-track{flex:none;width:74px;height:6px;border-radius:3px;background:var(--well);overflow:hidden;margin-top:0}
+.ck-track i{display:block;height:100%;background:var(--bar-ink);border-radius:3px}
+.ck-cnt{flex:none;min-width:34px;font-size:12px;font-weight:600;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ck-cnt i{font-style:normal;font-weight:400;font-size:11px;color:var(--muted);margin-left:2px}
+/* 排行榜默认只画前 10 行，其余收在这枚钮后面（一屏 50 行会把下面几节挤出视口）。
+   一条通栏文字钮＝不留「看着像一行、实则是个钮」的第三种形态；min-height 44px 直接给自己（通栏件没有
+   左右邻居可抢，不必去 css/base.css 那张 44px 补偿名单里占一行），box-sizing 必须带上——本仓无全局 border-box */
+.stats-more{display:block;width:100%;box-sizing:border-box;min-height:44px;margin-top:6px;padding:10px 0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;cursor:pointer;font-family:inherit;font-size:11px;line-height:1.4;color:var(--muted);text-align:center}
+.stats-empty{font-size:11px;line-height:1.6;color:var(--muted);text-align:center;padding:14px}
+
+/* 字卡榜的「联系人∶我的」切换：参考稿 .seg＝浅灰凹槽 + 选中实心墨底白字 */
+.stats-switch{display:inline-flex;background:var(--well);border:0;border-radius:999px;padding:3px;margin:0 0 10px}
+.stats-switch-btn{border:0;background:transparent;cursor:pointer;padding:6px 14px;border-radius:999px;font-size:11px;line-height:1.3;color:var(--muted);transition:background .15s,color .15s}
+.stats-switch-btn.on{background:var(--ink);color:#FFFFFF;font-weight:600}
+
+/* 折线（时光线那一节）：按月一条趋势线，末端一枚实心点＝「此刻」 */
+.stats-trend{display:block;width:100%;height:64px;overflow:visible}
+.stats-trend polyline{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stats-trend circle{fill:var(--ink)}
+.stats-trend-x{display:flex;justify-content:space-between;font-size:11px;line-height:1.2;color:var(--muted);margin-top:6px}
+
+/* 统计范围芯片（全部/联系人/群聊）——播放器也在用 .scope-chip，那一条改不得 */
+.stats-scope{display:flex;gap:6px;overflow-x:auto;margin:2px -16px 2px;padding:2px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.stats-scope::-webkit-scrollbar{display:none}
+.scope-chip{flex:none;padding:7px 14px;border-radius:99px;background:var(--page);color:var(--muted);font-size:12px;white-space:nowrap;box-shadow:none}
+.scope-chip.on{background:var(--ink);color:#fff}
+
+/* 分类 tab 一族：统计页自此不用，件留给播放器（css/player.css:16∶18 只改内距与计数小字） */
+.stats-tabs{position:sticky;top:calc(var(--topbar-h,52px) + env(safe-area-inset-top,0px));z-index:3;display:flex;gap:6px;overflow-x:auto;padding:10px 0 12px;background:var(--page);-webkit-overflow-scrolling:touch}
+.stats-tabs:empty{display:none}
+.stats-tab{flex:none;padding:7px 14px;border-radius:999px;border:0;background:var(--bubble);font-size:12px;color:var(--muted);white-space:nowrap;letter-spacing:.5px;transition:all .15s}
+.stats-tab.active{background:var(--accent);color:#fff;font-weight:600}
+.stats-panel{animation:statsFade .18s ease}
+@keyframes statsFade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+/* ===== 时光线那一节的里程碑列表（折线下面接着走）===== */
+.tl-head{font-size:12px;color:var(--muted);padding:2px 2px 12px;letter-spacing:.3px}
+.tl-head b{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
+.stats-tl{position:relative;padding-left:16px;margin-top:14px}
+.stats-tl::before{content:'';position:absolute;left:4px;top:6px;bottom:6px;width:1px;background:var(--line)}
+.tl-item{position:relative;padding:0 0 16px 10px}
+.tl-item:last-child{padding-bottom:2px}
+.tl-dot{position:absolute;left:-15.5px;top:4px;width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.tl-date{font-size:11px;color:var(--muted);letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.tl-label{font-size:13px;color:var(--ink);margin-top:1px}
+.tl-detail{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;word-break:break-word}
+.tl-empty{font-size:11px;color:var(--muted);padding:8px 2px}

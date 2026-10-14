@@ -1,0 +1,147 @@
+/* ===== 头像和昵称互动（移植自家 mochi）：全屏独立页（view-avatarlib） ===== */
+/* 顶部「我的 + 每个联系人」胶囊行按会话区分池子；邀请卡仍用 chat.css 的 .poke-mask 遮罩 */
+
+/* 页面骨架：.view 内自滚动容器，顶栏下方起 */
+.av-page{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 6px) 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+.av-page::-webkit-scrollbar{width:0;height:0;display:none}
+
+/* 「我的 + 联系人」胶囊行（横向滚动，选中居中） */
+.av-owners{flex:none;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding:2px 2px 12px}
+.av-owners::-webkit-scrollbar{width:0;height:0;display:none}
+.av-chip{flex:none;display:flex;align-items:center;gap:7px;padding:5px 13px 5px 5px;border-radius:999px;background:var(--page);border:1px solid var(--line);color:var(--ink)}
+.av-chip:active{opacity:.75}
+.av-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.av-chip-ava{position:relative;width:27px;height:27px;flex:none;border-radius:50%;overflow:hidden;background:var(--bubble);display:grid;place-items:center}
+body[data-avatar-shape="rounded"] .av-chip-ava{border-radius:9px}
+body[data-avatar-shape="square"] .av-chip-ava{border-radius:6px}
+.av-chip-ava img{width:100%;height:100%;object-fit:cover;display:block}
+/* 铺满口径与 .avatar .initial 同一族：不铺满＝.initial-person 的 --well 浅盘缩成 svg 那块灰方（BUGS #406） */
+.av-chip-ava .initial{position:absolute;inset:0;display:grid;place-items:center}
+.av-chip-ava .initial svg{width:15px;height:15px;display:block}
+.av-chip-name{font-size:13px;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px}
+
+/* 页头预览：当前对象的头像 + 名字 + 说明 */
+.av-page-head{flex:none;display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 0 14px}
+.av-page-ava{position:relative;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--bubble);border:1px solid var(--line);display:grid;place-items:center;margin-bottom:8px}
+body[data-avatar-shape="rounded"] .av-page-ava{border-radius:12px}
+body[data-avatar-shape="square"] .av-page-ava{border-radius:8px}
+.av-page-ava img{width:100%;height:100%;object-fit:cover;display:block}
+.av-page-ava .initial{position:absolute;inset:0;display:grid;place-items:center}
+.av-page-ava .initial svg{width:30px;height:30px}
+.av-page-name{font-size:17px;font-weight:700;color:var(--ink);letter-spacing:.4px;word-break:break-all}
+.av-page-sub{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.4px}
+
+/* 第一级分段：换什么（头像/昵称），计数跟当前对象走 */
+.av-kinds{flex:none;display:flex;gap:3px;background:var(--well);border-radius:12px;padding:3px;margin-bottom:10px}
+.av-kind{flex:1;height:30px;border-radius:9px;font-size:13px;color:var(--muted);letter-spacing:.3px}
+.av-kind.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:none}
+.av-kind:active{opacity:.8}
+
+.av-body{flex:none}
+
+.av-toggle{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:var(--page);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.av-toggle-txt{flex:1;min-width:0}
+.av-toggle-name{font-size:13.5px;font-weight:600;color:var(--ink)}
+.av-toggle-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
+/* 节奏档位（2026-10-08 事件驱动，BUGS #179）：总闸 + 三档 chips，取代原来的「1-8 小时随机」开关 */
+.av-rate-row{display:flex;align-items:center;gap:5px;margin-top:8px;flex-wrap:wrap}
+.av-rate-sw{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);cursor:pointer}
+.av-rate-sw input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.av-rate{padding:5px 10px;border-radius:9px;background:var(--bubble);color:var(--muted);font-size:11.5px;line-height:1}
+.av-rate.on{background:var(--accent);color:#fff;font-weight:600}
+.av-rate[disabled]{opacity:.4}
+
+.av-note{font-size:11px;line-height:1.6;color:var(--muted);background:var(--page);border-radius:8px;padding:6px 9px;margin-bottom:10px}
+.av-note b{font-weight:600;color:var(--ink)}
+
+/* 头像网格：padding-bottom 撑高 + img 绝对定位（兼容不支持 aspect-ratio 的老内核） */
+.av-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:2px 0 12px}
+.av-cell{position:relative;padding-bottom:100%;border-radius:var(--r-card);overflow:hidden;background:var(--bubble);border:1px solid var(--line)}
+.av-cell img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
+.av-cell.on{outline:2px solid var(--ctl-on-ring);outline-offset:-2px;border-color:transparent}
+.av-cell-del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center}
+.av-cell-del:active{background:var(--danger-ink)}
+
+/* 昵称池：胶囊行（点文字换昵称，点 × 删这一条） */
+.av-names{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 12px}
+.av-name-cell{display:flex;align-items:center;gap:7px;max-width:100%;padding:8px 10px;border-radius:12px;background:var(--page);border:1px solid var(--line)}
+.av-name-cell.on{outline:2px solid var(--ctl-on-ring);outline-offset:-2px;border-color:transparent}
+.av-name-txt{font-size:13px;color:var(--ink);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-name-del{flex:none;width:16px;height:16px;border-radius:50%;background:var(--line);color:var(--muted);font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center}
+.av-name-del:active{background:var(--danger-ink);color:#fff}
+
+.av-empty{font-size:12px;color:var(--muted);text-align:center;padding:22px 10px}
+.av-actions{display:flex;gap:8px;padding-bottom:4px}
+.av-btn{flex:1;padding:11px;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+.av-btn:active{opacity:.75}
+.av-btn.ghost,.av-btn.danger{background:var(--bubble);font-weight:500}
+.av-btn.ghost{color:var(--ink)}
+.av-btn.danger{color:var(--danger-ink)}
+.av-btn svg{width:15px;height:15px}
+
+/* 「添加昵称」面板里的两枚钮（BUGS #246）：min-height:44 只给这一块面板里的它们——
+   页内那一排 .av-btn 是既有尺寸，没去动它。输入面与那一行排布在 BUGS #275 收进 css/base.css
+   由两族面板共用（.fs-sheet-ta/.fs-sheet-acts，旧类名并进同一条声明），此处不再留第二份 */
+.av-nick-actions .av-btn{min-height:44px}
+
+/* 池子条目上的印象数角标（TA心里话-印象，有积累才显示）：头像格左下角深色小圆片 */
+.av-impr{position:absolute;bottom:4px;left:4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center}
+.av-impr:active{opacity:.7}
+/* 昵称胶囊内的角标（relative＝既跟着 flex 排，又给 base.css 那圈 28px 命中区当定位锚点） */
+.av-impr.nick{position:relative;flex:none;background:var(--line);color:var(--muted)}
+
+/* TA 对单个头像/昵称的印象弹层（底部 sheet，列表随积累增厚） */
+#avImprMask{align-items:flex-end}
+.av-impr-sheet{width:100%;max-width:480px;background:var(--surface);border-radius:var(--r-panel) var(--r-panel) 0 0;padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px));max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
+.av-impr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.av-impr-head span{font-size:14px;font-weight:700;color:var(--ink)}
+#avImprClose{width:26px;height:26px;border-radius:50%;background:var(--bubble);color:var(--muted);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
+.av-impr-item{display:flex;align-items:baseline;justify-content:space-between;gap:10px;background:var(--page);border-radius:10px;padding:9px 11px;margin-bottom:7px}
+.av-impr-who{flex:none;font-size:11px;color:var(--muted);max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-impr-txt{flex:1;min-width:0;font-size:13px;color:var(--ink);line-height:1.55}
+/* 「因为什么换的」那行：跟在那句话下面，同一层不另起一行（它是这句话的来由，不是 TA 说的话的来由） */
+.av-impr-why{display:block;margin-top:3px;font-size:11px;color:var(--muted);letter-spacing:.2px}
+.av-impr-ts{flex:none;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 旧档那一节的小标（那些条没有归属，不与某位 TA 的行混在一起读） */
+.av-impr-cap{font-size:11px;color:var(--muted);margin:13px 2px 7px}
+.av-impr-empty{font-size:12px;color:var(--muted);text-align:center;padding:18px 0}
+
+/* 「印象簿」那一面（BUGS #303）：这本账原先只藏在每张小图角上一枚数字里，不进这一页就没有任何入口。
+   一行＝一条、整行可点（点开是那一条所属对象的完整账），内芯沿用上面弹层那一行的实现（js 里同一份
+   _avImprItemHTML），这里只换外壳：button 铺满一行·去壳·底边一条发丝线（暖纸单色那族的分行读法，不垫卡壳） */
+.av-ledger-sum{font-size:12px;color:var(--muted);margin:2px 0 9px}
+button.av-ledger-item{width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--hair);border-radius:0;padding:11px 2px;margin:0}
+button.av-ledger-item:active{opacity:.6}
+.av-ledger-more{font-size:11px;color:var(--muted);margin-top:8px}
+/* 「讲的是哪个头像/哪个昵称」——「我的」那一面翻的是每位各一本，一条不标对象就不知道说的哪张脸。
+   缩略图刻意不再抄 body[data-avatar-shape] 那两条覆盖：22px 上圆角与方角读不出差别，抄一份只会多一处要跟着改的地方 */
+.av-impr-what{flex:none;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted);align-self:center}
+.av-impr-what-ava{width:22px;height:22px;padding:0;overflow:hidden;border-radius:50%;background:var(--bubble)}
+.av-impr-what-ava img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* 系统消息附带的头像图（render.js sysImg 分支） */
+.sys-msg-img{display:block;width:44px;height:44px;object-fit:cover;margin:7px auto 0;background:var(--bubble);border-radius:50%}
+body[data-avatar-shape="rounded"] .sys-msg-img{border-radius:10px}
+body[data-avatar-shape="square"] .sys-msg-img{border-radius:12px}
+
+/* TA 主动换我的头像/昵称：居中邀请卡（复用 .poke-mask，改为垂直居中） */
+.av-invite-mask{align-items:center}
+.av-invite-card{width:min(300px,82vw);background:var(--surface);border-radius:var(--r-card);padding:20px 18px calc(16px + env(safe-area-inset-bottom));box-shadow:none;text-align:center;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
+.av-invite-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.av-invite-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
+.av-invite-preview{margin:0 auto 16px;display:flex;align-items:center;justify-content:center;min-height:60px}
+.av-invite-preview img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:var(--bubble)}
+.av-invite-preview span{font-size:22px;font-weight:700;color:var(--ink);word-break:break-all}
+.av-invite-actions{display:flex;gap:10px}
+.av-invite-actions button{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:600}
+#avInviteYes{background:var(--accent);color:#fff}
+#avInviteNo{background:var(--bubble);color:var(--ink)}
+.av-invite-actions button:active{opacity:.75}
+
+/* 「这本池子」子选择排（BUGS #407）：「我的」面里在编哪一本——通用 or 对某位专属。
+   体例同 .av-rate 那排小 chips；横向可滚（联系人多时不折行挤高这一面） */
+.av-mine-row{display:flex;align-items:center;gap:5px;margin:0 0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.av-mine-row::-webkit-scrollbar{display:none}
+.av-mine-cap{flex:none;font-size:11px;color:var(--muted);margin-right:2px}
+.av-mine-chip{flex:none;padding:5px 11px;border-radius:999px;background:var(--bubble);border:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:1;white-space:nowrap}
+.av-mine-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}

@@ -1,0 +1,91 @@
+/* ===== 字卡适应度检查（独立整页）=====
+   版式走这一族已定档的「独白」口径：零卡片容器、发丝线分条、缺口只靠墨度与字重显形。
+   不新增颜色令牌：正常读数＝--muted，缺口＝--ink 加粗——缺口本来就该是这一屏最重的东西，
+   而历轮「去黑／纯白」的尺子都判「暗＝墨」，反过来（该重的没重）它们扫不到，故这里靠字重而不是色相分层。
+   ★ 类名前缀是 fit-，不是 cf-：cf- 早被 css/call.css 占用（全屏通话页 .cf-body/.cf-bar/.cf-actions…），
+     首版复用 .cf-body 时那一族的 padding:148px 26px 20px 直接盖到这一页的展开体上，
+     实拍量出展开行顶部凭空一条 163px 空白（BUGS #204）。新类名落地前先 grep 一遍全仓。 */
+
+/* .fit-list 是这一面的滚动容器本身：flex:1 + min-height:0，不给它 overflow-x:auto，
+   免得犯 BUGS #080 那一族（直接子块带横向滚动会被列 flex 压扁）。
+   顶栏那一档让给上面的胶囊行（#cfOwners），列表自身只留一小段上距 */
+.fit-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:4px 18px calc(28px + env(safe-area-inset-bottom,0px))}
+.fit-list::-webkit-scrollbar{width:0;height:0;display:none}
+.fit-empty{font-size:11px;line-height:1.7;color:var(--muted);padding:10px 0 14px}
+/* 顶部联系人胶囊行（世界感知 #cjOwners 同款，.av-owners/.av-chip 全局类在 avatarlib.css）：
+   钉在顶栏之下不随报告滚，点谁看谁。flex:none 必须有——它是 .view.active{display:flex} 的直接子块
+   且自带 overflow-x:auto，不钉死会被列 flex 压扁（BUGS #080 那一族） */
+#cfOwners{flex:none;padding-top:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 6px);padding-left:14px;padding-right:14px;padding-bottom:2px}
+/* 报告态页头：状态词是这一屏最重的东西（大字＋满墨），读数在它下面一行 */
+.fit-hero{padding:4px 0 14px;border-bottom:1px solid var(--hair)}
+.fit-hero-k{font-size:11px;color:var(--muted);letter-spacing:.3px}
+.fit-hero-v{font-size:22px;font-weight:600;color:var(--ink);margin-top:6px;line-height:1.3}
+.fit-hero-l{font-size:11px;line-height:1.7;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
+.fit-hero-l b{font-weight:600;color:var(--ink)}
+/* 「要调的三件事」：一行一件事，标签不吃宽、结论折行（同 .fit-knob 那条教训） */
+.fit-adv{border-bottom:1px solid var(--hair);padding:8px 0}
+.fit-adv:last-child{border-bottom:0}
+.fit-adv-k{font-size:11px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+.fit-adv-v{font-size:11px;line-height:1.75;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.fit-adv-v b{font-weight:600;color:var(--ink)}
+.fit-adv-go{margin-top:7px}
+.fit-adv-btn{appearance:none;background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:99px;padding:6px 12px;min-height:28px;font-size:11px;color:var(--ink);cursor:pointer}
+/* 明细开关：一行文字链，不开就什么都不画（首屏那两张表占掉 826px 是这一轮要治的事） */
+.fit-detail-sw{margin-top:16px;padding:12px 0;border-top:1px solid var(--hair);font-size:11px;color:var(--muted);cursor:pointer}
+
+.fit-sec{margin-top:15px}
+.fit-sec-h{font-size:11px;font-weight:600;color:var(--ink);letter-spacing:.3px;margin-bottom:7px}
+.fit-sec-sub{font-weight:400;color:var(--muted);margin-left:6px}
+/* 「TA 怎么说」（旧节名「TA 眼里的这本卡」，2026-10-10 换判定轴后随宿主改名）：引文式一列（发丝左线），安好行 muted、缺口行墨重一档——
+   本页分层只靠墨度与字重显形（见文件头），不新增色相；甜蜜基调是文案口径，视觉上缺口仍要是最重的那行 */
+.fit-voice{border-left:1px solid var(--hair);padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:5px}
+.fit-voice p{font-size:11px;line-height:1.7;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.fit-voice p.fit-voice-gap{color:var(--ink)}
+.fit-note{font-size:11px;line-height:1.65;color:var(--muted);margin-top:6px}
+.fit-knobs,.fit-facts,.fit-slots,.fit-gapwrap{display:flex;flex-direction:column}
+/* 「一整句话」不能也当 flex 行排：只有「标签 ∶ 值」那种两列读数才用 flex。
+   .fit-facts 每一行是一句话夹两三个加粗数字，一旦 display:flex，文本节点会被拆成匿名 flex 项各占一列——
+   实拍里「最大三组占」被挤成两行、数字与后半句各站一列（BUGS #204 目视时抓出来的） */
+.fit-facts>div{font-size:11px;line-height:1.7;padding:5px 0;border-bottom:1px solid var(--hair);color:var(--muted)}
+.fit-knob,.fit-slot,.fit-gap{display:flex;align-items:baseline;gap:10px;font-size:11px;line-height:1.7;padding:5px 0;border-bottom:1px solid var(--hair)}
+.fit-knob:last-child,.fit-facts>div:last-child,.fit-slot:last-child,.fit-gap:last-child{border-bottom:0}
+/* 标签不许被长结论挤窄（首版「拍一拍概率 5%」被折成三截）：标签不缩，结论吃剩下的宽度、自己折行 */
+.fit-knob span{flex:none;color:var(--muted)}
+.fit-knob b,.fit-gap b,.fit-gap em{flex:none}
+.fit-knob b{flex:1;min-width:0;color:var(--ink);font-weight:600;text-align:right}
+.fit-knob-off b{color:var(--ink);font-weight:600}
+.fit-facts b{font-weight:600;color:var(--ink)}
+.fit-facts em{font-style:normal;color:var(--ink);font-weight:600;margin-left:5px}
+.fit-slot-k{flex:1;color:var(--ink)}
+.fit-slot-v{flex:none;color:var(--muted)}
+.fit-slot-miss .fit-slot-v{color:var(--ink);font-weight:600}
+.fit-slot-go,.fit-jump button,.fit-medit,.fit-mdel,.fit-add{appearance:none;background:none;border:0;padding:6px 8px;min-height:28px;font-size:11px;color:var(--ink);text-align:left;cursor:pointer}
+.fit-slot-go{flex:none;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.fit-jump{display:flex;gap:8px;margin-top:11px}
+.fit-jump button{border:1px solid var(--ctl-hair);border-radius:12px;flex:1;text-align:center}
+.fit-gap{align-items:flex-start}
+.fit-gap span{flex:none;width:66px;color:var(--muted)}
+.fit-gap b{flex:1;color:var(--ink);font-weight:400;line-height:1.6;overflow-wrap:anywhere}
+.fit-gap em{font-style:normal;color:var(--muted);text-align:right}
+
+.fit-manage{border-top:1px solid var(--hair);margin-top:20px;padding-top:14px}
+.fit-mrow{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--hair);padding:2px 0}
+.fit-mrow:last-of-type{border-bottom:0}
+.fit-medit{flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.fit-mwords{flex:1;font-size:11px;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}
+.fit-mdel{flex:none;color:var(--muted)}
+.fit-add{border:1px dashed var(--ctl-hair);border-radius:12px;width:100%;text-align:center;margin-top:10px;min-height:44px}
+
+/* 加一项 / 改这项：与心愿面板同一形制（实白面＋墨发丝环，不新增第二套弹层机制） */
+.fit-mask{position:absolute;inset:0;z-index:16;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.fit-mask[hidden]{display:none}
+@media(min-width:521px){.fit-mask{align-items:center}}
+.fit-panel{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--ctl-ring);border-radius:var(--r-panel) var(--r-panel) 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+@media(min-width:521px){.fit-panel{border-radius:var(--r-panel)}}
+.fit-panel-head{display:flex;align-items:center;gap:10px}
+.fit-panel-title{flex:1;font-size:15px;font-weight:600;color:var(--ink)}
+.fit-panel-close{appearance:none;background:none;border:0;width:28px;height:28px;font-size:16px;line-height:1;color:var(--muted);cursor:pointer}
+.fit-panel-hint{font-size:11px;line-height:1.6;color:var(--muted);margin:6px 0 12px}
+.fit-input{display:block;width:100%;margin:0 0 10px;padding:10px 12px;font-size:16px;line-height:1.4;color:var(--ink);font-family:inherit}
+.fit-panel-actions{display:flex;justify-content:flex-end;margin-top:4px}
+.fit-save{appearance:none;border:1px solid var(--ctl-on-ring);border-radius:12px;background:var(--island-grad);min-height:44px;padding:0 20px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}

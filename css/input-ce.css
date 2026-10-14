@@ -1,0 +1,136 @@
+/* ===== 输入框 contenteditable 化的样式镜像（Android · BUGS #418）=====
+   与 js/input-ce.js 配套：那边把 Android 上的文本类输入框换成 .ce-box（contenteditable div），
+   原 input 退场成 .ce-ghost（1px、不可点、Tab 跳过）。本件管两件事——
+   ① [基础层] .ce-box 与 .ce-ghost 自己的形制，以及占位符（div 没有 ::placeholder）；
+   ② [镜像层] 全站那些**元素限定**的输入框规则（`.composer input`、`.ask-field input[type="text"]`
+      …）在 div 上不再命中，逐条照抄一份 .ce-box 版。
+   ⚠ 基础层一律走 :where()（特异性 0）——它只补「没有别处管」的那些属性，
+     绝不压过各页自己的 .类名 规则（`.cards-modal-textarea{line-height:1.7}` 这类是 (0,1,0)，
+     本件排在 css_order 最后，若用裸 .ce-box 就会把全站同类规则的声明静默盖掉）。
+   ⚠ 镜像层不是「新设计」，是同一件事在另一个元素上重述一遍：除非原规则改了，这里别自作主张。
+   ⚠ 只在 Android（html.ce-on）上有效果：桌面/iOS 不转换，屏上没有 .ce-box 元素，
+     这里的镜像规则一条都不命中，原生 input 的样式与伪类（:placeholder-shown 等）原样保留。 */
+
+/* ── ① 基础层 ── */
+/* 幽灵锚点：零布局足迹（宽高钳死、不占流、不可点、不进 Tab）。
+   ⚠ left:-9999px 而不是 top:0/left:0——负偏移不进可滚动溢出，绝不会像 mochi #399
+     那样把祖先的滚动区撑出一个幻影高度。 */
+input.ce-ghost, textarea.ce-ghost {
+  position:absolute; top:0; left:-9999px;
+  width:1px !important; height:1px !important;
+  min-height:0 !important; max-height:none !important; min-width:0 !important;
+  overflow:hidden; opacity:0; pointer-events:none;
+  padding:0 !important; border:0 !important; margin:0 !important;
+}
+/* 基础形制（:where＝零特异性，谁都能压过它） */
+:where(.ce-box) {
+  display:block; box-sizing:border-box;
+  outline:none; caret-color:var(--ink);
+  white-space:pre-wrap; word-break:break-word;
+}
+:where(.ce-box).ce-one   { white-space:nowrap; word-break:normal; overflow:hidden; }
+:where(.ce-box).ce-multi { overflow-y:auto; }
+/* 占位符：div 没有 ::placeholder，用 ::before 画。
+   ⚠ 判据是 ce-empty 类（js 侧按 textContent 维护）而不是 :empty——contenteditable 里
+     删干净后常留一枚 <br> 垫底，:empty 会当场失效、占位符凭空消失。 */
+.ce-box.ce-empty::before {
+  content:attr(data-ph); color:var(--muted); pointer-events:none;
+}
+/* 固定高单行的文字要跟着垂直居中（原生 input 是居中，div 默认顶对齐＝文字贴顶）。
+   三处固定高的宿主：.poke-input(29px) · .search-field input(38px) · .pl-search-in(44px)。 */
+.ce-box.poke-input       { line-height:29px; }
+.search-field .ce-box    { line-height:38px; }
+.ce-box.pl-search-in     { line-height:44px; }
+
+/* ── ② 镜像层（顺序＝原规则在各 css 里的先后，保证同特异度之间的胜负关系不变）── */
+/* [theme] button,input,select{font:inherit;color:inherit} —— 字体继承这一条丢了，转换后字会换脸。
+   ⚠ 只补 .ce-box 这一半（元素那一半原样留在 theme.css）：这样本件连「元素选择器」都不碰，
+     桌面（不转换）下零影响；用 :where(.ce-box)（特异性 0）而不是裸 .ce-box——原规则是元素
+     选择器 (0,0,1)，抬成类 (0,1,0) 会盖过 `.app-modal-input{font-size:16px}` 这类同级类规则＝字体静默变档。 */
+:where(.ce-box) { font:inherit; color:inherit; }
+
+/* [chat] .composer input */
+.composer .ce-box {
+  margin:0; flex:1; min-width:0; background:transparent; border:0;
+  padding:8px 6px; border-radius:20px; outline:none;
+  -webkit-appearance:none; appearance:none;
+  font-size:15px; text-align:left; max-width:none;
+}
+.composer .ce-box.ce-empty::before { color:var(--muted); }
+.composer .ce-box:focus { box-shadow:inset 0 0 0 1.5px var(--accent); }
+.composer .composer-row .ce-box { background:transparent; box-shadow:none; }
+.composer .composer-row .ce-box:focus { box-shadow:none; }
+/* [theme] .composer input{font-size:max(1em,16px)} */
+.composer .ce-box { font-size:max(1em,16px); }
+/* ⚠ 「输入框空时发送键淡档」原靠 #messageInput:placeholder-shown——转换后原生 value 恒空＝
+   恒真，那条会永远生效（有字也是灰的）。这里先把恒真那条中性化，再按 ce-empty 重述。
+   ⚠ 中性化那条**必须与原规则同权重**（(2,5,0)：`.composer` ＋ `:has(#messageInput:placeholder-shown)`
+   ＋ `:not(:has(#composerAttach:not([hidden])))` ＋ `.send-btn`）——少一个 :not 就压不住原规则、
+   有字也是灰的（量具 F1 会红）。故 :not 照留，只是**写在前头**换个顺序：
+   tools/_smoke_send_btn_262.js 的 A8 靠「原规则那句话在产物里恰一次」判产物同步，
+   换个顺序既保权重又不撞那句话（连注释里也别把原串整句抄进来——注释同样进产物）。 */
+body.ce-on .composer:not(:has(#composerAttach:not([hidden]))):has(#messageInput:placeholder-shown) .send-btn { opacity:1; }
+body.ce-on .composer:has(#messageInput.ce-empty):not(:has(#composerAttach:not([hidden]))) .send-btn { opacity:.4; }
+
+/* [chats] .chat-form input,.chat-form textarea（添加联系人／建群的表单） */
+.chat-form .ce-box {
+  margin-top:5px; width:100%; padding:10px 11px; border:1px solid transparent;
+  border-radius:10px; background:var(--page); color:var(--ink); outline:none;
+  font-size:max(1em,16px); font-family:inherit; box-sizing:border-box;
+}
+.chat-form .ce-box:focus { border-color:var(--ctl-on-ring); }
+
+/* [search] .search-field input（搜索页那条胶囊） */
+.search-field .ce-box {
+  flex:1; min-width:0; height:100%; border:0; background:none; outline:none;
+  font-size:max(1em,16px); color:var(--ink); padding:0;
+}
+.search-field .ce-box.ce-empty::before { color:var(--muted); font-size:13px; }
+
+/* [settings] :where(#settingsView,#mateView,#deskStation) :is(input,select)（设置行右边那枚值） */
+:where(#settingsView,#mateView,#deskStation) :is(.ce-box,select) {
+  display:block; flex:1; min-width:0; max-width:58%; width:auto;
+  padding:8px 12px; border:1px solid transparent; border-radius:10px;
+  background:var(--page); color:var(--ink); outline:none; margin:0;
+  font-size:13px; text-align:right;
+}
+:where(#settingsView,#mateView,#deskStation) :is(.ce-box:focus,select:focus) { border-color:transparent; background:var(--bubble); }
+/* [settings] .setting-card textarea */
+.setting-card .ce-box {
+  display:block; width:100%; max-width:100%; text-align:left; flex:none;
+  background:var(--page); border-radius:10px; padding:10px 12px; font-size:12px;
+}
+
+/* [mate] 名字／固定昵称／成员字段／步进格 */
+.mate-fixed-row .ce-box {
+  flex:1; min-width:0; background:transparent; border:0; border-radius:0; box-shadow:none;
+  padding:0; text-align:left; max-width:100%; color:var(--ink);
+  font-size:12.5px; font-weight:600; font-family:inherit;
+}
+.mate-fixed-row .ce-box.ce-empty::before { color:var(--muted); font-weight:400; }
+.mate-head .mate-name .ce-box, .mate-mine .mate-name .ce-box {
+  background:transparent; border:0; border-radius:0; box-shadow:none;
+  padding:0; text-align:left; max-width:100%; color:var(--ink);
+  font-size:16.5px; font-weight:700;
+}
+.mate-mine .mate-name .ce-box { font-size:15px; font-weight:600; }
+.mate-mem-fields .ce-box { width:96px; flex:none; text-align:center; }
+.mate-stp-row .ce-box { flex:0 1 auto; width:56px; min-width:44px; max-width:none; text-align:center; }
+
+/* [ask] 问问TA 那道题与答案（.ask-field input[type="text"]） */
+.ask-field .ce-box {
+  width:100%; background:var(--page); border:1px solid var(--line); border-radius:10px;
+  padding:10px 12px; font-size:max(1em,16px); outline:none; color:var(--ink);
+  -webkit-appearance:none; appearance:none;
+}
+.ask-field .ce-box:focus { border-color:var(--ctl-on-ring); }
+.ask-q-wrap .ce-box { padding-right:46px; }
+
+/* [player] .pl-note input（网易云那条说明下的输入） */
+.pl-note .ce-box { width:100%; margin-top:8px; }
+
+/* [mono] 圆角收口（后加载胜出，故镜像也放最后）。
+   ⚠ 同 theme 那条：只补 .ce-box 那一半、且用 :where 保特异性 0，
+     否则 (0,1,0) 会压过各页自己的 `.app-modal-input{border-radius:10px}`。 */
+:where(.ce-box) { border-radius:12px; }
+.chat-form input, .chat-form textarea, .app-modal-input, .cards-modal-input, .cards-modal-textarea, .chat-form .ce-box { border-radius:12px; }

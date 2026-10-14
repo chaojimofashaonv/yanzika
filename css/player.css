@@ -1,0 +1,226 @@
+/* ===== 播放器（BUGS #284）=====
+   形制跟着「暖纸单色·编辑杂志」这一族走（css/editorial.css 那一条链）：零卡片容器·发丝线分行·直角·
+   衬线只给 ≥15px 的面·数字 tabular-nums·全页只留一枚反色面（就是整屏那枚播放键）。
+   页头复用 .home-greet/.g-hi（首页与字卡库同一族，衬线与状态栏让位都由它们供），
+   选项行复用 .stats-tabs/.stats-tab 与 .scope-chip（统计页与聊天统计同一族，
+   44px 触控垫层与「选中一条墨规线」都在 css/base.css·css/editorial.css 已在册），
+   贴底面板壳复用 .fs-sheet-*（信箱设置·收藏设置·添加昵称·批量加卡同一族）＝这些件此处一律不重画。
+   ⚠ 下面那条「哪几面底部导航在显示」的视口名单与 css/base.css:33-37 同源：两处各写一套必漂，
+     常驻门 tools/_smoke_player.js 会把两边的视图名逐枚比对（新增一个主视图要同时改两处）。 */
+
+/* ---- 页头与列表 ---- */
+.pl-greet{padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 20px) 20px 2px}
+.pl-head-btns{display:flex;align-items:center;gap:8px;flex:none}
+.pl-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+.pl-body::-webkit-scrollbar{width:0;height:0;display:none}
+#playerView .stats-tabs{margin:0 20px;padding:10px 0 12px}
+#playerView .stats-tab i{font-style:normal;font-size:11px;color:var(--muted);margin-left:5px;font-variant-numeric:tabular-nums}
+#playerView .stats-tab.active i{color:var(--muted)}
+.pl-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 20px 12px;scrollbar-width:none}
+.pl-chips::-webkit-scrollbar{width:0;height:0;display:none}
+/* 「发现」那一面（2026-10-14）：这一面的件（.pl-set-lab／.pl-search／.pl-res／.pl-note）都是「左右自贴边」的画法，
+   而 .pl-body 自己不垫左右内距（列表那几件各自带 20px）＝挂上来就整面贴边、右端被 .pl-body 裁掉
+   （用户报的「字都飞出手机屏幕了」）。所以整面套一层给内距，件本身的画法一处不改。 */
+.pl-find{padding:0 20px 4px}
+/* 面里复用的列表行（.pl-row 自带 11px 20px）要剥掉左右内距，免得叠成 40px 缩进——与 .pl-res 同一口径 */
+.pl-find .pl-row{padding-left:0;padding-right:0}
+
+.pl-sec{display:flex;align-items:baseline;gap:10px;padding:6px 20px 6px;border-bottom:1px solid var(--hair)}
+.pl-sec-t{font-size:11px;letter-spacing:1.4px;color:var(--ink);font-weight:600}
+.pl-sec-s{font-size:11px;color:var(--muted);letter-spacing:.4px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-sec-n{font-size:11px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+
+.pl-row{display:flex;align-items:center;gap:12px;width:100%;padding:11px 20px;border-bottom:1px solid var(--hair);background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--ink);font-family:inherit;cursor:pointer}
+.pl-row:last-child{border-bottom:0}
+.pl-du{flex:none;width:42px;font-size:11px;color:var(--muted);font-variant-numeric:lining-nums tabular-nums;letter-spacing:.3px}
+.pl-tx{flex:1;min-width:0}
+.pl-nm{display:block;font-size:15px;line-height:1.35;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-row.now .pl-nm{font-weight:600}
+.pl-row.now .pl-du{color:var(--ink)}
+.pl-ar{display:block;font-size:11px;line-height:1.5;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-more{flex:none;width:32px;height:32px;display:grid;place-items:center;border:0;background:none;color:var(--muted);padding:0}
+.pl-more svg{width:18px;height:18px}
+.pl-empty{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:26px 20px 30px;border-bottom:1px solid var(--hair)}
+.pl-empty>span{font-size:13px;color:var(--muted);line-height:1.6}
+
+.pl-txt-btn{border:1px solid var(--hair);background:none;color:var(--ink);font-family:inherit;font-size:12px;letter-spacing:.5px;padding:8px 12px;min-height:36px;cursor:pointer}
+.pl-txt-btn.ghost{border:0;color:var(--muted);padding-left:0;cursor:default}
+.pl-link{border:0;background:none;color:var(--ink);font-family:inherit;font-size:12px;letter-spacing:.5px;padding:6px 0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--ink) 40%,transparent)}
+
+/* ---- 记录那一面：一行一条，状态自己说 ---- */
+.pl-rec{display:flex;align-items:baseline;gap:10px;padding:11px 20px;border-bottom:1px solid var(--hair);cursor:pointer}
+.pl-rec .pl-who{flex:none;font-size:11px;letter-spacing:.5px;color:var(--muted);width:64px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pl-rec .pl-nm{flex:1;min-width:0;display:block;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-rec .pl-stt{flex:none;font-size:11px;color:var(--muted);letter-spacing:.4px}
+.pl-rec.wait .pl-stt{color:var(--ink);text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--ink) 45%,transparent)}
+.pl-rec .pl-when{flex:none;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.3px}
+
+/* ── 正在播放条（2026-10-14 重排）──
+   前身是 ui1.html #sc-player 那张通栏大封面卡（BUGS #284 那批照图重排过），实拍量下来：卡高约 380px
+   ＝顶栏以下半屏全是它，而里面只有一张纯黑封面＋一行歌名＋一个时间，信息密度极低，列表要滚才看得见
+   （用户 2026-10-14「播放器里的 ui 还是很丑，非常莫名其妙，字都飞出手机屏幕了」）。
+   这一版把同一张卡压成一条：封面 44 方块（里面那排跳动的声波条照旧）· 歌名与读数两行 ·
+   三枚键一行 · 进度贴卡底，卡高约 140px。**卡常驻**与**整卡可点开整屏**两条口径一字未动。
+   深面用 --ink／条用 --page（不钉 #fff）＝夜间档自动翻转，不违反全站令牌那一条。 ── */
+.pl-now{padding:8px 16px 0}
+.pl-now-card{position:relative;background:var(--glass-grad);border:var(--glass-border);border-radius:var(--r-card);padding:12px 14px;cursor:pointer}
+.pl-now-top{display:flex;align-items:flex-start;gap:12px}
+.pl-now-av{flex:none;width:44px;height:44px;border-radius:10px;background:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pl-now-eq{display:flex;gap:3px;align-items:flex-end;height:20px}
+.pl-now-eq i{width:3px;border-radius:2px;background:color-mix(in srgb,var(--page) 85%,transparent);animation:pl-eq 1.4s ease-in-out infinite}
+.pl-now-eq i:nth-child(1){height:7px;animation-delay:0s}
+.pl-now-eq i:nth-child(2){height:15px;animation-delay:.2s}
+.pl-now-eq i:nth-child(3){height:10px;animation-delay:.4s}
+.pl-now-eq i:nth-child(4){height:18px;animation-delay:.1s}
+.pl-now-eq i:nth-child(5){height:12px;animation-delay:.3s}
+.pl-now-eq i:nth-child(6){height:8px;animation-delay:.5s}
+@keyframes pl-eq{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
+.pl-now-tx{flex:1;min-width:0;padding-top:1px}
+.pl-now-tx b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-now-tx small{display:block;font-size:11px;line-height:1.5;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.pl-now-tag{flex:none;height:22px;display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;font-size:11px;font-weight:600;background:var(--ctl-glass);color:var(--muted);margin-top:2px}
+.pl-now-tag.on{background:var(--ink);color:var(--page)}
+.pl-now-acts{display:flex;align-items:center;justify-content:center;gap:24px;margin-top:12px}
+.pl-now-acts .pl-ico{color:var(--ink);padding:4px}
+.pl-now-acts .pl-ico svg{width:18px;height:18px}
+.pl-now-play{width:46px;height:46px;border-radius:50%;background:var(--ink);border:none;display:flex;align-items:center;justify-content:center;flex:none}
+/* 反色圆上那枚图标必须写足两级（`.pl-now-acts .pl-now-play`）∶同级的 `.pl-now-acts .pl-ico{color:var(--ink)}`
+   会把一级的 color 压掉＝墨色画在墨圆上隐形（2026-10-13 用户报「中间纯黑没有播放按钮」＝本坑），
+   尺寸同理（`.pl-now-acts .pl-ico svg` 也会压掉一级的 19px）。两处各留一句，别再合并回单级选择器。 */
+.pl-now-acts .pl-now-play{color:var(--page)}
+/* 圆底同样要写足两级：同表的 `.pl-ico{background:none…}` 是同一特异性（0,1,0）且在源码里更靠后＝
+   会把一级 `.pl-now-play` 的 background 压掉，反色圆变透明、白三角落在玻璃底上几乎看不见
+   （2026-10-14 实拍量到；与上一条 #323 是同一族坑，两条并排别合并）。 */
+.pl-now-acts .pl-now-play{background:var(--ink);border:0}
+.pl-now-acts .pl-now-play svg{width:19px;height:19px}
+.pl-now-prog{margin-top:12px;height:3px;border-radius:2px;background:var(--well);overflow:hidden}
+.pl-now-prog i{display:block;height:100%;width:0;border-radius:2px;background:var(--ink)}
+/* 空态卡：卡常驻（用户定档），禁用的切歌键只降一档字色（站规：不整行 opacity）；播放键改掷一首开播 */
+.pl-now-card.is-idle .pl-now-eq i{animation-duration:2.4s}
+.pl-now-acts .pl-ico[disabled]{color:color-mix(in srgb,var(--ink) 35%,transparent);cursor:default}
+@media(prefers-reduced-motion:reduce){.pl-now-eq i{animation:none}}
+
+/* ---- 整屏播放页（丙案）：从屏底推上来吃满一屏 ---- */
+.pl-full{position:absolute;inset:0;z-index:8;background:var(--page);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 8px) 20px calc(env(safe-area-inset-bottom,0px) + 18px)}
+.pl-full[hidden]{display:none}
+.pl-full-bar{display:flex;align-items:center;gap:10px;flex:none}
+.pl-full-ti{flex:1;font-size:11px;letter-spacing:1.6px;color:var(--muted);text-align:center}
+/* 封面（2026-10-14 重排）：原先是一整片 flex:1 的空白里浮着一枚音符图标＝整屏最显眼的位置什么也没有；
+   改成一块方形深色封面（与卡上那枚小方块同族），剩下的余量交给上下留白＝视觉重心回到歌名与控制键。 */
+.pl-cover{flex:1;min-height:0;display:grid;place-items:center;padding:10px 0}
+.pl-cover-box{width:min(64vw,236px);aspect-ratio:1;border-radius:20px;background:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pl-cover-box svg{width:min(20vw,76px);height:min(20vw,76px);color:color-mix(in srgb,var(--page) 55%,transparent)}
+.pl-f-tx{text-align:center;padding-top:16px}
+.pl-f-tx b{display:block;font-family:var(--serif);font-size:21px;line-height:1.35;font-weight:400;color:var(--ink);letter-spacing:-.01em;padding:0 2px}
+.pl-f-tx small{display:block;font-size:11.5px;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+.pl-f-who{text-align:center;font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.4px}
+/* 进度（2026-10-14 修）：原先只有一根 `i` 同时当轨道与已播（width:0 时连轨道一起消失）＝
+   未播时屏上只剩左端一枚黑圆点（实拍图里那条「莫名其妙的小黑点」就是它）。
+   这一版轨道改由 .pl-f-prog::before 单独给（--well），`i` 只管已播，`em` 仍是那枚圆点。 */
+.pl-f-prog{position:relative;height:20px;margin-top:18px;display:flex;align-items:center;touch-action:none;cursor:pointer}
+.pl-f-prog::before{content:'';position:absolute;left:0;right:0;height:3px;border-radius:2px;background:var(--well)}
+.pl-f-prog i{position:relative;display:block;height:3px;width:0;border-radius:2px;background:var(--ink)}
+.pl-f-prog em{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;left:0;background:var(--ink);border-radius:50%}
+.pl-f-time{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:lining-nums tabular-nums;letter-spacing:.3px;margin-top:4px}
+.pl-f-acts{display:flex;align-items:center;justify-content:center;gap:30px;margin-top:22px}
+/* 主播放键与卡上那枚同形（反色圆）——原先是直角，同一件事在两张面上长得不一样＝「莫名其妙」的一部分 */
+.pl-pri{width:60px;height:60px;border:0;border-radius:50%;background:var(--ink);color:var(--page);display:grid;place-items:center;cursor:pointer;padding:0}
+.pl-pri svg{width:24px;height:24px}
+.pl-pri[data-on="1"] .i-play,.pl-pri[data-on="0"] .i-pause{display:none}
+.pl-ico{width:40px;height:40px;border:0;background:none;color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.pl-ico svg{width:24px;height:24px}
+.pl-ico[data-on="1"] .i-play,.pl-ico[data-on="0"] .i-pause{display:none}
+.pl-f-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;flex:none}
+
+/* ---- 面板里的件：一首歌·一行设置·一格权限 ---- */
+.pl-song{display:flex;align-items:center;gap:12px;padding:14px 0 12px;border-bottom:1px solid var(--hair)}
+.pl-cv{flex:none;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--hair);color:var(--muted)}
+.pl-cv svg{width:22px;height:22px}
+.pl-song .pl-tx{flex:1;min-width:0}
+.pl-acts{display:flex;gap:8px;margin:14px 0 4px;flex-wrap:wrap}
+.pl-acts .pl-btn{flex:1;min-width:96px;border:1px solid var(--hair);background:none;color:var(--ink);font-family:inherit;font-size:13px;padding:13px 10px;min-height:44px;cursor:pointer}
+.pl-acts .pl-btn.pri{background:var(--ink);color:var(--page);border-color:var(--ink);font-weight:600}
+.pl-acts .pl-btn[disabled]{opacity:.4;cursor:default}
+.pl-ask-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-top:14px}
+.pl-ask-hd span{font-family:var(--serif);font-size:19px;font-weight:400;color:var(--ink)}
+.pl-ask-hd i{font-style:normal;font-size:11px;letter-spacing:1.4px;color:var(--muted)}
+.pl-note{font-size:11px;line-height:1.7;color:var(--muted);margin:10px 0 6px}
+.pl-note input{width:100%;margin-top:8px}
+/* 添加那一面的输入框：字号 max(1em,16px) 是 iOS 聚焦不整页放大那条地板（全站文本面同此口径）；
+   直角＋一条 --ctl-hair＋焦点环 --ctl-on-ring＝与全站输入面同一族，不在此处另画第二种「聚焦长什么样」。
+   min-height:88px 让「一行一条」贴三条还看得见（贴完不必在里面滚）。 */
+.pl-in{display:block;width:100%;box-sizing:border-box;min-height:88px;padding:11px 12px;border:1px solid var(--ctl-hair);border-radius:0;background:var(--well);color:var(--ink);font-family:inherit;font-size:max(1em,16px);line-height:1.6;resize:none;outline:none}
+.pl-in:focus{border-color:var(--ctl-on-ring)}
+.pl-in::placeholder{color:var(--muted)}
+/* 每一行的结果写回同一栏（不开确认弹窗＝用看得见的状态变化代替）；失败那一行只把字染成全站那枚危险色，不引入外来色 */
+.pl-add-log{margin:2px 0 0}
+.pl-add-log div{font-size:11px;line-height:1.6;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--hair);word-break:break-all}
+.pl-add-log div:first-child{border-top:1px solid var(--hair)}
+.pl-add-log div:last-child{border-bottom:0}
+.pl-add-log .bad{color:var(--danger-ink)}
+
+/* ---- 网易云账号那一面（2026-10-13 二批）：二维码·登录态头像·搜索结果 ---- */
+/* 二维码给一块白底方框兜着（二维码本体是深色块图，落在暖纸白上要有边界才不飘）；
+   尺寸取 min(58vw,220px)＝与整屏那枚封面同一档思路，窄屏不挤、桌面不虚。 */
+.pl-qr{display:flex;justify-content:center;padding:10px 0 2px}
+.pl-qr img{width:min(58vw,220px);height:min(58vw,220px);background:#fff;border:1px solid var(--hair);border-radius:12px;padding:8px;box-sizing:border-box}
+.pl-qr-st{text-align:center;font-size:12px;color:var(--muted);line-height:1.6;padding:8px 0 2px}
+.pl-qava{width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--hair);flex:none;display:block}
+/* 搜索结果一行一首：与曲库那种行同族（发丝线分行），右端那枚是唯一动作（＋／已在） */
+.pl-res{display:flex;align-items:center;gap:12px;width:100%;padding:11px 0;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left;color:var(--ink);font-family:inherit;cursor:pointer}
+.pl-res:first-child{border-top:1px solid var(--hair)}
+.pl-res[disabled]{cursor:default}
+.pl-res[disabled] .pl-nm{color:var(--muted)}
+/* 搜索那一行：输入框与按钮一时长一排（输入框吃掉剩余宽），按钮不换行 */
+.pl-search{display:flex;align-items:stretch;gap:8px}
+.pl-search-in{flex:1;min-width:0;min-height:44px;height:44px;padding:0 12px;resize:none;overflow:hidden}
+.pl-search .pl-btn{flex:none;min-width:76px;min-height:44px;padding:0 12px;border:1px solid var(--hair);background:none;color:var(--ink);font-family:inherit;font-size:13px;cursor:pointer}
+
+.pl-set-lab{font-size:11px;letter-spacing:1.2px;color:var(--ink);padding:16px 0 6px;display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+/* 右端那句说明必须是可缩的（min-width:0）：flex item 默认 min-width:auto＝文字撑到容器外，
+   再被 .pl-body 的 overflow 裁掉＝「字飞出屏幕」的另一半来源。 */
+.pl-set-lab span{color:var(--muted);letter-spacing:.3px;font-size:11px;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-set-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--hair);cursor:pointer}
+.pl-set-row.on .pl-tx b::after{content:' · 已在这本里';font-size:11px;color:var(--muted);font-weight:400}
+.pl-set-row .pl-tx{flex:1;min-width:0}
+.pl-set-row b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.pl-set-row small{display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;word-break:break-word}
+.pl-chev{flex:none;font-size:14px;color:var(--muted);min-width:20px;text-align:right}
+.pl-set-row.danger b{color:var(--danger-ink)}
+.pl-set-row.danger .pl-chev{color:var(--danger-ink)}
+
+.pl-perm{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--hair)}
+.pl-perm-t{flex:1;min-width:0}
+.pl-perm-t b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.pl-perm-t em{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;letter-spacing:.3px}
+.pl-perm-t small{display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px}
+.pl-num{display:flex;align-items:center;gap:2px;flex:none;padding-top:2px}
+.pl-num input{-moz-appearance:textfield;appearance:textfield;width:52px;min-width:52px;text-align:center;border:1px solid var(--hair);background:var(--well);color:var(--ink);font-family:inherit;font-size:max(1em,16px);font-variant-numeric:lining-nums tabular-nums;padding:8px 2px;max-width:52px}
+.pl-num input::-webkit-outer-spin-button,.pl-num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pl-num em{font-style:normal;font-size:11px;color:var(--muted);margin-left:3px;min-width:24px}
+/* 开关：全站只有那一枚画法——css/glass.css 已把裸 checkbox 画成 44×26 的 iOS 开关（轨道与圆点两枚令牌），
+   这里不再画第二份；整行是 <label>＝点文字也算（本体 26px 高，行高本就 ≥44，不必再垫）。 */
+label.pl-perm{cursor:pointer}
+.pl-perm-sw{align-items:center}
+.pl-relay{font-family:inherit}
+
+/* 歌词（#330）：整屏播放页标题栏「歌词」一枚开关；开着＝封面（.pl-cover）换下、这一块上。
+   点一句跳到那句（委托在 js/player.js）；逐句高亮只换字色与一档字号（纯白那套不整行降透明），
+   当前行往下滚到容器中线＝换行才动，不跟每次 tick。 */
+.pl-f-lrc{flex:1;min-height:0;overflow-y:auto;position:relative;padding:10px 0;scroll-behavior:smooth}
+.pl-f-lrc[hidden],.pl-cover[hidden]{display:none}
+.pl-lrc-line{padding:8px 4px;text-align:center;font-size:14px;line-height:1.7;color:color-mix(in srgb,var(--ink) 45%,transparent);cursor:pointer;transition:color .25s;-webkit-tap-highlight-color:transparent}
+.pl-lrc-line.on{color:var(--ink);font-size:15px}
+.pl-lrc-say{text-align:center;font-size:12px;color:var(--muted);padding:18px 0;line-height:1.6}
+#plfLrcBtn[data-on="1"]{color:var(--ink)}
+
+/* 320 窄屏：时长列与作者挤，先让作者那行可折（宁可两行也不截字），按钮不留缝隙 */
+@media(max-width:340px){
+  .pl-row,.pl-rec{gap:9px;padding-left:16px;padding-right:16px}
+  .pl-du{width:36px}
+  .pl-rec .pl-who{width:52px}
+  .pl-f-acts{gap:24px}
+}
+@media(prefers-reduced-motion:reduce){
+  .pl-perm input[type=checkbox],.pl-perm input[type=checkbox]::before{transition:none}
+}

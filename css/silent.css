@@ -1,0 +1,64 @@
+/* ===== 主动消息管理（js/silent.js ∶ html/view-silent.html，2026-10-12）=====
+   页面骨架沿心愿那一族：顶栏文字让位给页内大标，页头＝大标＋英文小标＋右边一行计数，
+   下面一行边界说明、两枚筛选 chip、两组清单（单聊联系人 ∶ 群聊）。清单零卡片容器、发丝线分条
+   （与「更多」那一页同范式）——这一页是一份名单，不是一排地砖。
+   开关**不新画控件**：一行一枚 18px 复选框，`accent-color:var(--ink)`＝设置页「提醒」那一族
+   同一件（本仓不为一个功能画第二种开关）。
+   2026-10-13 二批：单聊那一节多一排「说给群」快捷档（批量设每人自己那份 asGroupProb），
+   类名同样复用全站那族 chips——本页只长内容，不长第二种控件。 */
+body[data-view="silent"] .topbar-title-text{display:none}
+/* FIX #004 同一课：移动端 WebKit 会算错 content-visibility 的滚动高度，自滚动的整页都显式关掉 */
+#silentView{content-visibility:visible;background:
+  radial-gradient(circle at 100% 0,rgba(255,255,255,.74),transparent 30%),
+  linear-gradient(180deg,transparent,var(--page) 76%)}
+
+/* ---------- 页头 ---------- */
+.silent-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 16px) 20px 0}
+.silent-brand{min-width:0}
+.silent-brand h2{font-size:26px;line-height:1.05;font-weight:800;letter-spacing:4px;color:var(--ink);margin:0}
+.silent-sub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:8px;min-width:0}
+.silent-en{font-size:11px;letter-spacing:2px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.silent-nums{flex:none;font-size:11px;letter-spacing:.6px;color:var(--muted);white-space:nowrap}
+.silent-note{flex:none;margin:12px 20px 0;font-size:11px;line-height:1.7;color:var(--muted)}
+
+/* ---------- 筛选 chips（两枚） ---------- */
+/* flex:none 必须有（BUGS #080 那一刀）：.view.active 是 column 布局，本行一旦可缩放就会被清单顶扁 */
+.silent-filter{flex:none;display:flex;gap:8px;padding:14px 20px 4px}
+.silent-fchip{flex:none;min-height:30px;padding:5px 13px;border-radius:999px;border:1px solid var(--ctl-ring);background:var(--ctl-glass,var(--surface));color:var(--muted);font-size:11.5px;font-family:inherit;letter-spacing:.5px}
+.silent-fchip.active{color:var(--ink);font-weight:600;background:var(--island-grad);border-color:var(--ctl-on-ring)}
+.silent-fchip:active{opacity:.7}
+
+/* ---------- 落点那一排（批量设每人自己那份「说给群」） ----------
+   类名复用全站那族 .fchips/.fchip（收藏页供∶信箱 #mbOwners∶字卡库 #cardsWho∶播放器 TA 收藏∶群成员
+   #mateScope 共用）＝零新组件，且自动落在 css/mono.css ③ 那条「选中态只有一种画法」的名单里——
+   同一件事写第五种观感就是本仓反复被打回的两层实现（那一族已逐条扫出四处）。
+   上下内距各 12px 加在**带 overflow 的那一层**（.fchips 自己有 overflow-x:auto，会顺手纵向裁切；
+   给外层让位＝信箱 #mbOwners 那批 F3 实测过的无效写法，垫层探出的半截照样被这一层剪掉）。 */
+.silent-probs{display:flex;align-items:center;gap:8px;padding:0 20px}
+.silent-probs .fchips{flex:1;min-width:0;padding:12px 0}
+.silent-prob-ti{flex:none;font-size:11px;letter-spacing:1px;color:var(--muted)}
+
+/* ---------- 清单 ---------- */
+/* flex:1 ＋ min-height:0 ＝这一页自己的滚动容器（BUGS #204 那一课，不写 min-height:0 会被内容顶开）。
+   刻意不给 overflow-x:auto：窄屏横向滚动会把整列压扁（avatarlib∶心愿那一行已栽过同一处） */
+.silent-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;padding:6px 20px calc(28px + env(safe-area-inset-bottom,0px))}
+.silent-body::-webkit-scrollbar{width:0;height:0;display:none}
+.silent-sec + .silent-sec{margin-top:18px}
+.silent-sec-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 6px}
+.silent-sec-ti{display:inline-flex;align-items:baseline;gap:6px;font-size:11px;letter-spacing:2.5px;color:var(--ink);font-weight:600}
+.silent-sec-ti em{font-style:normal;font-family:Georgia,"Times New Roman",serif;font-size:12px;color:var(--muted);letter-spacing:0}
+.silent-sec-btns{display:inline-flex;gap:6px;flex:none}
+.silent-batch{border:1px solid var(--ctl-ring);background:transparent;color:var(--muted);border-radius:999px;font-size:10.5px;font-family:inherit;padding:3px 9px;letter-spacing:.5px}
+.silent-batch:active{opacity:.6}
+.silent-batch:disabled{opacity:.35}
+.silent-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.silent-rows .silent-row:last-child{border-bottom:0}
+.silent-row-av{width:38px;height:38px}
+.silent-row-main{flex:1;min-width:0}
+.silent-row-main b{display:block;font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.silent-row-main small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.4}
+/* 关掉那一行：名字降一档字重＝屏上一眼分得清谁被关着，不必逐行读小字 */
+.silent-row.off .silent-row-main b{font-weight:500;color:var(--muted)}
+.silent-chk{width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)}
+.silent-chk:disabled{opacity:.4}
+.silent-empty{padding:36px 0;text-align:center;font-size:11.5px;color:var(--muted);letter-spacing:1px;line-height:1.7}
