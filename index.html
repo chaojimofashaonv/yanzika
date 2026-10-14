@@ -13,7 +13,7 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="alternate icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <title>言字卡传讯（完全免费 · 禁止倒卖）</title>
+  <title>言字卡（完全免费 · 禁止倒卖）</title>
   <script>
   // 首屏前置：本次打开还没确认过声明 → 第一帧就是公告页，否则读档（IndexedDB + ensureData + 首轮渲染）期间会先闪出桌面。
   // 键名在这里定义一次，js/age-gate.js 读这两个全局判同一件事，不留第二份实现。
@@ -978,6 +978,9 @@ body[data-ap-bg=on] #chatView .composer{background-image:linear-gradient(var(--c
    本批补上说明并补上自证件 `tools/_flex359_reverse.py`：现值这一枚落「已保护」栏、副本里摘掉 `flex:none` 后
    立刻挪进「候选」栏（FLEX359-REVERSE-OK）＝这一族下次再犯，审计真的列得出它。 */
 .chats-list{margin:0 16px 20px;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;display:flex;flex-direction:column}
+/* 空态整张撤卡（用户 2026-10-14「没添加联系人时白框很突兀」）：面与边都是给「行」用的，
+   一行都没有就别空着上屏——renderChatsList 空时 innerHTML 恰为空串，:empty 咬得住；提示交给 .chats-empty 那两句。 */
+.chats-list:empty{display:none}
 .chat-row{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;transition:background-color .15s}
 .chat-row + .chat-row{border-top:1px solid var(--hair)}
 .chat-row:active{background:var(--press)}
@@ -1905,7 +1908,7 @@ body[data-view="silent"] .topbar-title-text{display:none}
    脸面只由组卡供，行内（.mate-mine／.mate-jump／组内 .fold）一律裸排。 */
 .mate-group{background:var(--glass-grad);border:var(--glass-border);box-shadow:var(--glass-shadow);border-radius:var(--r-card);margin-bottom:10px}
 
-/* 顶部分组 tag（2026-10-14 #405）：一屏只画一档，形制沿「更多」页那排组 tag。
+/* 顶部分组 tag（2026-10-14 #408）：一屏只画一档，形制沿「更多」页那排组 tag。
    ⚠ 这里只写布局（flex∶内距∶字号，抄 css/more.css 的 .more-tags/.more-tag 两条）：
    面∶字色∶描边∶圆角与「选中那一态长什么样」全由 css/mono.css ③ 全站名单供（.mate-tag 已并进那条名单），
    本件再写一遍 background∶color 就是两层实现互相顶（#154∶#311 各红过一次的那一族）。
@@ -1981,7 +1984,7 @@ body[data-view="silent"] .topbar-title-text{display:none}
    切到某一位＝只留「他的形象 ＋ 他在本群那五格 ＋ 他的声音」：按会话（＝本群）那一份走的几张卡
    （气泡外观／拼句／夹带／会话音效）摆在成员段里就是「改了不生效」，整组收起。 */
 #mateScope{padding:2px 2px 10px}
-/* 成员段（2026-10-14 #405 随分组重做改按 fold 收）：「他在本群」那五格之外，本页还亮着哪些卡——
+/* 成员段（2026-10-14 #408 随分组重做改按 fold 收）：「他在本群」那五格之外，本页还亮着哪些卡——
    形象三件（群成员/我的形象/头像昵称库）与「美化设置」「会话音效」都是按会话/本群那份走的东西，
    摆在成员段里就是「改了不生效」＝整组收（#behaviorCard 那条旧规则随之拆成逐卡，情绪卡 #309 按人
    各一份，照旧亮着）。正停在收起的那一档时由 js/mate.js 的 _mateTabApply 当场改停「回话」。 */
@@ -2015,7 +2018,7 @@ body[data-view="silent"] .topbar-title-text{display:none}
    行式折叠卡（标题在上·摘要在下·右侧 ›）＋ 复选框画成实心开关。
    ⚠ 只套 #mateView：.fold 的基础形制是本页与设置页（view-settings 的 storage/night/font 等卡）共用的，
    上面那些未加_scope 的规则动不得，设置页那张的脸面靠这里的 #mateView 前缀隔开。
-   （分节小签 .sec-label 那条 2026-10-14 #405 撤下：一排组 tag 上已写着名字＝同一件事说两遍，
+   （分节小签 .sec-label 那条 2026-10-14 #408 撤下：一排组 tag 上已写着名字＝同一件事说两遍，
    #334 统计页那条口径；本页自此没有 .sec-label，这条规则没了宿主一并摘。） */
 
 /* 组卡内的行式折叠卡：卡脸交给 .mate-group，每行只留「标题＋摘要＋›」。
@@ -2035,7 +2038,7 @@ body[data-view="silent"] .topbar-title-text{display:none}
 #mateView .setting-card.fold{margin-bottom:10px}
 
 /* 成员段停在「某一位」时，「形象」「外观」两组整组收（见上面成员段 hiding 那段账）——
-   旧写法收的是 .mate-sec-profile 这层壳，#405 分组后那层壳住进了 profile 组里，改收整个组。 */
+   旧写法收的是 .mate-sec-profile 这层壳，#408 分组后那层壳住进了 profile 组里，改收整个组。 */
 #mateView[data-mate-scope="mem"] .mate-sec-profile{display:none}
 
 /* 复选框 → 实心开关（ui1 .switch 的画法）：轨道 46×27、白钮 21、开＝实心墨底。
@@ -3658,7 +3661,7 @@ body[data-avatar-shape="square"] .sys-msg-img{border-radius:12px}
 #avInviteNo{background:var(--bubble);color:var(--ink)}
 .av-invite-actions button:active{opacity:.75}
 
-/* 「这本池子」子选择排（BUGS #402）：「我的」面里在编哪一本——通用 or 对某位专属。
+/* 「这本池子」子选择排（BUGS #407）：「我的」面里在编哪一本——通用 or 对某位专属。
    体例同 .av-rate 那排小 chips；横向可滚（联系人多时不折行挤高这一面） */
 .av-mine-row{display:flex;align-items:center;gap:5px;margin:0 0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .av-mine-row::-webkit-scrollbar{display:none}
@@ -3671,6 +3674,8 @@ body[data-avatar-shape="square"] .sys-msg-img{border-radius:12px}
 /* 聊天页顶部的状态行：名字下方一行小字（不再做灰底胶囊），点它进世界感知页 */
 .cj-chip{z-index:2;grid-column:2;grid-row:2;justify-self:center;align-self:center;display:inline-flex;align-items:center;gap:4px;padding:1px 6px;background:transparent;border:0;color:var(--muted);font-size:11px;letter-spacing:.2px;white-space:nowrap}
 .cj-chip:active{opacity:.55}
+/* 连接感知判出单向/慢半拍时（data-conn 由 js/cjian.js 的 updateCjChip 独家维护）：墨字提亮一档 */
+.cj-chip[data-conn]{color:var(--ink)}
 
 .cj-page{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 6px) 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
 .cj-page::-webkit-scrollbar{width:0;height:0;display:none}
@@ -4463,6 +4468,9 @@ html.gate-early #ageGate.on{animation:none}
 .ag-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .ag-inner{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 34px) 22px calc(24px + env(safe-area-inset-bottom,0px))}
 .ag-brand{font-size:11px;letter-spacing:4px;color:var(--muted);margin-bottom:8px}
+/* 版号（#ageGateVer）：最顶一行，一眼核对线上部署是不是新版。运行时读 window.APP_VER（js/app.js 启动时填），
+   assemble.py --bump 推过 APP_VER 后这里自动跟着变，不用改这一页 */
+.ag-ver{font-size:10.5px;letter-spacing:1.5px;color:var(--muted);opacity:.75;font-variant-numeric:tabular-nums;margin-bottom:10px}
 .ag-title{font-size:22px;font-weight:650;letter-spacing:-.2px;color:var(--ink);margin:0 0 6px}
 .ag-sub{font-size:11.5px;color:color-mix(in srgb,var(--ink) 55%,transparent);letter-spacing:.2px;margin:0 0 20px}
 /* 「线上有新版」那一行（js/update-check.js 比过 version.json 才摘掉 hidden）：次级动作＝描边不加底，
@@ -5522,6 +5530,7 @@ input,select,textarea{border-radius:12px}
   <div id="ageGate" aria-hidden="true">
     <div class="ag-scroll">
       <div class="ag-inner">
+        <div class="ag-ver" id="ageGateVer"></div><!-- 版号由 js/app.js 启动时填 window.APP_VER -->
         <div class="ag-brand">言字卡</div>
         <h2 class="ag-title">开屏公告</h2>
         <p class="ag-sub">免责声明<br>每次进入前都读一遍</p>
@@ -5599,7 +5608,7 @@ input,select,textarea{border-radius:12px}
     <!-- active 写在这一面＝第一帧与 init 里那句无条件 showView('chats') 的落点一致；
          写死在别的面上就会「先闪出那一页·读完档再跳回桌面」（原宿主是 #chatView，BUGS #086→#234）-->
     <section class="view active" id="chatsView">
-      <div class="home-brand mono">言字卡 · 字卡传讯</div>
+      <div class="home-brand mono">言字卡</div>
       <!-- 页头四件形制沿 ui1 的 #sc-chats（用户 2026-10-13「按 ui1 的风格修改」）：品牌行 → 大字问候 ＋ 今日一句 ｜ 日号 ＋ 月周。
            静态文案「你好」不写「晚上好」＝那句要按钟点算，写死会在早上闪一下假话；几何由 js/chats.js 的 renderChatsList 当场填。 -->
       <div class="home-greet">
@@ -6251,7 +6260,7 @@ input,select,textarea{border-radius:12px}
      全部按当前会话联系人作用域；控件 id 与 js/settings.js 的既有绑定一一对应，搬家不改逻辑。
      排版 2026-10-13 按 ui1 演示稿 sc-mate 重排：页头卡（头像＋名字＋去聊天胶囊）· 行式折叠卡
      （标题在上、摘要在下、右侧 ›，与 ui1 的 hrow 同形）· 复选框在本页画成实心开关（css/mate.css）。
-     2026-10-14 #405：分节小签（sec-label）撤下，改一排顶部组 tag 分六档（形象∶回话∶主动∶外观∶声音∶记录，
+     2026-10-14 #408：分节小签（sec-label）撤下，改一排顶部组 tag 分六档（形象∶回话∶主动∶外观∶声音∶记录，
      见下面 #mateTags 那段的账）＝一屏只画一档。 -->
     <section class="view" id="mateView">
       <div class="mate-body">
@@ -6282,7 +6291,7 @@ input,select,textarea{border-radius:12px}
           <div class="fold-bd"><div id="mateMemPanelBody"></div></div>
         </div>
 
-        <!-- 顶部分组 tag（2026-10-14 #405）：一排六档＝形象∶回话∶主动∶外观∶声音∶记录，一屏只画一档。
+        <!-- 顶部分组 tag（2026-10-14 #408）：一排六档＝形象∶回话∶主动∶外观∶声音∶记录，一屏只画一档。
              起因＝用户「【美化设置】在回话方式的分类里，实在是非常莫名其妙」：美化管的是「好不好看」，
              混在「TA 怎么回话」那一节里读不出归属。分组只管把卡按归属摆对，卡内读写与保存链一字未动：
              形象＝成员/我的形象/头像昵称库；回话＝节奏/拼句/夹带/情绪（TA 怎么接你这句话）；
@@ -6444,7 +6453,7 @@ input,select,textarea{border-radius:12px}
 
         <!-- 聊天情绪（BUGS #309 段二）2026-10-14 随分组重做搬进「回话」组：它管的是 TA 回话时挂不挂
              情绪标签＝「怎么回话」的一档，与「日子」不是一族（原「日子与情绪」那节是唯一把这两张卡
-             拼在一起的因由，#405 分组时拆开各归各位）。控件本体一字未动，读写仍在 js/emotion.js 一处；
+             拼在一起的因由，#408 分组时拆开各归各位）。控件本体一字未动，读写仍在 js/emotion.js 一处；
              作用域口径照旧（#309）：与同页「形象／TA 的声音」同一份——群态切到某一位＝改他本人那份，
              停在「本群」＝这一群共用那份。控件由 renderEmoMateCard() 现渲染（EMOTION_FIELDS 唯一来源）。 -->
         <div class="setting-card fold" data-fold="emotion">
@@ -6480,8 +6489,8 @@ input,select,textarea{border-radius:12px}
 
         <!-- TA 会不会自己新建纪念日（2026-10-11 BUGS #271）：逻辑与那条钟都在 js/anniversary.js 的 annSelfTick，
              这两格只是按人那份 behavior 的读写口（保存仍走 saveBehaviorNow 一条链，不另开第二个写手）。
-             2026-10-14 #405 随分组重做住进「主动」组：它与「主动找你」同一族＝TA 不等你开口做的事
-             （原「日子与情绪」那节把这两张卡拼在一起本就没有归属逻辑，#405 拆开各归各位）。 -->
+             2026-10-14 #408 随分组重做住进「主动」组：它与「主动找你」同一族＝TA 不等你开口做的事
+             （原「日子与情绪」那节把这两张卡拼在一起本就没有归属逻辑，#408 拆开各归各位）。 -->
         <div class="setting-card fold" data-fold="anns">
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">TA 自己想起日子</span><span class="fold-sum" id="mateAnnSum"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
@@ -6513,7 +6522,7 @@ input,select,textarea{border-radius:12px}
 
         <!-- 这一本会话的记录：单独导出（JSON 能原样回灌、TXT 给人读）＋ 把外来的记录并进来（三级判同自动去重）。
              恒为整本会话，不跟随顶部那排成员 chip；判同与插入的逻辑都在 js/chat-io.js
-             （2026-10-14 #405 随分组重做住进「记录」组＝它管这本会话的记录进出，与声音不是一族）。 -->
+             （2026-10-14 #408 随分组重做住进「记录」组＝它管这本会话的记录进出，与声音不是一族）。 -->
         <div class="mate-grp" data-mate-grp="log" hidden>
           <div class="mate-group">
         <div class="setting-card fold" data-fold="chatio">
@@ -7089,7 +7098,9 @@ input,select,textarea{border-radius:12px}
     </div>
 <!-- 聊天情绪标签：机制切换、概率与词表（BUGS #309）。入口＝「更多」那一行＋使用大全那一行。
      这一页管的是**全局默认**那一份；每一位自己那本（只存被改过的格）在「TA 的设置 → 聊天情绪」那一格。
-     出厂默认 mode＝off：这一族会把 TA 的回话换成交接词、并在气泡下长出标签，属新行为，不默认生效。
+     出厂档 mode＝mixed（2026-10-14 用户定档「聊天情绪需要默认开启混合」）：这一族会把 TA 的回话换成交接词、
+     并在气泡下长出标签——上线时它出厂是关的，改开后旧档里那份「还停在 off 的全局默认」由 ensureData
+     一次性归到 mixed（某一位自己那本里显式存着 off 的＝他有意关掉，不动）。
 
      2026-10-13 BUGS #356 整页重排（用户「打开的页面 ui 也非常乱，需要重新设计」）——
      乱的根源量出来是三条：①一屏 3613px（4.3 屏）的词表把 209 张词连成一面墙；②三个板块
@@ -7887,7 +7898,7 @@ const defaults = {
       meAvDay: '', meNickDay: '', meAvDayN: 0, meNickDayN: 0, meAvLastWhy: '', meNickLastWhy: ''
     },
     by: {},
-    // 「我的」专属池（BUGS #402）：{ [联系人id]: 池 }＝只给那一位看的候选本（空池起步，可从通用 me 复制），
+    // 「我的」专属池（BUGS #407）：{ [联系人id]: 池 }＝只给那一位看的候选本（空池起步，可从通用 me 复制），
     // 池结构与 me 同形；换了只写那位的 myChatAvatar/myChatName 覆盖位。节奏档位/总闸不在这里（自动换的钟仍住 me 与 by）
     meBy: {},
     impr: {}   // TA 对池内头像/昵称的印象：{ [会话id]: { [key]: [{t,ts,w}] } }，每人一本；key=a:图片哈希 / n:昵称文本；w=换上它的来由（空串＝手动换或旧档）；保留键 '*'＝旧档那本没记下是谁
@@ -10453,7 +10464,7 @@ function ensureData(raw) {
       const c = raw.contacts.find(x => x.id === k);
       if (!c || c.kind === 'group') delete raw.avlib.by[k];
     }
-    // 「我的」专属池（BUGS #402）：meBy[cid]＝只给那一位看的候选本，结构与上面同一把 _avFix 尺；
+    // 「我的」专属池（BUGS #407）：meBy[cid]＝只给那一位看的候选本，结构与上面同一把 _avFix 尺；
     // 人已删／是群照 by 那两条一并清——留给不在册的人一本池＝屏上永远点不到的死数据
     if (!raw.avlib.meBy || typeof raw.avlib.meBy !== 'object') raw.avlib.meBy = {};
     for (const k of Object.keys(raw.avlib.meBy)) {
@@ -13687,6 +13698,7 @@ function _deliverToChat(msg, originChat) {
     // kind 只在「信」时区别成 letter，其余一律 msg —— src 的种类五花八门，硬凑成一句短语只会说错话。
     avlibFeed(originChat, msg.letter ? AV_HEAT_LETTER : (msg.src ? AV_HEAT_MSG + 2 : AV_HEAT_MSG), msg.letter ? 'letter' : 'msg');
   }
+  if (typeof _cjEvent === 'function' && msg.from === 'partner') _cjEvent(originChat, 'taReplied');   // 世界感知事件钩子：TA 刚回了话
   save();
   if (isActive) { _animateNextRender = true; renderMessages(); }
   if (!viewingThis && typeof renderChatsList === 'function') { try { renderChatsList(); } catch (e) {} }
@@ -13899,6 +13911,7 @@ function partnerReply(chatId, userText) {
         const stream = (ch && Array.isArray(ch.msgs)) ? ch.msgs : null;   // 等待期间切走：系统提示仍归原会话
         if (stream) {
           stream.push({ id: nextId(), from: 'system', text: '对方已读不回', time: time(), date: today });
+          if (typeof _cjEvent === 'function') _cjEvent(activeChat, 'nr');   // 世界感知事件钩子：已读不回落下＝TA 正被占着
           save();
           if (stream === data.messages) renderMessages();
           else if (typeof renderChatsList === 'function') { try { renderChatsList(); } catch (e) {} }
@@ -14644,6 +14657,7 @@ $('#composer').addEventListener('submit', async e => {
   const sentFromChat = data.activeChat;   // 同步捕获：await save 期间切走会话，回复仍归属发送时的会话与联系人
   data.messages.push(msg);
   if (msg.from === 'me' && typeof maybeCollectByTa === 'function') { const _cs = data.collectSettings || {}; maybeCollectByTa({ kind: 'msg', side: 'out', text: msg.text || '', imgs: msg.sticker ? [msg.sticker] : [], mid: msg.id }, _cs.taMsgProb, sentFromChat); }
+  if (typeof _cjEvent === 'function') _cjEvent(sentFromChat, 'meSent');   // 世界感知事件钩子：你刚说了话
   notifyMyMessage();
   input.value = '';
   _atClose();
@@ -19829,7 +19843,7 @@ function _avNewPool() {
 function _avRoot() {
   if (!data.avlib || typeof data.avlib !== 'object') data.avlib = { me: _avNewPool(), by: {} };
   if (!data.avlib.by || typeof data.avlib.by !== 'object') data.avlib.by = {};
-  // 「我的」专属池（BUGS #402）：meBy[cid]＝只给那一位看的候选本。懒建即可，这里只保形状在册
+  // 「我的」专属池（BUGS #407）：meBy[cid]＝只给那一位看的候选本。懒建即可，这里只保形状在册
   if (!data.avlib.meBy || typeof data.avlib.meBy !== 'object') data.avlib.meBy = {};
   return data.avlib;
 }
@@ -19854,7 +19868,7 @@ function _avSelContact() {
 }
 function _avPool() { return _avPoolById(_avSel); }
 
-// ===== 「我的」面的池子分本（BUGS #402）=====
+// ===== 「我的」面的池子分本（BUGS #407）=====
 // _avMineSel＝「我的」面里在编哪一本：'global'＝通用那本（data.avlib.me，换了全网生效）
 // ｜联系人id＝对那位专属的一本（data.avlib.meBy[cid]，换了只写那位的 myChatAvatar/myChatName 覆盖位）。
 // 给不给某位开专属由用户按人决定：不切子选择就一直用通用，切过去才动那本。
@@ -20115,7 +20129,7 @@ function openAvatarLib(cid) {
   const cur = (typeof currentContact === 'function' && currentContact());
   const want = cid || (cur && cur.id);
   _avSel = (_avAvatars().some(c => c.id === want)) ? want : 'me';
-  _avMineSel = 'global';   // 进页一律从通用那本看起（BUGS #402）
+  _avMineSel = 'global';   // 进页一律从通用那本看起（BUGS #407）
   showView('avatarlib');
 }
 
@@ -20173,7 +20187,7 @@ function _avRenderOwners() {
   if (on) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;   // 水平居中选中胶囊（不动页面纵向滚动）
 }
 
-// 「我的」面的子选择排（BUGS #402）：在编哪一本池。通用＝全网那份；每位名下一本专属，
+// 「我的」面的子选择排（BUGS #407）：在编哪一本池。通用＝全网那份；每位名下一本专属，
 // 空池起步（「从通用池复制」一键搬过来）。群聊不出现（整族退出本功能，BUGS #179）
 function _avMineRowHTML() {
   const list = _avAvatars();
@@ -20242,7 +20256,7 @@ function _avRenderPane() {
       + (pool.av.length ? `<div class="av-grid">${pool.av.map((s, i) => `<div class="av-cell${s === _avTaAvatar() ? ' on' : ''}" data-av-idx="${i}"><img src="${escapeHTML(s)}" alt="头像" loading="lazy">${_avImprBadge(pool.av, i, false)}<button type="button" class="av-cell-del" data-av-del="${i}" aria-label="删除这张头像">×</button></div>`).join('')}</div>` : '<div class="av-empty">还没有头像，点下方按钮从相册添加</div>')
       + `<div class="av-actions"><button type="button" class="av-btn" data-av-act="add-av-ta">${_AV_ICON_UP}添加头像</button><button type="button" class="av-btn danger" data-av-act="clear-av-ta">${_AV_ICON_TRASH}清空</button></div>`;
   } else if (!isNick && !ta) {
-    // 「我的」面（BUGS #402）：网格画的是**在编的那本**（通用 or 对某人专属），
+    // 「我的」面（BUGS #407）：网格画的是**在编的那本**（通用 or 对某人专属），
     // 高亮与印象角标都对着「这本池子服务的那一位」实际看到的样子；节奏块仍读全局 me 池（自动换的钟不跟素材走）
     const mpool = _avMinePool();
     const mc = _avMineContact();
@@ -20260,7 +20274,7 @@ function _avRenderPane() {
       + (pool.nicks.length ? `<div class="av-names">${pool.nicks.map((n, i) => `<div class="av-name-cell${n === _avTaName() ? ' on' : ''}" data-nick-idx="${i}"><span class="av-name-txt">${escapeHTML(n)}</span>${_avImprBadge(pool.nicks, i, true)}<button type="button" class="av-name-del" data-nick-del="${i}" aria-label="删除这条昵称">×</button></div>`).join('')}</div>` : '<div class="av-empty">还没有昵称，点下方按钮添加</div>')
       + `<div class="av-actions"><button type="button" class="av-btn" data-av-act="add-nick-ta">${_AV_ICON_PLUS}添加昵称（一行一个）</button><button type="button" class="av-btn danger" data-av-act="clear-nick-ta">${_AV_ICON_TRASH}清空</button></div>`;
   } else {
-    // 「我的」昵称面：分本同头像那支（BUGS #402）
+    // 「我的」昵称面：分本同头像那支（BUGS #407）
     const mpool = _avMinePool();
     const mc = _avMineContact();
     const cur = mc ? chatMyName(mc.id) : _avMyName();
@@ -20325,7 +20339,7 @@ function _avPickTaAvatar(src) {
 function _avPickMyAvatar(src) {
   const pool = _avMinePool();
   if (!pool.av.includes(src)) return;
-  // 分本（BUGS #402）：通用那本换了落全局 data.me.avatar（没单独设过的会话都跟着变）；
+  // 分本（BUGS #407）：通用那本换了落全局 data.me.avatar（没单独设过的会话都跟着变）；
   // 对某人那本换了只写那位的 myChatAvatar 覆盖位，系统行也只落那一位的会话流
   const cid = _avMineSel === 'global' ? null : _avMineSel;
   if (cid) _avSysFor(cid, '我更换了自己的头像（只对这一位生效）', src);
@@ -20391,7 +20405,7 @@ function _avSubmitNickSheet() {
 function _avAddNicks(raw) {
   const lines = String(raw).split(/\r\n|\r|\n|\u2028|\u2029/).map(_avCleanNick).filter(Boolean);
   if (!lines.length) { showToast('没有可添加的昵称'); return; }
-  const pool = _avNickSide === 'ta' ? _avPool() : _avMinePool();   // 我这一面落「在编的那本」（BUGS #402）
+  const pool = _avNickSide === 'ta' ? _avPool() : _avMinePool();   // 我这一面落「在编的那本」（BUGS #407）
   if (!pool) return;
   let added = 0, dup = 0;
   lines.forEach(n => { if (pool.nicks.includes(n)) { dup++; return; } pool.nicks.push(n); added++; });
@@ -20414,7 +20428,7 @@ _avFileInput.addEventListener('change', async () => {
   const side = _avFileSide;
   _avFileSide = null;
   if (!files.length || !side) return;
-  const pool = side === 'ta' ? _avPool() : _avMinePool();   // 我这一面落「在编的那本」（BUGS #402）
+  const pool = side === 'ta' ? _avPool() : _avMinePool();   // 我这一面落「在编的那本」（BUGS #407）
   if (!pool) return;
   let added = 0;
   for (const f of files) {
@@ -20595,7 +20609,7 @@ function _avTickMeAv(cid) {
   const stored = _avRoot().by[cid];
   const c = _avContactById(cid);
   const me = _avMePool();
-  // 取池（BUGS #402）：那位名下有专属本就从专属本抽，没有才回落通用那本——
+  // 取池（BUGS #407）：那位名下有专属本就从专属本抽，没有才回落通用那本——
   // TA 给我换上的脸始终来自「我给它备的图」，专属开着的位不会拿到通用池里没给过它的脸。
   // 两本都空才 early-return：只开了专属的位，通用池空着也得能换
   const mine = _avMinePoolById(cid);
@@ -20623,7 +20637,7 @@ function _avTickMeNick(cid) {
   const stored = _avRoot().by[cid];
   const c = _avContactById(cid);
   const me = _avMePool();
-  const mine = _avMinePoolById(cid);   // 取池同头像那支：有专属用专属，没有回落通用（BUGS #402）
+  const mine = _avMinePoolById(cid);   // 取池同头像那支：有专属用专属，没有回落通用（BUGS #407）
   const hasMine = !!(mine && Array.isArray(mine.nicks) && mine.nicks.length);
   if (!stored || !c || c.kind === 'group' || (!me.nicks.length && !hasMine)) return;
   const cfg = _avRateGate(stored, true, 'meNick');
@@ -20656,7 +20670,7 @@ $('#avOwners').addEventListener('click', e => {
   const chip = e.target.closest('[data-av-owner-id]');
   if (!chip || chip.dataset.avOwnerId === _avSel) return;
   _avSel = chip.dataset.avOwnerId;
-  _avMineSel = 'global';   // 换编辑对象＝子选择回通用（BUGS #402：那排子选择只属于「我的」面）
+  _avMineSel = 'global';   // 换编辑对象＝子选择回通用（BUGS #407：那排子选择只属于「我的」面）
   _avRenderPane();
 });
 $('#avKinds').addEventListener('click', e => {
@@ -20666,7 +20680,7 @@ $('#avKinds').addEventListener('click', e => {
   _avRenderPane();
 });
 $('#avBody').addEventListener('click', e => {
-  // 「这本池子」子选择（BUGS #402）：切在编的那一本，整面重画
+  // 「这本池子」子选择（BUGS #407）：切在编的那一本，整面重画
   const mineChip = e.target.closest('[data-av-mine]');
   if (mineChip) { _avMineSel = mineChip.dataset.avMine; _avRenderPane(); return; }
   const imp = e.target.closest('[data-av-impr],[data-nick-impr]');
@@ -20682,7 +20696,7 @@ $('#avBody').addEventListener('click', e => {
   // 同一个对象可能攒到几十条，就地展开会把这一面撑成长条，而翻开那层贴底弹层已有现成的一份实现。
   const led = e.target.closest('[data-ledger-key]');
   if (led) { _avOpenImprPointer(led.dataset.ledgerCid, led.dataset.ledgerKey); return; }
-  // 我这一面的增删点选都落在「在编的那本」上（BUGS #402）：通用＝data.avlib.me，对某人＝meBy[cid]
+  // 我这一面的增删点选都落在「在编的那本」上（BUGS #407）：通用＝data.avlib.me，对某人＝meBy[cid]
   const pool = _avSel === 'me' ? _avMinePool() : _avPool();
   const del = e.target.closest('[data-av-del]');
   if (del) {
@@ -20716,7 +20730,7 @@ $('#avBody').addEventListener('click', e => {
   } else if (a === 'add-nick-ta') _avOpenNickSheet('ta');
   else if (a === 'add-nick-me') _avOpenNickSheet('me');
   else if (a === 'copy-mine') {
-    // 专属本空池起步的一键搬家：把通用那本里没有的搬过来，已有的不重复（BUGS #402）
+    // 专属本空池起步的一键搬家：把通用那本里没有的搬过来，已有的不重复（BUGS #407）
     if (_avMineSel === 'global') return;
     const isNick = _avKind === 'nick';
     const g = _avMePool(), dst = _avMinePool();
@@ -20880,8 +20894,11 @@ const CJ_MOOD_W = { joy: 12, soft: 15, calm: 22, low: 12, irritable: 12, miss: 1
 // 排除「平静」与主档之后再按各自权重掷：平静只单独出现（用户定档＝平静×雀跃 是打嘴不是复杂），
 // 两枚同名等于只有一枚（不重复说同一件事）。这一对出自**同一条钟的同一次掷**，不开第二条「次档钟」——
 // 那样两枚会在不同时刻各换各的，读起来像两个人共用一张嘴
-function _cjMoodRoll() {
-  const a = _cjPickWeighted(CJ_MOOD_W);
+function _cjMoodRoll(cur) {
+  // 惯性只落在调用方递进来的那一档（情绪这条钟传 en.mo＝换档更黏；TA 读你那条不传＝照旧纯漂）
+  const w0 = (cur && CJ_MOOD_W[cur]) ? Object.assign({}, CJ_MOOD_W) : CJ_MOOD_W;
+  if (w0 !== CJ_MOOD_W) w0[cur] *= 1.6;
+  const a = _cjPickWeighted(w0);
   if (a === 'calm') return ['calm', ''];
   const w = {};
   for (const k of CJ_MOOD_ORDER) if (k !== 'calm' && k !== a) w[k] = CJ_MOOD_W[k];
@@ -20998,6 +21015,7 @@ try { const _tv = localStorage.getItem(CJ_TAB_KEY); if (CJ_TABS.some(t => t.k ==
 let _cjSel = '';          // 面板当前选中的联系人
 let _cjLastApproach = 0;  // 靠近事件全局冷却
 let _cjPerceiveCd = 0;    // 感知按钮冷却
+let _cjEvCd = 0;          // 事件钩子全局冷却（_cjEvent）
 
 function _cjPad(n) { return (n < 10 ? '0' : '') + n; }
 function _cjRi(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
@@ -21477,6 +21495,17 @@ function _cjPickWeighted(w) {
   for (const k of keys) { acc += w[k]; if (rr < acc) return k; }
   return keys[keys.length - 1];
 }
+// 惯性（2026-10-14）：把「当前档」的权重乘一个倍率再抽＝换档更黏，观感上不再是每半小时换一个人。
+// 不按族维护转移表：小时段加权、事件偏置、事实反压三套机制天然叠在这一层之外
+function _cjInertia(w, cur, stay) { const x = Object.assign({}, w); if (cur && x[cur] != null) x[cur] *= stay; return x; }
+// 事件偏置（_cjEvent 写入的 en.evBias）：只管到期前的那几次重掷，过期当没有
+function _cjBias(w, en, fam) {
+  const b = en && en.evBias && en.evBias[fam];
+  if (!b || Date.now() >= (en.evBiasUntil || 0)) return w;
+  const x = Object.assign({}, w);
+  for (const k in b) if (x[k] != null) x[k] = Math.max(0, x[k] * b[k]);
+  return x;
+}
 function _cjRecentChatBoost(cid) {
   const ch = data.chats && data.chats[cid];
   const msgs = ch && Array.isArray(ch.msgs) ? ch.msgs : [];
@@ -21484,6 +21513,36 @@ function _cjRecentChatBoost(cid) {
   if (!last) return false;
   const t = new Date(`${last.date || ''} ${last.time || ''}`).getTime();
   return isFinite(t) && Date.now() - t < 30 * 60000;
+}
+// 事实反压的硬窗口：近 10 分钟双方各几句（比 _cjRecentChatBoost 的 30 分钟更「实」）。
+// 从消息尾倒着扫、出了窗就 break；唯一消费方是「事实压虚构」那三处——虚构层永不回写事实
+function _cjLiveTalk(cid) {
+  const msgs = ((data.chats || {})[cid] || {}).msgs || [];
+  const t0 = Date.now() - 600000;
+  let n = 0;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i], t = _cjTsOf(m);
+    if (!m || (m.from !== 'me' && m.from !== 'partner')) continue;
+    if (!t || t < t0) break;
+    n++;
+  }
+  return n;
+}
+// 事件钩子（2026-10-14）：聊天侧三处真实事件（我方发出／TA 回话／已读不回）唯一的入口，
+// 手法同 avlibFeed＝挂投递口不挂各功能。事件只写偏置、不换档不写史不弹话——
+// 虚构层对「你做了什么」有反应，但屏上不因此多出一句台词（那件事仍归统一投递钟）
+function _cjEvent(cid, kind) {
+  if (!cid || typeof _cjEntry !== 'function') return;
+  if (_cjRoot().enabled === false || _cjIsGroup(cid) || !_cjContact(cid)) return;
+  const now = Date.now();
+  if (now < (_cjEvCd || 0)) return;   // 全局冷却 90s：机关枪式连发不反复摇
+  _cjEvCd = now + 90000;
+  const en = _cjEntry(cid);
+  if (kind === 'meSent') en.evBias = { a: { free: 2.2, rest: 0.4 }, p: { near: 1.6, nearby: 1.6 } };
+  else if (kind === 'taReplied') en.evBias = { p: { near: 1.8, nearby: 1.8, gone: 0.3 } };
+  else if (kind === 'nr') en.evBias = { a: { busy: 2, rest: 1.6 }, ng: { outer: 2.2, taState: 1.8 } };
+  else return;
+  en.evBiasUntil = now + 120000;
 }
 function _cjPredictPhrase(p, a) {
   if (a === 'sleep' || a === 'rest') return '可能在休息';
@@ -21504,6 +21563,7 @@ function cjianTick() {
   for (const cid of Object.keys(root.by)) {
     if (!_cjContact(cid)) { delete root.by[cid]; dirty = true; continue; }
     const en = root.by[cid];
+    if (en.evBias && now >= (en.evBiasUntil || 0)) { delete en.evBias; delete en.evBiasUntil; }   // 过期偏置静默清掉，不为此单独存一次盘
     if (!en.world || typeof en.world.last !== 'number' || en.world.last > now || (now - en.world.last) / 36e5 >= (en.world.next || 0)) {
       en.world = _cjRollWorld(en, now); dirty = true;
     }
@@ -21520,7 +21580,10 @@ function cjianTick() {
     }
     if (now - en.sinceA >= en.cdA) {
       const oldA = en.a;
-      en.a = _cjPickWeighted(_cjActivityWeights(_cjWorldHour(en)));
+      const wA = _cjActivityWeights(_cjWorldHour(en));
+      // 事实反压：近 10 分钟有双向来回＝红线正在聊，sleep 直接归零、rest 折到三成（事实压虚构，单向）
+      if (_cjLiveTalk(cid) >= 2) { wA.sleep = 0; wA.rest *= 0.3; wA.free *= 1.5; }
+      en.a = _cjPickWeighted(_cjBias(_cjInertia(wA, en.a, 2.2), en, 'a'));
       en.sinceA = now; en.cdA = _cjRi(8, 25) * 60000; dirty = true;
       // 档【真换了】才去叫聊天侧那一格——同档重掷不动节奏（否则每 8~25 分钟抖一次）。
       // 那一头是单向的「只拉回不推后」，理由与仿真读数写在 js/chat.js 的 _asPullIn 头上
@@ -21529,7 +21592,8 @@ function cjianTick() {
     if (now - en.sinceP >= en.cdP) {
       const w = _cjPresenceWeights(_cjWorldHour(en));
       if (_cjRecentChatBoost(cid)) { w.near += 16; w.nearby += 16; w.far = Math.max(2, w.far - 8); w.unfelt = Math.max(2, w.unfelt - 8); w.gone = Math.max(2, w.gone - 6); }
-      en.p = _cjPickWeighted(w); en.sinceP = now; en.cdP = _cjRi(20, 45) * 60000; dirty = true;
+      if (_cjLiveTalk(cid) >= 2) { w.near += 10; w.nearby += 10; }   // 事实反压：正聊着，距离不该往远处漂
+      en.p = _cjPickWeighted(_cjBias(_cjInertia(w, en.p, 1.8), en, 'p')); en.sinceP = now; en.cdP = _cjRi(20, 45) * 60000; dirty = true;
     }
     if (now - en.sinceS >= en.cdS) {
       const t = _cjPickStatus(en);
@@ -21540,7 +21604,7 @@ function cjianTick() {
     // 这一维只给面板读，回复引擎与主动消息概率都不读它（用户定档：不生效，纯读数）
     // 存的那句＝面板那句；投递那一刻照旧按当前档另抽一次（BUGS #312，见 _cjSayCandidates 顶上那段）
     if (root.moodOn !== false && now - en.sinceMo >= en.cdMo) {
-      const pair = _cjMoodRoll();
+      const pair = _cjMoodRoll(CJ_MOODS[en.mo] ? en.mo : 'calm');   // 传当前主档＝情绪这条钟带惯性（TA 读你那条刻意不带）
       en.sinceMo = now; en.cdMo = _cjRi(25, 70) * 60000; dirty = true;
       const oldP = CJ_MOODS[en.mo] ? en.mo : 'calm', oldS = _cjMood2(oldP, en.mo2);
       const nk = CJ_MOODS[pair[0]] ? pair[0] : 'calm', nk2 = _cjMood2(nk, pair[1]);
@@ -21603,7 +21667,9 @@ function cjianTick() {
     const ngCd = typeof en.cdNg === 'number' && en.cdNg >= CJ_NG_MIN_MIN * 60000 && en.cdNg <= CJ_NG_MAX_MIN * 60000 ? en.cdNg : 0;
     const ngSince = typeof en.sinceNg === 'number' && isFinite(en.sinceNg) ? en.sinceNg : 0;
     if (root.ngOn !== false && now - ngSince >= ngCd) {
-      const nkN = _cjPickWeighted(CJ_NG_W);
+      const wN = Object.assign({}, CJ_NG_W);
+      if (_cjLiveTalk(cid) >= 2) wN.clear *= 2;   // 事实反压：正聊着，干扰更可能是「没被什么占着」
+      const nkN = _cjPickWeighted(_cjBias(_cjInertia(wN, en.ng, 1.7), en, 'ng'));
       en.sinceNg = now; en.cdNg = _cjRi(CJ_NG_MIN_MIN, CJ_NG_MAX_MIN) * 60000; dirty = true;
       if (CJ_NG[nkN]) en.ng = nkN;
     }
@@ -21785,7 +21851,13 @@ function updateCjChip() {
   // （rect 就是 border-box、内距已含＝别再加一次），而 320 屏那一轨只剩 164.0px（两翼实测 36.0＋80.0 反推）；
   // 多挂一枚「心情 · 」前缀那一发量得 182.7px＝顶出屏，挤不下不是折行而是压上右侧两枚键。三个数由 tools/_probe_cj_chip_mood.js 现量。
   const mood = _cjRoot().moodOn === false ? '' : _cjMoodPairLabel(en.mo, '');
-  b.textContent = CJ_ACTIVITY[en.a].label + (mood ? ' · ' + mood : '') + ' · TA那边 ' + _cjPad(en.world.hh) + ':' + _cjPad(en.world.mm);
+  // 输出口（2026-10-14）：连接感知判出单向/慢半拍＝等待已过这条线自己的节奏，chip 接上判读词。
+  // 心情那一节让位给判读词：心情在面板里总有宿主，而 320 屏 164px 的宽度预算（tools/_probe_cj_chip_mood.js 现量）只够装一节
+  let conn = null;
+  if (typeof cjConnOf === 'function') { const _c = cjConnOf(cid); if (_c.level === 'oneWay' || _c.level === 'slow') conn = _c; }
+  if (conn) b.dataset.conn = conn.level; else b.removeAttribute('data-conn');
+  const connTag = conn ? (conn.level === 'oneWay' ? '单向' : '慢半拍') : '';
+  b.textContent = CJ_ACTIVITY[en.a].label + (mood && !conn ? ' · ' + mood : '') + (connTag ? ' · ' + connTag : '') + ' · TA那边 ' + _cjPad(en.world.hh) + ':' + _cjPad(en.world.mm);
 }
 
 // ===== 时间线（记录卡）：按日分组＋类型筛选 =====
@@ -26746,13 +26818,13 @@ const HUB_GROUPS = [
   },
   {
     name: '记录', sub: '都留着', rows: [
-      { ico: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>', name: '信箱', desc: '写信寄信收信；寄出一封到手一封，按联系人各一册', nav: 'mailbox', badge: () => (data.receivedLetters || []).filter(m => !m.read).length, more: { d: '寄信 · 拆信 · 按联系人分册', b: 'tileMailDot' } },
       { ico: '<path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0 1 12 7.1a4.9 4.9 0 0 1 7.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/>', name: '收藏', desc: '聊天 / 信 都能收；TA 也会收藏你的话', nav: 'collect', more: { d: '存下的句子 · 信', i: '<path d="M6 3h12v18l-6-4.5L6 21z"/>' } },
-      { ico: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5h18"/><path d="M12 17.6s-3.2-2-3.2-4.1a1.85 1.85 0 0 1 3.2-1.25 1.85 1.85 0 0 1 3.2 1.25c0 2.1-3.2 4.1-3.2 4.1z"/>', name: '纪念日', desc: '多条纪念日，当天 TA 会来祝福、信盖心戳；TA 也会自己想起一个日子（在 TA 的设置里可调）', nav: 'anniversary', more: { d: '倒数日 · 周年 · 月历' } },
-      { ico: '<path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0 1 12 7.1a4.9 4.9 0 0 1 7.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/>', name: '心愿', desc: 'TA 说过与你记下的心愿：回应、置顶、促成与回响', nav: 'wish', sw: () => wishOn(), set: v => { data.wishOn = v; }, badge: () => wishCountTodo(''), more: { d: '说出的 · 记下的', i: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>' } },
-      { ico: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8.5 12 14l9-5.5"/><path d="M7.5 3.6h9"/>', name: '邀请', desc: '一句约一次：可以让 TA 来约你、也可以你去约 TA，双方都能说不（与心愿各算各的，2026-10-11 分家）', nav: 'invite', more: { d: '一句约一次 · 双方都能说不' } },
+      { ico: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>', name: '信箱', desc: '写信寄信收信；寄出一封到手一封，按联系人各一册', nav: 'mailbox', badge: () => (data.receivedLetters || []).filter(m => !m.read).length, more: { d: '寄信 · 拆信 · 按联系人分册', b: 'tileMailDot' } },
       { ico: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="12" cy="9.6" r="3"/><path d="M5.6 20.4a6.4 6.4 0 0 1 12.8 0z"/>', name: '朋友圈', desc: '大家按各自的发圈节奏冒一条动态；你也能发，他们会来点赞评论', nav: 'moments', badge: () => momentsUnreadTotal(), more: { d: '大家的动态 · 按时间收', b: 'tileMomentDot' } },
-            { ico: '<path d="M4 20V12M12 20V5M20 20V9"/>', name: '聊天统计', desc: '句数 / 常用字卡 / 二十四小时分布', nav: 'stats', more: { d: '时段 · 字卡榜 · 时光线' } },
+      { ico: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8.5 12 14l9-5.5"/><path d="M7.5 3.6h9"/>', name: '邀请', desc: '一句约一次：可以让 TA 来约你、也可以你去约 TA，双方都能说不（与心愿各算各的，2026-10-11 分家）', nav: 'invite', more: { d: '一句约一次 · 双方都能说不' } },
+      { ico: '<path d="M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0 1 12 7.1a4.9 4.9 0 0 1 7.5 2.8c0 5.3-7.5 10.6-7.5 10.6z"/>', name: '心愿', desc: 'TA 说过与你记下的心愿：回应、置顶、促成与回响', nav: 'wish', sw: () => wishOn(), set: v => { data.wishOn = v; }, badge: () => wishCountTodo(''), more: { d: '说出的 · 记下的', i: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>' } },
+      { ico: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9.5h18"/><path d="M12 17.6s-3.2-2-3.2-4.1a1.85 1.85 0 0 1 3.2-1.25 1.85 1.85 0 0 1 3.2 1.25c0 2.1-3.2 4.1-3.2 4.1z"/>', name: '纪念日', desc: '多条纪念日，当天 TA 会来祝福、信盖心戳；TA 也会自己想起一个日子（在 TA 的设置里可调）', nav: 'anniversary', more: { d: '倒数日 · 周年 · 月历' } },
+      { ico: '<path d="M4 20V12M12 20V5M20 20V9"/>', name: '聊天统计', desc: '句数 / 常用字卡 / 二十四小时分布', nav: 'stats', more: { d: '时段 · 字卡榜 · 时光线' } },
       { ico: '<path d="M3.5 6.5h11.5v9.5H3.5z"/><path d="M3.5 6.5 9.25 11 15 6.5"/><path d="M18.5 16v-3M21.5 16V10"/>', name: '写信统计', desc: '寄出与收到的信：封数 / 字数 / 信里用到哪几类字卡', nav: 'letterstats', more: { d: '封数 · 字数 · 常用字卡' } }
     ]
   },
@@ -26762,7 +26834,7 @@ const HUB_GROUPS = [
       { ico: '<rect x="8" y="3" width="13" height="13" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2"/>', name: '字卡库', desc: '你自己新建的分组与字卡，公用 / 专属两档', nav: 'cards', more: { d: '公用 · 专属两档' } },
       { ico: '<path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="M3 12.5 12 17l9-4.5"/>', name: '系统预设字卡', desc: '出厂自带的话术与 TA 心里话各池', nav: 'syscards', more: { d: '出厂话术 · 按功能分' } },
       { ico: '<path d="M4.5 6.5h9M4.5 12h7M4.5 17.5h5"/><path d="m14.5 15.5 2.2 2.2 4.3-5"/>', name: '字卡适应度', desc: '按人对账：这位现在说得出哪几类·哪些说法库里筛不到', nav: 'cardfit', more: { d: '按人对账 · 说得出的说法' } },
-      { ico: '<path d="M20.5 12.5c0 4.2-6.2 8-7.5 8s-7.5-3.8-7.5-8a5.5 5.5 0 0 1 11-3.7A5.5 5.5 0 0 1 20.5 12.5z"/><path d="M7 12.5h10"/>', name: '聊天情绪', desc: '三级标签链与逻辑连接词：星言 ∶ mochi ∶ 混合 三档可切（默认关）', nav: 'emotion', more: { d: '标签链 · 连接词 · 三档可切' } }, 
+      { ico: '<path d="M20.5 12.5c0 4.2-6.2 8-7.5 8s-7.5-3.8-7.5-8a5.5 5.5 0 0 1 11-3.7A5.5 5.5 0 0 1 20.5 12.5z"/><path d="M7 12.5h10"/>', name: '聊天情绪', desc: '三级标签链与逻辑连接词：星言 ∶ mochi ∶ 混合 三档可切（出厂走「混合」，2026-10-14 用户定档）', nav: 'emotion', more: { d: '标签链 · 连接词 · 三档可切' } }, 
       { ico: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.6a3.5 3.5 0 0 1 0 6.8M17.5 14.4A6 6 0 0 1 21 20"/>', name: '头像昵称', desc: '互相换形象，TA 会留下印象', nav: 'avatarlib', more: { d: '头像池 · 昵称池 · 印象' } },
       { ico: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>', name: '问问 TA', desc: '你出题 TA 选，或你写字卡 TA 回', nav: '#ask', more: { d: '你出题 · TA 选' } },
       { ico: '<rect x="2.5" y="7" width="19" height="10.5" rx="5"/><path d="M7 10v4.5M4.8 12.2h4.4M15.5 11h.01M18 13.5h.01"/>', name: '游戏中心', desc: '合成 · 2048 · 星星 · 连连看 · 拼图 · 方块（屏上那一排 tab 就是这六款），TA 立挑战分等你破', nav: 'games', more: { d: '六款 · 合作 · 对战' } },
@@ -30409,7 +30481,7 @@ function _autoSaveCard(containerSel, saveFn) {
   card.addEventListener('change', queue);
 }
 _autoSaveCard('#behaviorCard', saveBehaviorNow);
-// 「主动」组（2026-10-14 #405 分组重做）：「主动找你」与「TA 自己想起日子」两卡随分组搬出了
+// 「主动」组（2026-10-14 #408 分组重做）：「主动找你」与「TA 自己想起日子」两卡随分组搬出了
 // #behaviorCard 的子树（html/view-mate.html 的账），自动保存跟着补一行登记——仍是 saveBehaviorNow
 // 一条链，不另开第二个写手（那一节分家前的老账：保存路径一条）。
 _autoSaveCard('[data-mate-grp="proactive"]', saveBehaviorNow);
@@ -32287,7 +32359,7 @@ if (_myNameEl) _myNameEl.addEventListener('change', saveMateMe);
 const _myFollowEl = $('#myFollowGlobal');
 if (_myFollowEl) _myFollowEl.addEventListener('click', resetMateMe);
 
-// ===== 顶部分组 tag（2026-10-14 BUGS #405）=====
+// ===== 顶部分组 tag（2026-10-14 BUGS #408）=====
 // 一排六档＝形象∶回话∶主动∶外观∶声音∶记录，一屏只画一档（html/view-mate.html 的 #mateTags）。
 // 起因＝用户「【美化设置】在回话方式的分类里，实在是非常莫名其妙」——分组只管把卡摆对归属，
 // 各卡的读写与保存链一字未动（behavior 的自动保存仍走 settings.js 那条 _autoSaveCard，本文件不加第二份）。
@@ -33035,8 +33107,10 @@ function maybeShowAgeGate() {
   });
 })();
 // ===== 入站小测 · 开屏公告「确认进入」后的第二道门（先输内测密码，再 8 道单选，全对才放行进桌面）=====
-// 与公告的分工：公告每次打开都要重读一遍（BUGS #258），小测只填一次——完成标记落 localStorage
-// （键值存 QUIZ_GATE_VER 而不是任意非空串：将来改题/改答案把版本一抬，老设备自动重考）。
+// 与公告的分工：公告每次打开都要重读一遍（BUGS #258），小测答一次管终身——完成标记落 localStorage，
+// **只认「在不在」、不比版本**（BUGS #409，2026-10-14 用户定档：开屏密码和答题只需要答一次，后续更新也不重新答题）。
+// 键值仍写 QUIZ_GATE_VER 留作来源标注；改题/改答案抬版本号不再触发重考，老值（v1~v4 任何非空值）一律算已答过。
+// 内测密码住在小测门内＝门不再出现密码自然也不再问，无须单独记。
 // 问卷式（BUGS #355，2026-10-13 晚改版）：八题一次全部铺在一个滚动问卷里，向下滑动逐题选，
 // **作答过程零反馈**（选错不当时提醒）；底部常驻一枚「提交」，八题答完才亮；
 // 交卷后才判分——答错的选项标红留在原地可换选（改哪题撤哪题的红），全对才放行。
@@ -33068,7 +33142,8 @@ const QUIZ_ITEMS = [
 const QUIZ_HINT_IDLE = '— 逐题选出你认为正确的一项 —';
 
 function _quizGatePassed() {
-  try { return localStorage.getItem(QUIZ_GATE_KEY) === QUIZ_GATE_VER; } catch { return false; }
+  // 只认「在不在」：任何非空值（含历史版本 v1~v4 写下的）都算已答过＝更新换代不重考（BUGS #409）
+  try { return localStorage.getItem(QUIZ_GATE_KEY) !== null; } catch { return false; }
 }
 
 window.__quizGateNeed = function () { return !_quizGatePassed(); };
@@ -37506,10 +37581,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.3.2';
+window.APP_VER = 'v9.3.8';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.3.2' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.3.8' + s; }
 
 (async function init() {
   try {
@@ -37530,6 +37605,7 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
 
     applyAppearance();
     const _moreVer = document.getElementById('moreVer'); if (_moreVer) _moreVer.textContent = window.APP_VER;   // 更多页顶部的版号
+    const _agVer = document.getElementById('ageGateVer'); if (_agVer) _agVer.textContent = window.APP_VER;     // 开屏公告最顶的版号（部署核对用）
     showView('chats');
 
     markStep('渲染聊天');
