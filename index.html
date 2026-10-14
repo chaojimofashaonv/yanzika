@@ -1523,10 +1523,26 @@ body:not([data-view=chat]) .call-window{display:none}
 .card-foot{display:flex;align-items:center;gap:6px;width:100%;margin-top:2px}
 .card-grp{font-size:11px;color:var(--muted);letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:auto}
 .card-actions{display:flex;align-items:center;gap:2px;flex:none}
-.card-edit,.card-delete,.card-voice-out{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--muted);background:transparent;position:relative}
-.card-edit svg,.card-delete svg,.card-voice-out svg{width:13.5px;height:13.5px;display:block}
-.card-edit::after,.card-delete::after,.card-voice-out::after{content:"";position:absolute;inset:-7px}
-.card-edit:active,.card-delete:active,.card-voice-out:active{background:var(--press);color:var(--accent)}
+.card-edit,.card-delete,.card-voice-out,.card-off{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:var(--muted);background:transparent;position:relative}
+.card-edit svg,.card-delete svg,.card-voice-out svg,.card-off svg{width:13.5px;height:13.5px;display:block}
+.card-edit::after,.card-delete::after,.card-voice-out::after,.card-off::after{content:"";position:absolute;inset:-7px}
+.card-edit:active,.card-delete:active,.card-voice-out:active,.card-off:active{background:var(--press);color:var(--accent)}
+/* ===== #411 使用权开关：停用的分组/单卡 =====
+   停用只降一档：文字卡换 lighter 墨色（纯白主题禁整行 opacity —— --ink 一起被乘灰那课，#405 前定档），
+   图片卡 grayscale 去色；「已停用」小签补一句话说明，眼睛钮在原位换闭眼 */
+.card-item.off .card-text{color:color-mix(in srgb,var(--ink) 45%,transparent)}
+.card-item.off .card-img img{filter:grayscale(1)}
+.card-item.off .card-voice svg{opacity:.4}
+.card-off-tag{font-style:normal;font-size:10px;color:var(--muted);border:1px solid rgba(var(--ink-rgb),.16);border-radius:5px;padding:1px 6px;align-self:flex-start;letter-spacing:.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-off{color:var(--accent)}
+.g-off-tag{font-style:normal;font-size:10px;color:var(--muted);border:1px solid rgba(var(--ink-rgb),.16);border-radius:5px;padding:1px 6px;flex:none;letter-spacing:.5px}
+.group-bar-off{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted);position:relative}
+.group-bar-off svg{width:14px;height:14px}
+.group-bar-off::after{content:"";position:absolute;inset:-6px}
+.group-bar-off:active{color:var(--accent)}
+.group-bar-off.off{color:var(--accent)}
+.cards-group-tab .toff{font-style:normal;font-size:10px;color:var(--muted);border:1px solid rgba(var(--ink-rgb),.16);border-radius:4px;padding:0 4px;flex:none}
+.cards-group-tab.g-off{color:var(--muted)}
 
 /* 批量管理 */
 .card-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--muted);flex:none;display:grid;place-items:center}
@@ -2923,6 +2939,17 @@ body[data-ap-bubble=tail] .bubble{border:none}
 body[data-ap-bubble=tail] .ap-prev-bub{position:relative}
 body[data-ap-bubble=tail] .ap-prev-bub.partner::before{content:"";position:absolute;left:-5px;bottom:8px;width:10px;height:10px;background:inherit;border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg);border-bottom-left-radius:2px}
 body[data-ap-bubble=tail] .ap-prev-bub.mine::before{content:"";position:absolute;right:-5px;bottom:8px;width:10px;height:10px;background:inherit;transform:rotate(45deg);border-bottom-right-radius:2px}
+
+/* 头像与气泡对齐（2026-10-15，居「TA 的设置 → 聊天外观」）：bottom 底部对齐＝.message 基础就是 flex-end
+   （css/chat.css 那条不写覆盖块＝默认档零输出）／ top 顶部对齐。预览镜像同条并上。 */
+body[data-ap-align=top] .message{align-items:flex-start}
+body[data-ap-align=top] .ap-preview .ap-prev-msg{align-items:flex-start}
+/* 小头像显隐：off＝聊天里不画小头像、气泡通栏（预览镜像一并收） */
+body[data-ap-avat=off] .message .mini-avatar{display:none}
+body[data-ap-avat=off] .ap-preview .ap-prev-av{display:none}
+/* 日期签位置：head＝钉在顶栏正下方（sticky：往下滚新一天的签自己顶上来，无需 JS 挂滚动监听）。
+   顶栏在滚动区外，sticky top 对着滚动区上缘＝视觉上正好贴着顶栏头像那一行下方。 */
+body[data-ap-daypos=head] .chat-area .day-label{position:sticky;top:6px;z-index:2;margin-bottom:12px}
 
 /* 全站字号（设置-外观「字号」：标准 / 大）：整站文字与间距一起放大，含聊天页
    zoom 只挂在 .app-shell 的直接子元素上，不挂 html——挂 html 时 100dvh 不跟着缩放，
@@ -5846,7 +5873,7 @@ input,select,textarea{border-radius:12px}
               </div>
             </div>
       </div>
-      <form class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><img class="attach-thumb" id="attachThumb" alt="待发送图片"><span class="attach-info">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" style="display:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button class="send-btn" type="submit" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div></form>
+      <div class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><img class="attach-thumb" id="attachThumb" alt="待发送图片"><span class="attach-info">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" style="display:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button class="send-btn" type="button" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div></div>
       <!-- 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x 同名功能）：TA 的设置「批量发送」开关打开后
            输入栏显示那枚钮；面板里逐项添加文字 / 表情包 / 图片（每一项就是一条消息，清单可删可清空），
            点「发送全部」按顺序逐条入账、整批只发起一次回复。壳用全站 .fs-sheet-* 贴底面板族；
@@ -6238,7 +6265,7 @@ input,select,textarea{border-radius:12px}
 
         <div class="setting-card fold" data-tab="desk" data-fold="light">
           <button type="button" class="fold-hd"><span class="fold-ti">卡片通透</span><span class="fold-sum" id="sumLight"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>通透程度</span><div class="contact-chip-row" style="margin:0" data-ap-set="light" data-sum="sumLight"><button type="button" class="contact-chip" data-v="airy">通透</button><button type="button" class="contact-chip" data-v="balanced">均衡</button><button type="button" class="contact-chip" data-v="deep">厚重</button></div></div><p class="data-note">管的是卡片与气泡<b>透多少</b>，不管颜色（底色全站只留「雾蓝」一档，屏上没有可选的族）。三档都是量过的组合，点一下整屏当场换：<b>通透</b>（alpha .70）最透、层次偏平；<b>均衡</b>（默认 .78）折中；<b>厚重</b>（.86）卡片最实、通透感最弱。⚠ 透与层次是一对反向值：越透就越接近底、明度差被吃掉，所以没有「又最透又最有层次」那一档。面的弧度在下一张「卡片圆角」里调，聊天气泡不吃那一档（它有自己的四档，在下面「聊天外观」里）。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>通透程度</span><div class="contact-chip-row" style="margin:0" data-ap-set="light" data-sum="sumLight"><button type="button" class="contact-chip" data-v="airy">通透</button><button type="button" class="contact-chip" data-v="balanced">均衡</button><button type="button" class="contact-chip" data-v="deep">厚重</button></div></div><p class="data-note">管的是卡片与气泡<b>透多少</b>，不管颜色（底色全站只留「雾蓝」一档，屏上没有可选的族）。三档都是量过的组合，点一下整屏当场换：<b>通透</b>（alpha .70）最透、层次偏平；<b>均衡</b>（默认 .78）折中；<b>厚重</b>（.86）卡片最实、通透感最弱。⚠ 透与层次是一对反向值：越透就越接近底、明度差被吃掉，所以没有「又最透又最有层次」那一档。面的弧度在下一张「卡片圆角」里调，聊天气泡不吃那一档（它有自己的四档，在【TA 的设置 → 外观】的「聊天外观」里）。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="corner">
@@ -6468,10 +6495,11 @@ input,select,textarea{border-radius:12px}
                  且旧写法存的还是重启即失效的 blob: 地址。现入口在 设置 → 外观 →「全站字体」。 -->
             <div class="ap-sec">
               <div class="ap-sec-t">气泡 CSS</div>
-              <textarea id="customBubbleCssText" class="ap-ta" rows="3" spellcheck="false" placeholder=".message .bubble{ border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.18); }"></textarea>
+              <textarea id="customBubbleCssText" class="ap-ta" rows="4" spellcheck="false" placeholder=".bubble{ border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+.mine .bubble{ background:#111; color:#fff; }"></textarea>
               <div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customBubbleCssApply">应用气泡 CSS</button><button type="button" class="ap-btn" id="customBubbleCssClear">清空</button></div>
               <div class="ap-frow"><span class="ap-status" id="customBubbleCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customBubbleCssRemove">移除</button></div>
-              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡。写错不生效也不会弄坏页面，清空即可回头。</p>
+              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡。常用类名：.message 一条消息（加 .mine 是我方）· .bubble 气泡 · .mini-avatar 小头像 · .message-meta 时间小字 · .day-label 日期签。写好的样式整段自动加权，盖过上面的配色与形状档位，不用再手写 !important；写错不生效也不会弄坏页面，清空即可回头。</p>
             </div>
             <div class="ap-hr"></div>
             <!-- 「恢复默认」（2026-10-14）：这一位 TA 的外观档没有一键回头路，八格点回来太苦。
@@ -6484,13 +6512,14 @@ input,select,textarea{border-radius:12px}
         </div>
 
         <!-- 聊天外观（2026-10-15 自 设置 → 外观 整卡搬来）：气泡形状/行距/字体/消息时间/发送按钮/顶栏磨砂
+             ＋三组排版新档（头像对齐/小头像显隐/日期签位置，同日新增）
              全是聊天页的东西，用户「很多内容明明是【聊天设置】里的」。读写链一字未动：档位 chips 仍走
-             js/settings.js 那个 data-ap-set document 委托——写的是全局 data.appearance＝这七项全站一份、
+             js/settings.js 那个 data-ap-set document 委托——写的是全局 data.appearance＝这十项全站一份、
              对每位 TA 生效（某一位单独的气泡颜色/背景图仍归上一张「美化设置」）；回显由
              renderApSettings→echoApSets 一处管（renderProfile 进本页就会走到）。 -->
         <div class="setting-card fold" data-fold="chatap">
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天外观</span><span class="fold-sum" id="sumChatAp"></span></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape" data-sum="sumChatAp"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">这七项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>头像对齐</span><div class="contact-chip-row" style="margin:0" data-ap-set="alignMode"><button type="button" class="contact-chip" data-v="bottom">底部对齐</button><button type="button" class="contact-chip" data-v="top">顶部对齐</button></div></div><div class="ap-row"><span>小头像</span><div class="contact-chip-row" style="margin:0" data-ap-set="avatarShow"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏通栏</button></div></div><div class="ap-row"><span>日期签</span><div class="contact-chip-row" style="margin:0" data-ap-set="dayPos"><button type="button" class="contact-chip" data-v="flow">消息流里</button><button type="button" class="contact-chip" data-v="head">钉在顶栏</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">「头像对齐」管消息行里头像贴着气泡的上沿还是下沿；「小头像」隐藏后气泡通栏、点头像开面板那一手随之不可用；「日期签＝钉在顶栏」时「今天」这类日期签贴在顶栏下方，往下滚会自动换成当天的。</p><p class="data-note">这十项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
         </div>
           </div>
         </div>
@@ -7456,12 +7485,46 @@ function chatCardOwners(chatId) {
 }
 // 硬隔离（2026-10-05 用户定档）：公用组人人可用；专属组只对绑定的那位联系人（含其所在群）可见；
 // 专属但未绑定＝任何会话都取不到，字卡库那一面会在卡面标出来提醒去绑（旧的「未绑定＝所有联系人共用」作废）
+// #411 使用权开关：g.off＝整组停用，任何会话都取不到（组内单卡各自的开关一字不动，重新启用分组即恢复原样，
+// 与 mochi #926 的 cc-groups-off 同一口径）。收在这一把总闸上＝聊天回复池/写信/朋友圈/拍一拍/表情/语音/
+// TA心里话等一切走 groupUsableFor 的自动抽取自动跟上，不留第二份写法。
 function groupUsableFor(g, chatId) {
   if (!g) return false;
+  if (g.off) return false;
   if (cardScope(g) === 'public') return true;
   if (!g.contactId) return false;
   return chatCardOwners(chatId).indexOf(g.contactId) >= 0;
 }
+// ===== #411 单卡开关（分组停用只叠一层，单卡开关各自记账） =====
+// 存法＝组对象上的 g.offCards（内容记账，不按下标——移动/增删卡后记账不错位）：
+//   文字卡记原文；语音卡记 'v|'+名称（录音字节大，不整串存；同组同名两张语音算同一张）；图片对象卡
+//   内联 c.off（对象本就带 img 一位，不另起册）。mochi 的 dc-off-<分类>:<内容> 同思路。
+// 口径：停用只摘「TA 自动用」的那一路（回复池/写信/朋友圈/表情/语音/TA心里话…），
+//   字卡库与系统预设字卡两面照常显示（带「已停用」标记），用户自己的手动面板不受影响。
+function cardOffKey(c) {
+  if (typeof c !== 'string') return null;
+  const v = voiceCardParts(c);
+  return v ? 'v|' + v.name : c;
+}
+function cardIsOff(g, c) {
+  if (!g) return false;
+  if (c && typeof c === 'object') return !!c.off;   // 图片卡：内联
+  const k = cardOffKey(c);
+  return !!(k && Array.isArray(g.offCards) && g.offCards.indexOf(k) >= 0);
+}
+function cardSetOff(g, c, off) {
+  if (!g) return;
+  if (c && typeof c === 'object') { if (off) c.off = 1; else delete c.off; return; }
+  const k = cardOffKey(c);
+  if (!k) return;
+  const arr = Array.isArray(g.offCards) ? g.offCards : (g.offCards = []);
+  const i = arr.indexOf(k);
+  if (off && i < 0) arr.push(k);
+  if (!off && i >= 0) arr.splice(i, 1);
+  if (!arr.length) delete g.offCards;   // 空册不留：存档里不养死字段
+}
+// 删除/改名一张卡时摘掉它的记账（旧内容已不在，留着＝死键）
+function cardOffPrune(g, c) { cardSetOff(g, c, false); }
 
 // 出厂的「TA 占位名」：2026-10-05 起统一叫「梦角1」。原来叫 Ordinal（= 项目/品牌名），
 // 当人名用时读着像个系统名而不是一个人物，且信箱页署名会直接把它印出来。
@@ -7593,7 +7656,7 @@ function partnerStickerPool(chatId) {
     if (!groupUsableFor(g, chatId)) return;
     (g.cards || []).forEach(c => {
       const img = cardImage(c);
-      if (!img) return;
+      if (!img || cardIsOff(g, c)) return;
       if (cat === '表情包') hasStickerCat = true;
       out.push({ src: img, kind: cat === '图片' ? 'image' : 'sticker' });
     });
@@ -7622,7 +7685,7 @@ function partnerImages(chatId) {
     const cat = g.category || '主字卡';
     if (cat !== '表情包' && cat !== '图片') return;
     if (!groupUsableFor(g, chatId || mainChatId())) return;   // 不面向具体会话的自动行为认主 TA 那一份
-    (g.cards || []).forEach(c => { const img = cardImage(c); if (img) out.push(img); });
+    (g.cards || []).forEach(c => { if (cardIsOff(g, c)) return; const img = cardImage(c); if (img) out.push(img); });
   });
   return out.length ? out : partnerStickers(chatId);
 }
@@ -7634,7 +7697,7 @@ function partnerVoices(chatId) {
   const out = [];
   (data.groups || []).forEach(g => {
     if ((g.category || '主字卡') !== '语音' || !groupUsableFor(g, chatId)) return;
-    (g.cards || []).forEach(c => { const v = voiceCardParts(c); if (v && v.data) out.push(v); });
+    (g.cards || []).forEach(c => { if (cardIsOff(g, c)) return; const v = voiceCardParts(c); if (v && v.data) out.push(v); });
   });
   return out;
 }
@@ -7650,7 +7713,7 @@ const TA_REASON_KINDS = { collect: '收藏理由', letter: '写信理由', impre
 const _TA_NIGHT_ONLY = /这个点|睡不着|凌晨/;
 function taReasonPick(kind, allowSys) {
   const g = (data.groups || []).find(x => (x.name || '') === TA_REASON_KINDS[kind] && (x.category || '主字卡') === 'TA心里话' && groupUsableFor(x, mainChatId()));
-  let cards = (g && Array.isArray(g.cards) ? g.cards : []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c));
+  let cards = (g && Array.isArray(g.cards) ? g.cards : []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c) && !cardIsOff(g, c));
   if (!cards.length) return { text: '', sys: false };
   if (allowSys && Math.random() * 100 < 10) return { text: '', sys: true };
   const night = (() => { const h = new Date().getHours(); return h >= 23 || h < 5; })();
@@ -7862,6 +7925,11 @@ const defaults = {
     // 但上线以来没有任何界面能改它们＝零入口。现居 设置 → 外观 →「聊天外观」
     bubbleShape: 'round', density: 'cozy', showTime: true, sendBtn: true,
     fontFamily: 'system', glass: true, glassLite: false,   // glassLite＝省电磨砂：常驻三栏去实时 blur（耗电优化）
+    // 三组排版新档（2026-10-15，居「TA 的设置 → 聊天外观」）：枚举校验在 db.js ensureData，
+    // 写手在 settings.js applyAppearance，令牌在 css/theme.css 的 data-ap-align/-avat/-daypos 段
+    alignMode: 'bottom',   // 头像与气泡对齐：bottom 底部对齐（默认）/ top 顶部对齐
+    avatarShow: true,      // 聊天里的小头像：开（默认）/关＝气泡通栏
+    dayPos: 'flow',        // 日期签位置：flow 消息流里（默认）/ head 钉在顶栏下方（sticky 随滚动换签）
     // 全站字体两样 2026-10-12 也由「按会话」收成**全站一份**（用户定档「字体只留全局一份」）：
     // customFont*＝上传的字体文件，整条 @font-face 连字体本体一起存进这里（不是 blob: 地址——那种地址
     // 只在写下它的那一份文档里有效，重启必失效）；customGlobalFont*＝手打的字体 CSS。
@@ -10292,6 +10360,10 @@ function ensureData(raw) {
     // 全站字号（设置-外观「字号」两档）：不进 chatAppearanceDefault，故不受按会话迁移的删除循环波及
     if (!['medium', 'large'].includes(a.uiFontScale)) a.uiFontScale = da.uiFontScale;
     if (!['cozy', 'compact'].includes(a.density)) a.density = da.density;
+    // 三组排版新档（2026-10-15）脏值回落：枚举与 utils defaults 对齐
+    if (!['bottom', 'top'].includes(a.alignMode)) a.alignMode = da.alignMode;
+    if (typeof a.avatarShow !== 'boolean') a.avatarShow = da.avatarShow;
+    if (!['flow', 'head'].includes(a.dayPos)) a.dayPos = da.dayPos;
     if (typeof a.showTime !== 'boolean') a.showTime = da.showTime;
     if (typeof a.sendBtn !== 'boolean') a.sendBtn = da.sendBtn;
     if (typeof a.chatBg !== 'string') a.chatBg = da.chatBg;
@@ -12532,6 +12604,9 @@ function jumpToLatest() {
 }
 
 function renderProfile() {
+  // 「恢复本会话默认外观」的武装态（两段式确认的第一下）不跨渲染残留：进本页/换会话即复位，
+  // 复位函数与状态同住 js/settings.js 一处（_apResetDisarm），这里只调不碰账
+  if (typeof _apResetDisarm === 'function') _apResetDisarm();
   // 资料卡按联系人编辑：回显本页正在编辑的那位（群态切到某一位＝那一位；无联系人兜底全局 profile）
   const _cp = _mateTarget() || data.profile;
   $('#partnerAvatarButton').innerHTML = contactAvatarHTML(_cp);
@@ -13740,7 +13815,7 @@ function _categoryCards(cat, chatId) {
   // 语音字卡（名称|||data:audio）不是可发言文字，排除在回复池外；专属分组只认绑定关系——
   // 绑给别人的、以及没绑给任何人的（未绑定＝停用）都不进这一路的池（口径见 utils.js groupUsableFor）
   // chatId 省略＝此刻开着的会话；主动发送那一条按【被掷的那位】传，池子才不会串味
-  data.groups.forEach(g => { if ((g.category || '主字卡') === cat && groupUsableFor(g, chatId)) (g.cards || []).forEach(c => { const t = cardText(c); if (t && !voiceCardParts(t)) out.push(t); }); });
+  data.groups.forEach(g => { if ((g.category || '主字卡') === cat && groupUsableFor(g, chatId)) (g.cards || []).forEach(c => { const t = cardText(c); if (t && !voiceCardParts(t) && !cardIsOff(g, c)) out.push(t); }); });
   return out;
 }
 function _ri(min, max) { min = Math.ceil(min); max = Math.floor(max); return min + Math.floor(Math.random() * (max - min + 1)); }
@@ -14713,7 +14788,11 @@ $('#messageInput').addEventListener('input', () => {
 const _scrollBtn = $('#scrollBottomBtn');
 // 回车键发送开关：设置里关闭后，拦截输入框回车（表单隐式提交），回车不再发送消息
 $('#messageInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !(data.behavior && data.behavior.enterSend)) e.preventDefault();
+  // #411 回车发送：原走 <form> 隐式提交，去 form 化后显式触发；isComposing/229＝输入法选字回车豁免
+  if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+  if (!(data.behavior && data.behavior.enterSend)) { e.preventDefault(); return; }
+  e.preventDefault();
+  _composerSend();
 });
 // FIX 2026-10-12 #316 分页的下一帧执行器（与 scroll 监听里那段注释同一处根因）
 let _scrollPagePending = false, _scrollPageAt = 0;
@@ -14767,8 +14846,11 @@ function _setAttach(src, big) {
 $('#attachRemove').onclick = () => _setAttach('');
 // FIX 2026-09-02 #017 手机端点发送按钮后输入法自动收起：阻止按钮 pointerdown 夺走输入框焦点，键盘保持弹出
 $('#composer .send-btn').addEventListener('pointerdown', e => e.preventDefault());
-$('#composer').addEventListener('submit', async e => {
-  e.preventDefault();
+// #411 输入栏去 form 化：Chrome 手机版对「文档里存在 <form>」的页面整体挂自动填充附件条
+// （键盘上方那条 🔑💳📍 白条），SPA 所有输入框跟着中招。composer 由 <form> 改 <div> 后，
+// submit 事件不再存在，发送改由「点发送钮」＋「输入框回车（enterSend 开时）」两条路径显式触发。
+// isComposing/229 守卫＝输入法选字回车不发送（原 form 隐式提交自带该豁免，去 form 后须自己补）。
+async function _composerSend() {
   const input = $('#messageInput'), text = input.value.trim();
   if (!text && !_attachSrc) return;
   const msg = { id: nextId(), from: 'me', text, time: time(), date: new Date().toLocaleDateString('zh-CN') };
@@ -14801,7 +14883,8 @@ $('#composer').addEventListener('submit', async e => {
     if (document.activeElement === input) scrollChatToBottom();
   });
   partnerReply(sentFromChat, text);
-});
+}
+$('#composer .send-btn').addEventListener('click', () => _composerSend());
 
 // ===== 批量发送（FR 2026-10-11，复刻自家 mochi v3.11.x 同名功能）=====
 // TA 的设置 → 回复节奏「批量发送」开关（每联系人独立，默认关）打开后，输入栏显示「批量发送」钮。
@@ -16107,7 +16190,7 @@ function mmCallGreet(cid) {
       || (typeof currentContact === 'function' && currentContact()) || null;
     if (!cur) return;
     const pool = [];
-    const collect = g => (g.cards || []).forEach(c => { const v = voiceCardParts(c); if (v && v.data) pool.push({ data: v.data, text: v.text || v.name || '' }); });
+    const collect = g => (g.cards || []).forEach(c => { if (cardIsOff(g, c)) return; const v = voiceCardParts(c); if (v && v.data) pool.push({ data: v.data, text: v.text || v.name || '' }); });
     (data.groups || []).forEach(g => {
       if (cardScope(g) === 'public' || !groupUsableFor(g, cur.id)) return;
       collect(g);
@@ -16842,6 +16925,34 @@ async function _cardsListClick(e) {
   const ce = e.target.closest('[data-card-edit]');
   const ga = e.target.closest('[data-group-idx]');
   const ca = e.target.closest('[data-category]');
+  // #411 分组使用权开关：字卡库与系统预设字卡两面共用这套列表操作，两边都长这枚钮
+  const go = e.target.closest('[data-group-off]');
+  if (go) {
+    const ogi = Number(go.dataset.groupOff);
+    const og = data.groups[ogi];
+    if (!og) return;
+    og.off = !og.off;
+    await save();
+    paint();
+    showToast(og.off ? `已停用分组「${og.name || '未命名'}」：TA 用不到这组字卡（组内单卡开关原样保留）`
+      : `已启用分组「${og.name || '未命名'}」：恢复使用`);
+    return;
+  }
+  // #411 单卡使用权开关：文字/语音按内容记账（g.offCards），图片对象卡内联 c.off
+  const co = e.target.closest('[data-card-off]');
+  if (co) {
+    const cgi = Number(co.dataset.group), cci = Number(co.dataset.card);
+    const cg = data.groups[cgi];
+    const card = cg && cg.cards ? cg.cards[cci] : null;
+    if (card == null) return;
+    const nowOff = !cardIsOff(cg, card);
+    cardSetOff(cg, card, nowOff);
+    await save();
+    paint();
+    const lab = cardText(card) || (cardImage(card) ? '这张图' : (voiceCardParts(card) || {}).name || '这张卡');
+    showToast((nowOff ? '已停用：' : '已恢复：') + (lab.length > 18 ? lab.slice(0, 18) + '…' : lab));
+    return;
+  }
   if (gd) {
     const dgi = Number(gd.dataset.groupDelete);
     const dname = data.groups[dgi]?.name;
@@ -16861,7 +16972,7 @@ async function _cardsListClick(e) {
     const v = voiceCardParts(card);
     const show = String(v ? v.name : card);
     openModal('删除字卡', '', async () => {
-      if (data.groups[gi]?.cards?.[ci] != null) data.groups[gi].cards.splice(ci, 1);
+      if (data.groups[gi]?.cards?.[ci] != null) { cardOffPrune(data.groups[gi], card); data.groups[gi].cards.splice(ci, 1); }
       await save();
       paint();
     }, { noInput: true, staticText: `删除「${show.length > 24 ? show.slice(0, 24) + '…' : show}」？删了不可恢复。`, okText: '删除', danger: true });
@@ -17015,7 +17126,7 @@ $('#batchDelete').onclick = () => {
     for (const k of cardsBatchSel) { const p = k.split(':'); const gi = +p[0], ci = +p[1]; byGroup[gi] = byGroup[gi] || []; byGroup[gi].push(ci); }
     for (const gi of Object.keys(byGroup).map(Number)) {
       const cis = byGroup[gi].sort((a, b) => b - a);
-      for (const ci of cis) data.groups[gi].cards.splice(ci, 1);
+      for (const ci of cis) { const c = data.groups[gi].cards[ci]; if (c != null) cardOffPrune(data.groups[gi], c); data.groups[gi].cards.splice(ci, 1); }
     }
     cardsBatchSel.clear();
     await save();
@@ -17044,6 +17155,7 @@ function openCardEdit(gi, ci, paint) {
     if (v) { const segs = card.split('|||'); segs[0] = t; next = segs.join('|||'); }   // 只换名字那一段
     if (next === card) return;
     if (!v && g.cards.includes(next)) { showToast('这组里已有这句'); ask(t); return; }
+    cardOffPrune(g, card);   // 旧内容已不在：它的停用记账跟着摘掉（改完默认恢复可用）
     g.cards[ci] = next;
     await save();
     if (typeof paint === 'function') paint(); else renderGroups();
@@ -17546,7 +17658,7 @@ $('#clearAllCards').onclick = async () => {
   if (!total) { showToast('字卡库已经是空的'); return; }
   openModal('清空全部字卡', '', () => {
     openModal('最后确认', '', async () => {
-      mine.forEach(g => { g.cards = []; });
+      mine.forEach(g => { g.cards = []; delete g.offCards; });
       cardsBatchSel.clear();
       selectedGroupName = '';
       await save();
@@ -18842,7 +18954,7 @@ function composeLetterText(cid) {
   if (m.useSticker) cats.push('表情包');
   // 只取文本字卡；图片/表情对象字卡不参与组信（与 chat.js 主字卡口径一致，避免生成 "[object Object]" 乱码信）
   // 取的是**那位自己**那一份字卡（公用＋绑给他的专属），写死主会话会让回信用别人的话术
-  const pool = (data.groups || []).filter(g => cats.includes(g.category) && groupUsableFor(g, who)).flatMap(g => g.cards || []).filter(c => typeof c === 'string' && !voiceCardParts(c));
+  const pool = (data.groups || []).filter(g => cats.includes(g.category) && groupUsableFor(g, who)).flatMap(g => (g.cards || []).filter(c => !cardIsOff(g, c))).filter(c => typeof c === 'string' && !voiceCardParts(c));
   if (!pool.length) return '';
   // 这两个数按**张数**计（照 mochi 的 ml-min-cards / ml-max-cards）：想拼几张卡就是几张，
   // 池子里只有那么多张时夹到那么多。旧写法把 min/max 当「累计字符数」用，标签却写着条数——
@@ -18859,7 +18971,7 @@ function composeLetterText(cid) {
 // 回信先回应你的信：从 TA心里话「信的回应」抽一句拼在正文前（组被删则跳过，回信退回纯字卡正文）
 function _replyRespondLine(cid) {
   const g = (data.groups || []).find(x => (x.name || '') === '信的回应' && (x.category || 'TA心里话') === 'TA心里话' && groupUsableFor(x, cid || mainChatId()));
-  const cards = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c));
+  const cards = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c) && !cardIsOff(g, c));
   if (!cards.length) return '';
   return cards[Math.floor(Math.random() * cards.length)];
 }
@@ -21281,8 +21393,8 @@ function cjSkyFor(cid) {
 }
 // 天色那句台词：只按当天真实天气取词（雨∶雪∶风），取不到整池凑一句也不编——这一族从此没有「月亮」可说
 function _cjRemarkPick(weather) {
-  const g = (data.groups || []).find(x => (x.name || '') === '天气的话' && (x.category || '主字卡') === 'TA心里话');
-  const cards = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c));
+  const g = (data.groups || []).find(x => (x.name || '') === '天气的话' && (x.category || '主字卡') === 'TA心里话' && !x.off);
+  const cards = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c) && !cardIsOff(g, c));
   if (!cards.length) return '';
   const re = weather === 'rain' ? /雨/ : weather === 'snow' ? /雪/ : /风/;
   const hit = cards.filter(c => re.test(c));
@@ -21296,16 +21408,16 @@ function _cjHist(cid, e) {
   if (en.hist.length > 80) en.hist.splice(0, en.hist.length - 80);
 }
 function _cjStatusPool() {
-  const g = (data.groups || []).find(x => (x.name || '') === '状态签名' && (x.category || '主字卡') === 'TA心里话');
-  return ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c));
+  const g = (data.groups || []).find(x => (x.name || '') === '状态签名' && (x.category || '主字卡') === 'TA心里话' && !x.off);
+  return ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c) && !cardIsOff(g, c));
 }
 // 一池台词里「档名：」前缀对得上的那几条中抽一句——这一页所有会开口的线共用这一个出口（不留六份实现）。
 // 该档没有对应句子就返回空：宁可这条线这一轮不开口，也不拿别档的话冒充；整组删掉＝这条线从此只亮档名
 function _cjPoolSay(name, label) {
   if (!label) return '';
-  const g = (data.groups || []).find(x => (x.name || '') === name && (x.category || '主字卡') === 'TA心里话');
+  const g = (data.groups || []).find(x => (x.name || '') === name && (x.category || '主字卡') === 'TA心里话' && !x.off);
   const pre = label + '：';
-  const hit = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim().startsWith(pre) && !voiceCardParts(c));
+  const hit = ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim().startsWith(pre) && !voiceCardParts(c) && !cardIsOff(g, c));
   if (!hit.length) return '';
   return hit[Math.floor(Math.random() * hit.length)].trim().slice(pre.length).trim();
 }
@@ -21370,8 +21482,8 @@ function _cjMoodPair(en) {
     </div>`;
 }
 function _cjGroupCards(name) {
-  const g = (data.groups || []).find(x => (x.name || '') === name && (x.category || '主字卡') === 'TA心里话');
-  return ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c)).map(c => c.trim());
+  const g = (data.groups || []).find(x => (x.name || '') === name && (x.category || '主字卡') === 'TA心里话' && !x.off);
+  return ((g && g.cards) || []).filter(c => typeof c === 'string' && c.trim() && !voiceCardParts(c) && !cardIsOff(g, c)).map(c => c.trim());
 }
 function _cjGroupText(name, filterRe) {
   const cards = _cjGroupCards(name);
@@ -30237,6 +30349,51 @@ function _apSh() {
   return data.appearance;
 }
 // 通透观感（磨砂/透明/光影）不再可调：值固定在 css/theme.css 的 --glass-blur / --glass-a1 / --glass-a2 / --shadow-k
+// 自定义气泡 CSS：整段**自动加权**（2026-10-15，用户报「气泡 CSS 完全没效果」的根因）。
+// 主题侧我方气泡的底色写在 `.mine .bubble`（0,2,0）、对方配色档在 body 属性选择器上——
+// 用户照直觉写 `.bubble{background:...}`（0,1,0）＝我方那半永远打不过，看起来就是「整段没生效」。
+// 这里给每条规则的选择器统一加一层 `body[data-ap-bubcss] ` 前缀（＝每条 +1 个类级权重），
+// 写错也不会弄坏页面：引号字符串与注释整段原样搬，@media 块整体下钻一层继续加，括号不配对就放弃加权、原文照用。
+function _scopeBubbleCss(css) {
+  const _sel = s => s.split(',').map(p => {
+    const t = p.trim();
+    if (!t || /^(html\b|body\b|:root)/i.test(t)) return p.trim();   // html/body/:root 开头的不再包（包了就匹配不到了）
+    return 'body[data-ap-bubcss] ' + t;
+  }).join(', ');
+  const _scan = s => {
+    let out = '', i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (c === '"' || c === "'") {   // 字符串整段搬（转义的闭引号不算）
+        const q = c; out += c; i++;
+        while (i < s.length) { out += s[i]; const hit = s[i] === q && s[i - 1] !== '\\'; i++; if (hit) break; }
+        continue;
+      }
+      if (c === '/' && s[i + 1] === '*') {   // 注释整段搬
+        const e = s.indexOf('*/', i + 2);
+        const seg = e < 0 ? s.slice(i) : s.slice(i, e + 2);
+        out += seg; i += seg.length; continue;
+      }
+      if (c === '{') {   // 块：先配对到闭括号，再按「@规则下钻 ∶ 普通规则加前缀」二选一
+        let dep = 1, j = i + 1;
+        while (j < s.length && dep > 0) {
+          if (s[j] === '"' || s[j] === "'") { const q = s[j]; j++; while (j < s.length && !(s[j] === q && s[j - 1] !== '\\')) j++; j++; continue; }
+          if (s[j] === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? s.length : e + 2; continue; }
+          if (s[j] === '{') dep++; else if (s[j] === '}') dep--;
+          j++;
+        }
+        if (dep !== 0) return s;   // 括号不配对＝不折腾，原文照用（老行为）
+        const inner = s.slice(i + 1, j - 1);
+        if (out.trim().charAt(0) === '@') out += '{' + _scan(inner) + '}';
+        else out = _sel(out) + '{' + inner + '}';
+        s = s.slice(j); i = 0; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  };
+  try { return _scan(css); } catch (e) { return css; }
+}
 function applyAppearance() {
   const a = _apView();
   const b = document.body;
@@ -30249,6 +30406,10 @@ function applyAppearance() {
   b.dataset.apDensity = a.density;
   b.dataset.apTime = a.showTime ? 'on' : 'off';
   b.dataset.apSendbtn = a.sendBtn === false ? 'off' : 'on';
+  // 三组排版新档（2026-10-15）：头像对齐／小头像显隐／日期签位置，消费方都在 css/theme.css 的 data-ap-align/-avat/-daypos 段
+  b.dataset.apAlign = a.alignMode === 'top' ? 'top' : 'bottom';
+  b.dataset.apAvat = a.avatarShow === false ? 'off' : 'on';
+  b.dataset.apDaypos = a.dayPos === 'head' ? 'head' : 'flow';
   b.dataset.apFontfamily = a.fontFamily;
   if (a.customFontCss) {
     b.dataset.apFontfamily = 'custom';
@@ -30303,7 +30464,7 @@ function applyAppearance() {
     const fontStyle = $('#ordinal-custom-font-style');
     if (fontStyle) fontStyle.remove();
   }
-  // 自定义气泡 CSS
+  // 自定义气泡 CSS（加权版见 _scopeBubbleCss；data-ap-bubcss 是加权选择器的落点，没这一段前缀匹配不到）
   if (a.customBubbleCss) {
     let bubbleStyle = $('#ordinal-custom-bubble-style');
     if (!bubbleStyle) {
@@ -30311,10 +30472,12 @@ function applyAppearance() {
       bubbleStyle.id = 'ordinal-custom-bubble-style';
       document.head.appendChild(bubbleStyle);
     }
-    bubbleStyle.textContent = a.customBubbleCss;
+    bubbleStyle.textContent = _scopeBubbleCss(a.customBubbleCss);
+    b.dataset.apBubcss = 'on';
   } else {
     const bubbleStyle = $('#ordinal-custom-bubble-style');
     if (bubbleStyle) bubbleStyle.remove();
+    delete b.dataset.apBubcss;
   }
   // 自定义全局字体 CSS
   if (a.customGlobalFontCss) {
@@ -30335,6 +30498,12 @@ function applyAppearance() {
   {
     const ff = $('#ordinal-custom-font-style'), gf = $('#ordinal-custom-global-font-style');
     if (ff && gf && (ff.compareDocumentPosition(gf) & Node.DOCUMENT_POSITION_PRECEDING)) document.head.insertBefore(ff, gf);
+  }
+  // 气泡 CSS 那张表**永远搬到 head 末位**：它是「用户显式改这一位 TA 的气泡」＝同权重里必须最后说才算数
+  // （创建序跟着操作顺序漂的那一族，与上面两枚字体表的排序同因）。appendChild 对已挂载节点就是搬家。
+  {
+    const bb = $('#ordinal-custom-bubble-style');
+    if (bb) document.head.appendChild(bb);
   }
 }
 
@@ -30742,6 +30911,16 @@ $('#apBgClear').onclick = async () => {
 // _caSh() 下次写入会按 chatAppearanceDefault 重新垫底，db.ensureData 的 _caFill 也认这本缺页。
 const AP_RESET_LABEL = '恢复本会话默认外观';
 let _apResetArmed = false, _apResetTimer = 0;
+// 武装态复位（js/render.js 的 renderProfile 每次进页/换会话都会调）：两段式确认的第一下点过之后
+// 切走再回来，态与按钮文案一起回初始——不带进下一本会话（timer 是 3 秒自回落，但文案不跟渲染走，
+// 旧写法下「态已被 timer 放掉、按钮还停在『再点一次确认』」这种错位读法留到现在）。
+function _apResetDisarm() {
+  if (!_apResetArmed) return;
+  _apResetArmed = false;
+  clearTimeout(_apResetTimer);
+  const btn = $('#apResetAll');
+  if (btn) btn.textContent = AP_RESET_LABEL;
+}
 $('#apResetAll').addEventListener('click', async () => {
   const btn = $('#apResetAll');
   if (!_apResetArmed) {
@@ -30754,12 +30933,16 @@ $('#apResetAll').addEventListener('click', async () => {
   clearTimeout(_apResetTimer);
   _apResetArmed = false;
   btn.textContent = AP_RESET_LABEL;
-  if (data.chatAppearance) delete data.chatAppearance[data.activeChat];
+  // 空会话不删不报：activeChat 为空时没有「这一本」可清，直接退出（防止对 chatAppearance[''] 误删）
+  if (!data.activeChat) return;
+  const _had = !!(data.chatAppearance && data.chatAppearance[data.activeChat]);
+  if (_had) delete data.chatAppearance[data.activeChat];
   applyAppearance();
   renderApSettings();
   await save();
   if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
-  showToast('已恢复默认外观');
+  // 提示如实：本就没有覆盖档时不说「已恢复」（本仓不留「点了、报了、实际什么都没发生」那一族）
+  showToast(_had ? '已恢复默认外观' : '本就已是默认外观');
 });
 
 // 桌面前台弹窗开关：即点即存（js/deskpop.js deskPopEnabled 读取）
@@ -30849,6 +31032,12 @@ function _echoUiFontScale() {
 }
 // 外观档位 chips 的白名单——与 js/db.js 的 ensureData 必须同口径，两处不一致就会出现
 // 「点了屏上不动、刷新又回落」那种两头都对不上的状态。
+// ⚠ 新增一个档位（比如给「卡片通透」再加一档、或新开一行 chips）要四处同步，少一处＝屏上四种死法之一：
+//   ① html 里那行 chips（容器 data-ap-set="<键>"，每枚 chip data-v="<值>"；行摘要 data-sum 按需挂）
+//   ② 这里 AP_SETS 的白名单（缺了＝点 chip 静默无效，委托在 allow.indexOf 处 return）
+//   ③ js/utils.js 的 defaults.appearance 默认值（缺了＝老档读 undefined；布尔键还影响 on/off 换算）
+//   ④ css/theme.css 的覆盖块（body[data-ap-xxx=值]；缺了＝存了生效不了，刷新即打回）
+// 另：db.js ensureData 的脏值回落要与 ③ 同改；卡头摘要若要报这一档，写手在 mate.js renderFoldSummaries。
 const AP_SETS = {
   light: ['airy', 'balanced', 'deep'],
   // 卡片圆角（2026-10-08 补）：small 利落 ∕ medium 标准（默认）∕ large 柔和。
@@ -30865,6 +31054,9 @@ const AP_SETS = {
   sendBtn: ['on', 'off'],
   glass: ['on', 'off'],
   glassLite: ['on', 'off'],   // 省电磨砂：常驻三栏去实时 blur（耗电优化，默认关）
+  alignMode: ['bottom', 'top'],   // 头像与气泡对齐：bottom 底部对齐（默认）/ top 顶部对齐
+  avatarShow: ['on', 'off'],      // 聊天里的小头像：on 显示（默认）/ off 隐藏＝气泡通栏
+  dayPos: ['flow', 'head'],       // 日期签位置：flow 消息流里（默认）/ head 钉在顶栏下方（sticky 随滚动换签）
   deskBgAll: ['on', 'off'],
 };
 // 底色档只认这四个值，脏值一律回落 soft（soft 没有覆盖块——css/theme.css 的基础令牌本身就是它）
@@ -30901,6 +31093,9 @@ document.addEventListener('click', async e => {
   await save();
   applyAppearance();
   echoApSets();
+  // 卡头摘要（如「聊天外观」的 #sumChatAp）按档现拼在 renderFoldSummaries 一处：点完档位当场重算，
+  // 不然折起卡读到的是上一次的摘要。settings 页那两枚行级摘要（sumLight/sumCorner）仍归 echoApSets，互不相干。
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
 });
 function echoApSets() {
   const a = data.appearance || {};
@@ -32156,6 +32351,16 @@ function renderFoldSummaries() {
   // 信箱／收藏两处设置都已搬进各自功能页（那张折叠卡与它们在设置页卡头的摘要同批删除），
   // 这里不再摘一份——一份值两处摘要本来也会互相打嘴（BUGS #100·#198）
   _set('#deskEntryState', '背景图 ' + (g.deskBg ? '已放' : '未放') + ' · 压暗 ' + _num(g.deskBgVeil, 60) + '% · 缩放 ' + _num(g.deskBgZoom, 100) + '% · ' + (g.deskBgSize === 'contain' ? '整张' : '铺满'));
+  // 「聊天外观」卡头摘要（2026-10-15 随卡自设置页搬来）：原先只由 bubbleShape 行上的 data-sum 喂＝
+  // 折着的时候七档里只读得出形状一档。现按全局档现拼一句（与卡内 chips 同源 data.appearance），
+  // 行上的 data-sum 已删＝写手只剩这一处；点击档位后由 settings.js 委托尾部调 renderFoldSummaries 当场重算。
+  const _bs = { round: '圆角', tail: '带尾', square: '方角', sharp: '直角' }[g.bubbleShape] || '圆角';
+  // 三组排版新档（2026-10-15）与全卡同一条口径：默认档不上摘要，非默认才多说一句
+  _set('#sumChatAp', '气泡 ' + _bs + ' · 行距 ' + (g.density === 'compact' ? '紧凑' : '舒适')
+    + ' · 磨砂 ' + (g.glass === false ? '关' : '开')
+    + (g.alignMode === 'top' ? ' · 顶对齐' : '')
+    + (g.avatarShow === false ? ' · 无头像' : '')
+    + (g.dayPos === 'head' ? ' · 日期签钉顶' : ''));
   _set('#sumData', (_num((data.messages || []).length, 0)) + ' 条消息 · ' + (_num((data.groups || []).reduce((a, x) => a + (x.cards || []).length, 0), 0)) + ' 张字卡');
   // 这一本的条数只在 js/chat-io.js 那一处算（chatIoSummary），这里只端过来，不留第二把尺子
   _set('#mateChatIoSum', (typeof chatIoSummary === 'function') ? chatIoSummary() : '');
@@ -34030,7 +34235,7 @@ function _cfVoicePool(cid) {
   const out = [];
   (data.groups || []).forEach(g => {
     if ((g.category || '主字卡') !== '语音' || cardScope(g) === 'public' || (g.contactId || '') !== cid) return;
-    (g.cards || []).forEach(c => { const v = voiceCardParts(c); if (v && v.data) out.push(v); });
+    (g.cards || []).forEach(c => { if (cardIsOff(g, c)) return; const v = voiceCardParts(c); if (v && v.data) out.push(v); });
   });
   return out;
 }
@@ -34040,7 +34245,7 @@ function _cfMainGroups(cid) {
   const out = [];
   (data.groups || []).forEach(g => {
     if ((g.category || '主字卡') !== '主字卡' || !groupUsableFor(g, cid)) return;
-    const cs = (g.cards || []).map(cardText).filter(t => t && !voiceCardParts(t));
+    const cs = (g.cards || []).filter(c => !cardIsOff(g, c)).map(cardText).filter(t => t && !voiceCardParts(t));
     if (cs.length) out.push({ name: g.name || '（无名）', scope: cardScope(g), cs });
   });
   return out;
@@ -34073,7 +34278,7 @@ function _cfStat(cid) {
     const cat = g.category || '主字卡';
     if (cat !== '表情包' && cat !== '图片') return;
     if (!groupUsableFor(g, cid)) return;
-    (g.cards || []).forEach(c => { if (cardImage(c)) catImgs++; });
+    (g.cards || []).forEach(c => { if (cardImage(c) && !cardIsOff(g, c)) catImgs++; });
   });
   const uniq = new Set(texts);
   const short = texts.filter(t => t.trim().length <= 4).length;
@@ -36576,7 +36781,7 @@ function _mmPeople() { return (data.contacts || []).filter(c => c && c.id && c.k
 
 function momentPool(category, cid) {
   // 取那一本字卡（公用＋绑给他的专属；绑定别人的组不进）
-  return (data.groups || []).filter(g => g.category === category && groupUsableFor(g, cid)).flatMap(g => g.cards || []);
+  return (data.groups || []).filter(g => g.category === category && groupUsableFor(g, cid)).flatMap(g => (g.cards || []).filter(c => !cardIsOff(g, c)));
 }
 function momentRand(min, max) { return min + Math.random() * (max - min); }
 function momentPick(arr) { return arr.length ? arr[Math.floor(Math.random() * arr.length)] : ''; }
@@ -37044,7 +37249,7 @@ function _mmStkPool(cid) {
   const gs = {};
   (data.groups || []).forEach(g => {
     if (!groupUsableFor(g, cid) || (g.category !== '表情包' && g.category !== '图片')) return;
-    const rows = (g.cards || []).map(cardImage).filter(Boolean).map(src => ({ src }));
+    const rows = (g.cards || []).filter(c => !cardIsOff(g, c)).map(cardImage).filter(Boolean).map(src => ({ src }));
     if (rows.length) { const k = g.name || '未分组'; gs[k] = (gs[k] || []).concat(rows); }
   });
   Object.keys(gs).forEach(k => add(k, gs[k]));
@@ -37752,10 +37957,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.3.9';
+window.APP_VER = 'v9.4.1';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.3.9' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.1' + s; }
 
 (async function init() {
   try {
