@@ -1603,6 +1603,11 @@ body:not([data-view=chat]) .call-window{display:none}
 .bind-row .bind-av img{width:100%;height:100%;object-fit:cover;display:block}
 .bind-row .bind-av.free{background:transparent;box-shadow:inset 0 0 0 1.2px var(--muted);color:var(--muted)}
 .bind-row .bind-check{margin-left:auto;flex:none;font-size:15px;color:var(--accent)}
+/* #412 绑定弹层：说明行／批量勾选／空名单提示 */
+.bind-note{font-size:12px;color:var(--muted);line-height:1.6;padding:2px 6px 10px;letter-spacing:.3px}
+.bind-empty{font-size:12px;color:var(--muted);line-height:1.6;padding:12px 6px;letter-spacing:.3px}
+.bind-all{display:flex;align-items:center;gap:9px;padding:12px 6px;border-top:1px solid var(--line);font-size:13px;color:var(--ink);letter-spacing:.3px;cursor:pointer}
+.bind-all input{width:17px;height:17px;flex:none;accent-color:var(--accent)}
 /* 设置 */
 /* FIX 2026-09-01 #004 手机端设置页内容被挤压显示不全：设置列表改为自身滚动（flex:1+overflow），tab 不再依赖 sticky，并关掉 .view 的 content-visibility（该优化在移动端 WebKit 会算错滚动高度，导致内容显示不全） */
 #settingsView{content-visibility:visible}
@@ -12775,6 +12780,9 @@ const _ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const _ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5h17"/><path d="M8.5 6.5V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v1.5"/><path d="M18.5 6.5l-.85 12.35a2 2 0 0 1-2 1.65H8.35a2 2 0 0 1-2-1.65L5.5 6.5"/><path d="M10 10.5v6.5M14 10.5v6.5"/></svg>';
 const _ICON_VOICE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3.5 10.5v3M7.5 7.5v9M12 4.5v15M16.5 7.5v9M20.5 10.5v3"/></svg>';
 const _ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v10"/><path d="M7.5 9.5l4.5 4.5 4.5-4.5"/><path d="M4.5 17.5V19a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-1.5"/></svg>';
+// #411 使用权开关的两枚眼睛（停用＝闭眼）：mochi 同款形制，开／停共用一个位
+const _ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const _ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
 function _cardItemHTML(gi, ci, entry, selKey, batch, badge) {
   const img = cardImage(entry);
   const voice = img ? null : voiceCardParts(entry);
@@ -12805,7 +12813,7 @@ function _cardItemHTML(gi, ci, entry, selKey, batch, badge) {
 function _bindBadgeHTML(gi, g) {
   if (currentCardsScope !== 'own') return '';
   const contact = g.contactId ? (data.contacts || []).find(c => c.id === g.contactId) : null;
-  return `<button class="gbind${contact ? '' : ' free'}" data-group-bind="${gi}">${contact ? '@' + escapeHTML(fixedNameOf(contact) || '未命名') : '未绑定 · TA用不到'}</button>`;
+  return `<button class="gbind${contact ? '' : ' free'}" data-group-bind="${gi}">${contact ? '@' + escapeHTML(fixedNameOf(contact) || '未命名') : '未绑定 · 点这里绑给谁'}</button>`;
 }
 // 作用域切换：一组卡建在公用还是专属，过去只由「新建那会儿你在哪一档」钉死一次，之后屏上
 // 专属那组可「改成公用」；公用不再有「改成专属」（2026-10-11 纠偏：公用就是公用，不能绑定为专属）
@@ -12818,20 +12826,24 @@ function _scopeSwitchHTML(gi, g) {
 function _cardItemHTML(gi, ci, entry, selKey, batch, badge, grp, bind) {
   const img = cardImage(entry);
   const voice = img ? null : voiceCardParts(entry);
+  // #411 单卡使用权：停用的卡照常上墙（看得见才想得起恢复），只给 lighter 墨色＋「已停用」小签＋闭眼钮
+  const gObj = data.groups[gi] || null;
+  const coff = cardIsOff(gObj, entry);
   const body = img
     ? `<span class="card-img"><img data-src="${escapeHTML(img)}" alt="表情包" data-lazy-img="true"></span>`
     : voice
       ? `<span class="card-text card-voice">${_ICON_VOICE}<span class="voice-name">${escapeHTML(voice.name)}</span></span>`
       : `<span class="card-text">${escapeHTML(entry)}</span>`;
-  const badgeHtml = badge ? `<span class="card-badge">${escapeHTML(badge)}</span>` : '';
+  const badgeHtml = (badge ? `<span class="card-badge">${escapeHTML(badge)}</span>` : '') + (coff ? '<em class="card-off-tag">已停用</em>' : '');
   const bindHtml = !batch && bind ? `<button class="card-bind${bind.name ? '' : ' free'}" data-group-bind="${gi}" title="${bind.name ? '已绑定：' + escapeHTML(bind.name) : '未绑定联系人 · 这组字卡任何会话都用不到，点这里绑定'}">${bind.name ? '@' + escapeHTML(bind.name) : 'TA用不到'}</button>` : '';
   // 语音卡多一枚「导出这句音频」：这一族的内容是一段录音，改名与删除都代替不了把它取出去
   const voiceOut = voice ? `<button class="card-voice-out" data-card-voice-export data-group="${gi}" data-card="${ci}" title="导出这句音频">${_ICON_DOWN}</button>` : '';
+  const offBtn = `<button class="card-off" data-card-off data-group="${gi}" data-card="${ci}" title="${coff ? '恢复使用' : '停用这张'}">${coff ? _ICON_EYE_OFF : _ICON_EYE}</button>`;
   const actions = img
-    ? `<div class="card-actions"><button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`
-    : `<div class="card-actions">${voiceOut}<button class="card-edit" data-card-edit data-group="${gi}" data-card="${ci}" title="编辑">${_ICON_EDIT}</button><button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`;
+    ? `<div class="card-actions">${offBtn}<button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`
+    : `<div class="card-actions">${voiceOut}${offBtn}<button class="card-edit" data-card-edit data-group="${gi}" data-card="${ci}" title="编辑">${_ICON_EDIT}</button><button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`;
   const selAttr = batch && cardsBatchSel.has(selKey) ? ' data-sel="1"' : '';
-  const itemCls = img ? 'card-item card-img-item' : 'card-item';
+  const itemCls = (img ? 'card-item card-img-item' : 'card-item') + (coff ? ' off' : '');
   const foot = grp ? `<div class="card-foot"><span class="card-grp">${escapeHTML(grp)}</span>${batch ? '' : actions}</div>` : (batch ? '' : actions);
   if (batch) {
     const check = '<span class="card-check"></span>';
@@ -12935,7 +12947,7 @@ function renderGroups(rootSel, subSel, presetOnly) {
   // #298 起它是**整页顶上的联系人切换条**（在分类 tab 之上），张数＝那位名下整本专属库合计（不再随分类 tab 变）；
   // 「全部」那枚＝专属库合计，点某人后下面列表只列当前分类里 TA 的组（分类维度仍由 tab 管，两层各管各的）
   const whoHtml = !whoShow ? '' : `<div class="fchips cards-who" id="cardsWho">${[{ id: 'all', cards: ownAll.reduce((s, x) => s + (x.g.cards || []).length, 0), label: '全部' }].concat(whoBuckets).map(b => `<button type="button" class="fchip${who === b.id ? ' on' : ''}" data-cards-who="${escapeHTML(b.id)}">${escapeHTML(b.label || _cardsWhoLabel(b))}<span class="n">${b.cards}</span></button>`).join('')}</div>`;
-  const chipsHtml = `<div class="cards-group-tabs"><button class="cards-group-tab" data-group-chip=""${sel ? '' : ' data-active="true"'}>全部<span class="n">${catTotal}</span></button>${viewGroups.map(x => `<button class="cards-group-tab" data-group-chip="${escapeHTML(x.g.name)}"${sel && sel.gi === x.gi ? ' data-active="true"' : ''}>${escapeHTML(x.g.name)}<span class="n">${x.g.cards.length}</span></button>`).join('')}</div>`;
+  const chipsHtml = `<div class="cards-group-tabs"><button class="cards-group-tab" data-group-chip=""${sel ? '' : ' data-active="true"'}>全部<span class="n">${catTotal}</span></button>${viewGroups.map(x => `<button class="cards-group-tab${x.g.off ? ' g-off' : ''}" data-group-chip="${escapeHTML(x.g.name)}"${sel && sel.gi === x.gi ? ' data-active="true"' : ''}>${escapeHTML(x.g.name)}${x.g.off ? '<i class="toff">停用</i>' : ''}<span class="n">${x.g.cards.length}</span></button>`).join('')}</div>`;
   const isImgCat = tab === '表情包' || tab === '图片';
   const gridCls = `cards${isImgCat ? ' category-grid' : ''}`;
   let listHtml = '', pending = null;
@@ -12949,11 +12961,16 @@ function renderGroups(rootSel, subSel, presetOnly) {
       ? `<button class="group-bar-add" data-group-add-img="${sel.gi}">＋ 添加${tab === '图片' ? '图片' : '表情包'}</button>`
       : `<button class="group-bar-add" data-group-idx="${sel.gi}">＋ 添加</button>`;
     const delBtn = `<button class="group-bar-del" data-group-delete="${sel.gi}" title="删除分组">${_ICON_TRASH}</button>`;
+    // #411 分组使用权开关：整组停用＝TA 各自动池都取不到这组（组内单卡开关原样保留，恢复即回原状）。
+    // 预置页同样长这枚钮——「系统预设字卡的某个分组关停用」正是这一批的需求之一
+    const goff = !!sel.g.off;
+    const offBtn = `<button class="group-bar-off${goff ? ' off' : ''}" data-group-off="${sel.gi}" title="${goff ? '启用该分组' : '停用该分组'}">${goff ? _ICON_EYE_OFF : _ICON_EYE}</button>`;
+    const goffTag = goff ? '<em class="g-off-tag">已停用</em>' : '';
     const bindBtn = presetOnly ? '' : _bindBadgeHTML(sel.gi, sel.g);
     const scopeBtn = presetOnly ? '' : _scopeSwitchHTML(sel.gi, sel.g);
     // 预置页这一面「能加能删」是用户自己定档保留的，所以这里不写「不可修改」那句（写了就是假话），
     // 出厂身份改挂统一搜索那一枚小签（search.js）——两样混排的地方只有那一面。
-    listHtml = `<div class="group-bar"><div class="group-bar-info"><span class="group-bar-name">${escapeHTML(sel.g.name)}</span>${bindBtn}${scopeBtn}<span class="group-bar-count">${sel.g.cards.length} 张</span></div>${addBtn}${delBtn}</div>`
+    listHtml = `<div class="group-bar"><div class="group-bar-info"><span class="group-bar-name">${escapeHTML(sel.g.name)}</span>${goffTag}${bindBtn}${scopeBtn}<span class="group-bar-count">${sel.g.cards.length} 张</span></div>${addBtn}${offBtn}${delBtn}</div>`
       + (items.length ? `<div class="${gridCls}"></div><div class="cards-pager"></div>` : `<div class="empty-cards">${q ? '没有匹配的字卡' : '暂无字卡，点右上「＋ 添加」'}</div>`);
     if (items.length) pending = { items };
   } else {
@@ -14788,7 +14805,7 @@ $('#messageInput').addEventListener('input', () => {
 const _scrollBtn = $('#scrollBottomBtn');
 // 回车键发送开关：设置里关闭后，拦截输入框回车（表单隐式提交），回车不再发送消息
 $('#messageInput').addEventListener('keydown', e => {
-  // #411 回车发送：原走 <form> 隐式提交，去 form 化后显式触发；isComposing/229＝输入法选字回车豁免
+  // #412 回车发送：原走 <form> 隐式提交，去 form 化后显式触发；isComposing/229＝输入法选字回车豁免
   if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
   if (!(data.behavior && data.behavior.enterSend)) { e.preventDefault(); return; }
   e.preventDefault();
@@ -14846,7 +14863,7 @@ function _setAttach(src, big) {
 $('#attachRemove').onclick = () => _setAttach('');
 // FIX 2026-09-02 #017 手机端点发送按钮后输入法自动收起：阻止按钮 pointerdown 夺走输入框焦点，键盘保持弹出
 $('#composer .send-btn').addEventListener('pointerdown', e => e.preventDefault());
-// #411 输入栏去 form 化：Chrome 手机版对「文档里存在 <form>」的页面整体挂自动填充附件条
+// #412 输入栏去 form 化：Chrome 手机版对「文档里存在 <form>」的页面整体挂自动填充附件条
 // （键盘上方那条 🔑💳📍 白条），SPA 所有输入框跟着中招。composer 由 <form> 改 <div> 后，
 // submit 事件不再存在，发送改由「点发送钮」＋「输入框回车（enterSend 开时）」两条路径显式触发。
 // isComposing/229 守卫＝输入法选字回车不发送（原 form 隐式提交自带该豁免，去 form 后须自己补）。
@@ -16806,8 +16823,20 @@ function openCardsBindSheet(gi) {
   _bindGi = gi;
   const cur = g.contactId || '';
   const row = (id, av, label) => `<button class="bind-row" data-bind-id="${escapeHTML(id)}"><span class="bind-av${id ? '' : ' free'}">${av}</span>${escapeHTML(label)}${cur === id ? '<span class="bind-check">✓</span>' : ''}</button>`;
-  $('#cardsBindList').innerHTML = row('', '∅', '未绑定（TA 用不到这组字卡）') +
-    (data.contacts || []).map(c => row(c.id, contactAvatarHTML(c), (fixedNameOf(c) || '未命名') + (c.kind === 'group' ? ' · 群' : ''))).join('');
+  const rest = (data.groups || []).filter(x => x && !x.preset && !x.system && cardScope(x) === 'own' && !x.contactId && x !== g);
+  // #412 批量绑定：导入一整本专属卡后不想一组组点——选人的同时可勾「其余未绑定的组一起给他」。
+  // 只数**专属且未绑定**的组（公用本来就人人可用，没有「绑」可言；预置组另有专有分类管着）
+  const alsoHtml = rest.length
+    ? `<label class="bind-all"><input type="checkbox" id="cardsBindAlso"><span>同时把其余 ${rest.length} 个未绑定分组也绑给 TA</span></label>`
+    : '';
+  const emptyHtml = (data.contacts || []).length
+    ? ''
+    : '<div class="bind-empty">还没有联系人：先到聊天页右上加一位，再来把字卡绑给 TA。</div>';
+  $('#cardsBindList').innerHTML =
+    (cur ? '' : '<div class="bind-note">这组卡现在是「未绑定」＝哪位 TA 都取不到；点下面一位，这组就归 TA 用。</div>') +
+    row('', '∅', '未绑定（TA 用不到这组字卡）') +
+    (data.contacts || []).map(c => row(c.id, contactAvatarHTML(c), (fixedNameOf(c) || '未命名') + (c.kind === 'group' ? ' · 群' : ''))).join('') +
+    emptyHtml + alsoHtml;
   $('#cardsBindMask').hidden = false;
 }
 // 绑定层只管「这组专属卡归谁」：挑人→落 contactId→重画（2026-10-11 纠偏：公用就是公用，
@@ -16821,12 +16850,21 @@ $('#cardsBindMask').addEventListener('click', e => {
   const r = e.target.closest('[data-bind-id]');
   if (!r || _bindGi < 0 || !data.groups[_bindGi]) return;
   const id = r.dataset.bindId;
+  const also = !!(document.getElementById('cardsBindAlso') && document.getElementById('cardsBindAlso').checked);
   _closeCardsBind();
   data.groups[_bindGi].contactId = id;
+  // #412 批量绑定：勾上就把全库其余「专属且未绑定」的组一并落到这位名下（解「导入一整本还要一组组点」）
+  let extra = 0;
+  if (id && also) {
+    (data.groups || []).forEach(x => {
+      if (x && !x.preset && !x.system && x !== data.groups[_bindGi] && cardScope(x) === 'own' && !x.contactId) { x.contactId = id; extra++; }
+    });
+  }
   save();
   renderGroups();
+  const nm = (data.contacts || []).find(c => c.id === id);
   showToast(!id ? '已解绑 · TA 用不到这组字卡'
-    : '已绑定：' + (fixedNameOf((data.contacts || []).find(c => c.id === id) || {}) || '未命名'));
+    : '已绑定：' + (fixedNameOf(nm) || '未命名') + (extra ? `（连同另外 ${extra} 组一起给了 TA）` : ''));
 });
 
 // ===== 分组命名 / 选组两块站内面板：替掉浏览器自带的 prompt（#246·#275 同族病在字卡库剩余四处的收口，BUGS #286）=====
@@ -17651,21 +17689,22 @@ $('#batchExportVoice').onclick = () => {
   _exportVoiceZip(rows, '言字卡-语音-选中.zip', rest ? '（选中的另外 ' + rest + ' 张不是语音卡）' : '');
 };
 
-// 清空全部字卡（保留分组结构，双重确认防误触）：只清字卡库这一侧的自建组，预置组在独立页另算
+// 清空全部字卡（自建分组整组删除，双重确认防误触）：只动字卡库这一侧的自建组；
+// 预置组在「系统预设字卡」独立页、系统内置组缺失即补种，都不经这里管
 $('#clearAllCards').onclick = async () => {
-  const mine = data.groups.filter(g => !g.preset);
+  const mine = data.groups.filter(g => !g.preset && !g.system);
   const total = mine.reduce((n, g) => n + (g.cards?.length || 0), 0);
-  if (!total) { showToast('字卡库已经是空的'); return; }
+  if (!mine.length) { showToast('字卡库已经是空的'); return; }
   openModal('清空全部字卡', '', () => {
     openModal('最后确认', '', async () => {
-      mine.forEach(g => { g.cards = []; delete g.offCards; });
+      data.groups = data.groups.filter(g => g.preset || g.system);
       cardsBatchSel.clear();
       selectedGroupName = '';
       await save();
       renderGroups();
-      showToast(`已清空 ${total} 张字卡`);
+      showToast(total ? `已删除 ${mine.length} 个分组、${total} 张字卡` : `已删除 ${mine.length} 个空分组`);
     }, { noInput: true, staticText: '此操作不可恢复，建议先「导出字卡」备份。仍要继续？', okText: '仍要清空', danger: true });
-  }, { noInput: true, staticText: `确定删除全部 ${total} 张字卡？`, okText: '下一步', danger: true });
+  }, { noInput: true, staticText: total ? `将删除全部 ${mine.length} 个分组、共 ${total} 张字卡（分组一并删掉）。` : `将删除全部 ${mine.length} 个空分组。`, okText: '下一步', danger: true });
 };
 
 // 批量添加：一行一张字卡，【分组名】切换目标分组，与导入 TXT 同格式
@@ -27170,6 +27209,16 @@ function bindHubView() {
     }
     const nav = def.nav;
     if (!nav) return;
+    _hubRoute(nav);
+  });
+}
+
+// '#' 那种动作直达的**唯一路由**（2026-10-14 BUGS：原本这段只活在 bindHubView 里，而「更多」那一列的行
+// 走的是 js/settings.js 的 [data-view] 委托＝showView 只认纯视图名，'#' 开头一律静默 return
+// ＝更多页那四枚（字号·诊断信息·桌面美化·数据备份，同病的还有 搜索聊天记录·问问TA）点了没反应。
+// 抽成全局函数后两处共用一个投递口：bindHubView 走这里，settings.js 见 '#' 开头的 data-view 也交到这里。
+// 冒烟尺 _smoke_hub_rows.js 的 A2 静态扫的是 hub.js 全文找 "nav === '#…'" 分支，抽函数不挪走分支＝尺照过）
+function _hubRoute(nav) {
     if (nav === '#ask') { showView('chat'); const b = document.getElementById('askBtn'); if (b) b.click(); return; }
     if (nav === '#chat') { showView('chat'); enterChatAtLatest(); return; }   // 功能中心进聊天＝打开会话，定位到最新（BUGS #014）
     if (nav === '#data') { showView('settings'); const t = document.querySelector('.settings-tab[data-tab="data"]'); if (t) t.click(); return; }
@@ -27203,7 +27252,6 @@ function bindHubView() {
       return;
     }
     showView(nav);
-  });
 }
 
 // ===== 「更多」那一列：名单·顺序·组别·名字全从上面那本册子现派生（2026-10-13 BUGS #300 二批）=====
@@ -30592,7 +30640,15 @@ function updateTopbarTitle(name) {
   }
 }
 
-$$('[data-view]').forEach(b => { b.addEventListener('click', () => showView(b.dataset.view)); });
+// '#' 那种动作直达（字号·诊断信息·桌面美化·数据备份·搜索聊天记录…）不在 showView 映射里，
+// 统一投递给 js/hub.js 的 _hubRoute（唯一路由，2026-10-14 修「更多页那四枚点了没反应」）
+$$('[data-view]').forEach(b => {
+  b.addEventListener('click', () => {
+    const v = b.dataset.view;
+    if (v && v.charAt(0) === '#' && typeof _hubRoute === 'function') { _hubRoute(v); return; }
+    showView(v);
+  });
+});
 
 // 信箱 tab（三枚：TA 的来信｜我的写信｜TA 的回信）。2026-10-14 BUGS #402 起按「这封信是谁起的头」分册，
 // 旧两枚（收到的信｜寄出的信）按方向分＝回信混在来信里只别一枚徽章（用户报的「分类有缺陷」）
@@ -37957,10 +38013,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.4.1';
+window.APP_VER = 'v9.4.5';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.1' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.5' + s; }
 
 (async function init() {
   try {
@@ -38889,15 +38945,52 @@ function env(name) {
   }
 
   // 刷新进入新版：先再确认一次线上仍是新版再落待换版标记（可能用户刚刷过、或线上已回滚）；
-  // 确认失败也照刷＝用户点了就是要点。上一次刷新已经失败过＝换址导航（?v= 时间戳）把 HTTP 缓存
-  // 与 SW 缓存全部绕开（GitHub Pages 文件本身有 10 分钟边缘缓存，这是最硬的穿透手段）。
+  // 然后走预取落盘通道（BUGS #415，mochi PRECACHE_NOW 同族）：把最新 index 长超时拉进 SW 缓存、
+  // 收到 UPD_PREFETCH_DONE 回执再 reload——弱网下裸 reload 的导航请求会超时回退旧缓存＝
+  // 「刷了还在旧版」的根治。上一次刷新已经失败过＝换址导航（?v= 时间戳）把 HTTP 缓存与
+  // SW 缓存全部绕开（GitHub Pages 文件本身有 10 分钟边缘缓存，这是最硬的穿透手段）。
+  let downloading = false;
+  function goReload() {
+    if (failedReloads > 0) { try { location.replace('./?v=' + Date.now()); return; } catch (e) {} }
+    try { location.reload(); } catch (e) {}
+  }
   function doRefresh() {
+    if (downloading) return;   // 防连点叠监听/叠计时器（mochi _prBusy 同口径）
     fetchVer().then(function (d) {
       const remote = num(d && d.ver);
       if (remote && remote > num(window.APP_VER)) writeWait(d.ver, failedReloads);
     }).catch(function () {}).then(function () {
-      if (failedReloads > 0) { try { location.replace('./?v=' + Date.now()); return; } catch (e) {} }
-      try { location.reload(); } catch (e) {}
+      let swc = null;
+      try { swc = navigator.serviceWorker && navigator.serviceWorker.controller; } catch (e) {}
+      if (!swc) { goReload(); return; }   // 无 SW（首次访问注册未完成）＝裸 reload 兜底
+      downloading = true;
+      showRow('正在下载新版…（弱网约一分钟，别连点）');
+      let doneSeen = false;
+      const cleanup = function () {
+        try { navigator.serviceWorker.removeEventListener('message', onMsg); } catch (e) {}
+        clearInterval(ping);
+      };
+      const onMsg = function (ev) {
+        if (!ev.data || ev.data.type !== 'UPD_PREFETCH_DONE' || doneSeen) return;
+        doneSeen = true; downloading = false;
+        cleanup();
+        goReload();
+      };
+      const send = function () { try { swc.postMessage({ type: 'UPD_PREFETCH' }); } catch (e) {} };
+      const ping = setInterval(function () {   // #1047 同族：iOS WebKit 冻结空闲 SW＝首条消息可能没人收，12s 重发唤醒
+        if (doneSeen) { clearInterval(ping); return; }
+        send();
+      }, 12000);
+      try { navigator.serviceWorker.addEventListener('message', onMsg); } catch (e) { downloading = false; goReload(); return; }
+      send();
+      // 硬超时兜底（#629 同理）：下载没完成就不自动 reload——此时兜底缓存大概率还是旧页，
+      // 刷了多半白刷；如实告知并留给用户再试（wait 标记还在，下一轮首查仍会改口）
+      setTimeout(function () {
+        if (doneSeen) return;
+        downloading = false;
+        cleanup();
+        showRow('下载没完成（网络慢）· 点按再试，或换流量再试');
+      }, 90000);
     });
   }
 

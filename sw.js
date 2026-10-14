@@ -1,4 +1,4 @@
-const CACHE_PREFIX = 'ordinal-v941';
+const CACHE_PREFIX = 'ordinal-v945';
 const STATIC_CACHE = CACHE_PREFIX + '-static';
 const DATA_CACHE = CACHE_PREFIX + '-data';
 
@@ -49,10 +49,17 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== location.origin) return;
 
   // 页面导航：network-first，确保部署到任意子路径时也总能拿到最新 index.html
+  // （#413 改 networkFirstNav＝成功与兜底都归一到「去查询串」的规范键，见下）
   if (event.request.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(networkFirstNav(event.request));
     return;
   }
+
+  // BUGS #415：version.json 完全放行、不拦截不缓存（mochi #157 同族移植）——
+  // SW 对它的「网络优先」在弱网超时会回退缓存里的旧 version.json ⇒ 页面读到旧值以为已是
+  // 最新＝「有新版却永远不提示、一直停在旧版」。放行后页面 fetch(cache:'reload') 直接走
+  // 浏览器原生网络：要么真线上值、要么真失败，绝不拿旧缓存冒充。
+  if (url.pathname.endsWith('/version.json')) return;
 
   // API / data requests: network-first
   if (url.pathname.endsWith('.json') || url.pathname.includes('/api/')) {
@@ -108,6 +115,53 @@ async function networkFirst(request) {
     return new Response('Offline', { status: 503 });
   }
 }
+
+// BUGS #415：导航专用 network-first——成功与兜底都归一到「去查询串」的规范键上写/读，
+// 与下方 UPD_PREFETCH 预取通道（写 './' 与 './index.html' 两键）共用同一本账：
+// 弱网 reload 超时回退时命中的才是刚预取落盘的新页；带 ?v= 的换址导航也命中同一键
+// （不归一＝?v= 导航失败时 caches.match 落空＝直接 503 白屏）。
+async function networkFirstNav(request) {
+  const u = new URL(request.url); u.search = ''; const key = u.href;
+  try {
+    const response = await fetch(request, { cache: 'reload' });
+    if (response.ok) {
+      const c = await caches.open(DATA_CACHE);
+      c.put(key, response.clone());
+      c.put(key.endsWith('/index.html') ? key.replace(/index\.html$/, '') : key + 'index.html', response.clone());
+    }
+    return response;
+  } catch {
+    const cached = (await caches.match(key)) || (await caches.match(key, { ignoreSearch: true })) || (await caches.match(request));
+    if (cached) return cached;
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+// ===== BUGS #415：点「刷新进入新版」的预取落盘通道（mochi PRECACHE_NOW #157/#273/#629/#1047 同族移植）=====
+// 弱网下裸 reload 的导航请求会超时回退旧缓存 index.html＝「刷了还在旧版」。页面点刷新先发
+// UPD_PREFETCH，这里长超时拉最新 index、校验完整后写进当前 DATA_CACHE，回执 UPD_PREFETCH_DONE，
+// 页面收到再 reload——导航即使超时，networkFirstNav 的缓存兜底命中的就是刚落盘的新页。
+// 幂等：页面 12s 重发唤醒被 iOS 冻结的 SW 实例（#1047），重复收到只是重复回执，无害。
+self.addEventListener('message', (e) => {
+  const data = e.data || {};
+  if (data.type !== 'UPD_PREFETCH') return;
+  const base = new URL('./', self.registration.scope).href;
+  const urls = [base, base + 'index.html'];
+  const done = () => { try { if (e.source && e.source.postMessage) e.source.postMessage({ type: 'UPD_PREFETCH_DONE' }); } catch (x) {} };
+  caches.open(DATA_CACHE).then((c) =>
+    Promise.allSettled(urls.map((u) =>
+      fetch(u, { cache: 'reload' }).then((res) => {
+        if (!res || !res.ok) return false;
+        // 完整性校验（mochi #134 同理）：把截断的新版固化进缓存＝用户永远卡残缺版
+        if (!/\.html$/.test(u)) return true;
+        return res.clone().text().then((t) => {
+          if (t.length < 500000 || !/<\/html>\s*$/i.test(t.trim())) return false;
+          c.put(u, res); return true;
+        });
+      }).catch(() => false)
+    ))
+  ).then(done).catch(done);
+});
 
 // 后台弹窗点击（mochi 移植）：聚焦已有窗口 / 开新窗口，并 postMessage 通知页面端跳转。
 // 页面可能已被系统回收（postMessage 落空），点击侧同时把 tag 写进 IDB，页面开机后自取一次（只认 3 分钟内的）。
