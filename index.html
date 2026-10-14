@@ -17128,7 +17128,8 @@ $('#batchSelectAll').onclick = () => {
   updateBatchBar();
 };
 $('#batchMove').onclick = () => {
-  if (!cardsBatchSel.size) return;
+  // #415 「放入分组无反应」实解之一：没勾卡时这里是静默 return＝点了像没点（本仓零容忍那一族）
+  if (!cardsBatchSel.size) { showToast('先勾选要移动的字卡'); return; }
   $('#cardsMoveList').innerHTML = data.groups.map((g, i) => {
     const c = g.contactId ? (data.contacts || []).find(x => x.id === g.contactId) : null;
     return `<button type="button" class="cards-pick-row" data-move-gi="${i}">${escapeHTML(g.name)}<small>（${g.category || '主字卡'}·${cardScope(g) === 'public' ? '公用' : '专属'}${c ? '·@' + escapeHTML(fixedNameOf(c) || '未命名') : ''}）</small></button>`;
@@ -17151,11 +17152,15 @@ $('#cardsMoveList').addEventListener('click', async e => {
     const cis = byGroup[gi].sort((a, b) => b - a);
     for (const ci of cis) { const txt = data.groups[gi].cards.splice(ci, 1)[0]; if (txt != null) moved.push(txt); }
   }
-  for (const t of moved) if (!data.groups[ti].cards.includes(t)) data.groups[ti].cards.push(t);
+  // #415 「无反应」实解之二：移动成功原先一声不吭——同分类移动在屏上几乎看不出变化＝读成没生效。
+  // 一句 toast 把「搬了几张、进了哪组」说破（组里已有的重复卡跳过，账要跟屏上对得上）
+  let added = 0;
+  for (const t of moved) if (!data.groups[ti].cards.includes(t)) { data.groups[ti].cards.push(t); added++; }
   cardsBatchSel.clear();
   await save();
   renderGroups();
   updateBatchBar();
+  showToast(`已把 ${added} 张字卡放进「${data.groups[ti].name || '未命名'}」` + (moved.length !== added ? `（${moved.length - added} 张组里已有，跳过重复）` : ''));
 });
 $('#batchDelete').onclick = () => {
   if (!cardsBatchSel.size) return;
@@ -38013,10 +38018,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.4.5';
+window.APP_VER = 'v9.4.6';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.5' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.6' + s; }
 
 (async function init() {
   try {
