@@ -208,6 +208,27 @@ body[data-view=settings] .settings-list{padding-bottom:calc(20px + env(safe-area
 .bk-flash{animation:bkFlash 1.8s ease}
 @keyframes bkFlash{0%,100%{box-shadow:0 0 0 0 transparent}30%{box-shadow:0 0 0 4px color-mix(in srgb,var(--ink) 20%,transparent)}}
 @media(prefers-reduced-motion:reduce){.bk-panel{animation:none}.bk-btn:active{transform:none}.bk-flash{animation:none}}
+
+/* ===== 新版提醒弹窗（BUGS #410 · js/update-check.js）=====
+   定位与版式完全照上面「备份提醒弹窗」那族（居中＋--scrim＋z=130；徽章∶标题∶状态 pill∶正文∶主次两钮∶脚注），
+   类名一律 up- 前缀＝不碰 bk- 与上面任何一条规则＝零影响面。壳在 html/sheet.html #updateRemind，
+   触发与「待换版验证闭环」全在 js/update-check.js（BUGS #410）。 */
+.up-mask{position:fixed;inset:0;z-index:130;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:22px}
+.up-mask[hidden]{display:none}
+.up-panel{width:min(330px,100%);max-height:calc(100dvh - 44px);overflow-y:auto;background:var(--surface);border-radius:var(--r-card);padding:24px 22px 18px;text-align:center;animation:upIn .28s ease}
+@keyframes upIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.up-badge{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;background:var(--well);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.up-badge svg{width:23px;height:23px}
+.up-title{font-size:16px;font-weight:700;letter-spacing:.2px;color:var(--ink);margin-bottom:6px}
+.up-when{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.3px;color:var(--ink);background:var(--well);border-radius:99px;padding:5px 12px;margin-bottom:12px}
+.up-body{font-size:12px;line-height:1.75;color:var(--muted);text-align:left;margin:0 0 16px}
+.up-acts{display:flex;gap:10px}
+.up-btn{flex:1;min-height:44px;border-radius:14px;font-family:inherit;font-size:13.5px;font-weight:600;letter-spacing:.5px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .15s,transform .12s}
+.up-btn:active{transform:scale(.98);opacity:.8}
+.up-later{border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.up-go{border:1px solid var(--ink);background:var(--ink);color:var(--page)}
+.up-note{font-size:10.5px;line-height:1.6;color:var(--muted);letter-spacing:.3px;margin-top:12px}
+@media(prefers-reduced-motion:reduce){.up-panel{animation:none}.up-btn:active{transform:none}}
 /* 顶栏让位那一口内距只在这一处算（BUGS #348）：`.chat-area` 的 padding-top 与下面那块骨架条
    `#msgSkel` 共用这一枚令牌——两处各写一份 calc，日后改 --topbar-h 或动安全区必漂。 */
 #chatView{--chat-top-pad:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 6px)}
@@ -760,7 +781,7 @@ body[data-avatar-shape="square"] .poke-who-avatar{border-radius:5px}
 #chatView .chat-head::before{background-color:color-mix(in srgb,var(--surface) calc(100% - var(--head-trans,0) * 1%),transparent)}
 body[data-ap-headveil=on] #chatView .chat-head::before{-webkit-backdrop-filter:blur(calc(var(--head-trans,0) * .5px));backdrop-filter:blur(calc(var(--head-trans,0) * .5px))}
 #chatView .composer{--comp-wash:color-mix(in srgb,var(--surface) calc(100% - var(--comp-trans,0) * 1%),transparent);background-color:var(--comp-wash)}
-body[data-ap-bg=on] #chatView .composer{background-image:linear-gradient(var(--comp-wash),var(--comp-wash)),var(--chat-bg);background-size:auto,cover;background-position:center bottom}
+body[data-ap-bg=on] #chatView .composer{background-image:linear-gradient(var(--comp-wash),var(--comp-wash)),linear-gradient(color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent),color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent)),var(--chat-bg);background-size:auto,auto,cover;background-position:center bottom}
 /* 胶囊本体跟着薄一档，但**只到 today 那排 chips 里最透的一档为止**（`--comp-row-trans` 由 JS 夹在 28＝≥72% 白）：
    再薄下去输入框里的字就要压在照片上读不出（theme.css:520 那条「输入栏不能透」的地板，门 B10 一直钉着这个数）。
    外圈那条带子吃滑杆全行程——照片就是从那一圈透出来的。 */
@@ -1599,8 +1620,10 @@ body[data-settings-tab=about] .setting-card[data-tab=about]{display:block}
 .ap-prev-msg+.ap-prev-msg{margin-top:10px}
 .ap-prev-av{width:26px;height:26px;border-radius:8px;background:var(--line,#e3e3e3);color:var(--muted,#999);font-size:11px;display:grid;place-items:center;flex:none}
 .ap-prev-bub{max-width:72%;padding:8px 12px;font-size:12.5px;line-height:1.5}
-.ap-prev-bub.partner{background:var(--partner-bubble,var(--bubble,#f1f1f1));color:var(--partner-text,var(--ink,#111));border-radius:6px 16px 16px 16px}
-.ap-prev-bub.mine{background:var(--mine,#111);color:var(--mine-text,#fff);border-radius:16px 6px 16px 16px}
+/* 圆角引全站令牌（--bub-r／--bub-r-mine，值由 theme.css 的 data-ap-bubble 四档发）＝
+   「气泡形状」那格在设置-外观里换档，这张预览跟着变；var() 里那份是令牌缺失时的兜底 */
+.ap-prev-bub.partner{background:var(--partner-bubble,var(--bubble,#f1f1f1));color:var(--partner-text,var(--ink,#111));border-radius:var(--bub-r,6px 16px 16px 16px)}
+.ap-prev-bub.mine{background:var(--mine,#111);color:var(--mine-text,#fff);border-radius:var(--bub-r-mine,16px 6px 16px 16px)}
 .ap-sec{margin:13px 0 0}
 .ap-sec-t{font-size:11px;color:var(--muted);letter-spacing:3px;margin-bottom:9px}
 /* 一枚滑杆加一个数（美化设置里那两行透明度）：形制与桌面美化台那排 .ds-knob 同一族（同一件事不画第二种样子），
@@ -1637,6 +1660,32 @@ body[data-settings-tab=about] .setting-card[data-tab=about]{display:block}
 .ap-ta{display:block;width:100%;min-height:64px;padding:9px 11px;border:1px solid var(--line,#efefef);border-radius:10px;background:var(--page,#fafafa);color:var(--ink,#111);outline:none;margin:8px 0 0;font-size:11px;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;resize:vertical;box-sizing:border-box}
 .ap-ta:focus{border-color:var(--ctl-on-ring)}
 .ap-ta::placeholder{color:var(--muted)}
+/* 预览升级（2026-10-14）：原来只画两枚气泡＝气泡颜色以外的每一档都「设了也看不见」。
+   现在把时间轴小签、每条气泡下面的时间小字、系统消息行一并画进预览；这三样的选档样式
+   由 theme.css 那组 data-ap-day/meta/sys 覆盖条一并接管（选择器里并了 .ap-preview 镜像）
+   ＝预览与聊天页永远读同一份档，调哪档预览当场变。传了背景图时预览也垫上图与「压暗」
+   那层纱（同一根 --chat-veil）＝所见即所得。 */
+.ap-prev-day,.ap-prev-sys{width:fit-content;margin:0 auto 10px;padding:2px 10px;border-radius:99px;background:var(--surface,#fff);color:var(--muted);font-size:10px;line-height:1.5}
+.ap-prev-col{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;max-width:72%}
+.ap-prev-msg.me .ap-prev-col{align-items:flex-end}
+.ap-prev-col .ap-prev-bub{max-width:100%}
+.ap-prev-meta{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 顶栏条与输入栏条（2026-10-14 二批）：透明度两根滑杆的预览。浓淡公式与聊天页同源
+   （css/chat.css #chatView .chat-head::before 与 .composer-row 那两条）——同一根 --head-trans／
+   --comp-row-trans（body 级，js/settings.js applyAppearance 一处写），拖到哪预览当场变。
+   没传背景图时条下只有画布色，浓淡看不出差别＝与聊天页同一表现，不算骗人。 */
+.ap-prev-head{display:flex;justify-content:center;align-items:center;margin:0 0 10px;padding:7px 0;border-radius:10px;background-color:color-mix(in srgb,var(--surface) calc(100% - var(--head-trans,0) * 1%),transparent);color:var(--ink);font-size:12px;font-weight:600;letter-spacing:1px}
+.ap-prev-comp{display:flex;align-items:center;gap:6px;margin:12px 0 0;padding:5px 6px;border-radius:12px;background-color:color-mix(in srgb,var(--surface) calc(100% - var(--comp-row-trans,0) * 1%),transparent)}
+.ap-prev-pill{flex:1;min-width:0;padding:6px 10px;border-radius:99px;background:var(--page,#f5f5f5);color:var(--muted);font-size:11px}
+.ap-prev-send{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ink,#111);display:grid;place-items:center}
+.ap-prev-send::after{content:"";display:block;width:7px;height:7px;border-top:1.8px solid var(--surface,#fff);border-right:1.8px solid var(--surface,#fff);transform:rotate(45deg) translate(-1px,1px)}
+body[data-ap-bg=on] .ap-preview{background-image:linear-gradient(color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent),color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent)),var(--chat-bg);background-size:auto,cover;background-position:center,center}
+/* 「恢复本会话默认外观」那行（2026-10-14）：整行铺满，与 ap-btnrow 同族 */
+.ap-resetrow{display:flex;margin:12px 0 0}
+.ap-resetrow .ap-btn{flex:1}
+/* 色点行右端的档名读数（2026-10-14）：八枚圆点长得都一样、四枚 A 也分不出谁是谁，
+   选中了哪档靠这行小字说；margin-left:auto 顶到行右端＝与左侧「我的/对方」标签各占一头。 */
+.ap-dotname{margin-left:auto;font-size:11px;color:var(--muted);flex:none}
 .setting-card{background:var(--surface);border-radius:var(--r-card);padding:6px 16px;margin-bottom:14px;box-shadow:none}
 .setting-title{display:block;margin:14px 0 2px}
 .setting-icon{display:none}
@@ -2870,6 +2919,10 @@ body[data-ap-bubble=tail] .bubble{position:relative}
 body[data-ap-bubble=tail] .message:not(.mine) .bubble::before{content:"";position:absolute;left:-5px;bottom:8px;width:10px;height:10px;background:inherit;border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg);border-bottom-left-radius:2px}
 body[data-ap-bubble=tail] .mine .bubble::before{content:"";position:absolute;right:-5px;bottom:8px;width:10px;height:10px;background:inherit;transform:rotate(45deg);border-bottom-right-radius:2px}
 body[data-ap-bubble=tail] .bubble{border:none}
+/* tail 档预览镜像（2026-10-14）：美化设置 .ap-preview 里的小尾巴与 .bubble 同形，调档预览当场变 */
+body[data-ap-bubble=tail] .ap-prev-bub{position:relative}
+body[data-ap-bubble=tail] .ap-prev-bub.partner::before{content:"";position:absolute;left:-5px;bottom:8px;width:10px;height:10px;background:inherit;border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg);border-bottom-left-radius:2px}
+body[data-ap-bubble=tail] .ap-prev-bub.mine::before{content:"";position:absolute;right:-5px;bottom:8px;width:10px;height:10px;background:inherit;transform:rotate(45deg);border-bottom-right-radius:2px}
 
 /* 全站字号（设置-外观「字号」：标准 / 大）：整站文字与间距一起放大，含聊天页
    zoom 只挂在 .app-shell 的直接子元素上，不挂 html——挂 html 时 100dvh 不跟着缩放，
@@ -2892,23 +2945,38 @@ body[data-ap-sendbtn=off] .send-btn{display:none}
    ⚠ 尺寸只许 cover，且不要写 background-attachment:local（BUGS #076）：
      100% 100% 是横纵各拉一次的非等比缩放；local 又把参照盒从「可视屏」换成「整条可滚动内容」，
      实测一张 3:1 图在 390×735 的聊天盒里被画成 390×3072（纵向拉 24 倍）且跟着消息走（tools/_smoke_chat_bg_cover.js） */
-body[data-ap-bg=on] .chat-area{background-image:var(--chat-bg);background-size:cover;background-position:center}
+/* 「压暗」层（2026-10-14）：--chat-veil（0~100 无单位数，js/settings.js applyAppearance 一处写）给整张
+   背景图垫一层墨纱——照片太亮太花抢字时用，0＝不垫＝与旧观感逐字节相同。写法与桌面壁纸那层
+   （下方 data-ap-desk 块）同族：linear-gradient 两端同色的纯色层叠在图前。 */
+body[data-ap-bg=on] .chat-area{background-image:linear-gradient(color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent),color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent)),var(--chat-bg);background-size:auto,cover;background-position:center,center}
 body[data-ap-bg=on] .chat-area .bubble{box-shadow:none}
-body[data-ap-bg=on] .chat-area .day-label{background:rgba(255,255,255,.78);border-radius:10px;padding:2px 10px;width:fit-content;margin:0 auto 18px}
+body[data-ap-bg=on] .chat-area .day-label,body[data-ap-bg=on] .ap-preview .ap-prev-day{background:rgba(255,255,255,.78);border-radius:10px;padding:2px 10px;width:fit-content;margin:0 auto 18px}
 
 /* 辅助文字三档（按会话 chatAppearance 的 dayStyle/metaColor/sysStyle → body[data-ap-day/meta/sys]）：
    'auto' 不写属性＝走上面那条与 chat.css 的默认；只有用户显式选档才落属性、在此覆盖。
    与上方同特异度 (0,3,1)，但本条写在后面＝后写胜（auto 时属性不存在，这几条整组不生效）。
+   每条都并上 .ap-preview 的镜像元素（ap-prev-day/​-meta/​-sys，2026-10-14 预览升级）＝
+   美化设置里的预览与聊天页永远读同一份档，调哪档预览当场变。
    墨底→白字、白底→深字：换族/去黑批只扫「暗＝墨」，这类「白底白字／墨底白字」的两面说反它扫不到，故在此写死并留注。 */
-body[data-ap-day=white] .chat-area .day-label{background:rgba(255,255,255,.86);color:rgba(20,22,28,.78)}
-body[data-ap-day=ink] .chat-area .day-label{background:rgba(var(--ink-rgb),.82);color:#fff}
-body[data-ap-day=none] .chat-area .day-label{background:transparent;color:var(--muted)}
-body[data-ap-meta=black] .chat-area .message-meta{color:rgba(20,22,28,.92)}
-body[data-ap-meta=white] .chat-area .message-meta{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-body[data-ap-meta=gold] .chat-area .message-meta{color:#d4af37;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-body[data-ap-sys=white] .chat-area .sys-msg{background:rgba(255,255,255,.86);color:rgba(20,22,28,.78)}
-body[data-ap-sys=ink] .chat-area .sys-msg{background:rgba(var(--ink-rgb),.82);color:#fff}
-body[data-ap-sys=none] .chat-area .sys-msg{background:transparent;color:var(--muted)}
+body[data-ap-day=white] .chat-area .day-label,body[data-ap-day=white] .ap-preview .ap-prev-day{background:rgba(255,255,255,.86);color:rgba(20,22,28,.78)}
+body[data-ap-day=ink] .chat-area .day-label,body[data-ap-day=ink] .ap-preview .ap-prev-day{background:rgba(var(--ink-rgb),.82);color:#fff}
+body[data-ap-day=none] .chat-area .day-label,body[data-ap-day=none] .ap-preview .ap-prev-day{background:transparent;color:var(--muted)}
+body[data-ap-meta=black] .chat-area .message-meta,body[data-ap-meta=black] .ap-preview .ap-prev-meta{color:rgba(20,22,28,.92)}
+body[data-ap-meta=white] .chat-area .message-meta,body[data-ap-meta=white] .ap-preview .ap-prev-meta{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+body[data-ap-meta=gold] .chat-area .message-meta,body[data-ap-meta=gold] .ap-preview .ap-prev-meta{color:#d4af37;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+body[data-ap-sys=white] .chat-area .sys-msg,body[data-ap-sys=white] .ap-preview .ap-prev-sys{background:rgba(255,255,255,.86);color:rgba(20,22,28,.78)}
+body[data-ap-sys=ink] .chat-area .sys-msg,body[data-ap-sys=ink] .ap-preview .ap-prev-sys{background:rgba(var(--ink-rgb),.82);color:#fff}
+body[data-ap-sys=none] .chat-area .sys-msg,body[data-ap-sys=none] .ap-preview .ap-prev-sys{background:transparent;color:var(--muted)}
+
+/* 深色背景图下的自动可读性（2026-10-14，用户报「深色背景图片会有一些字看不见」）：
+   消息时间与选了「无底色」的时间轴／系统消息都是**不垫底的裸字**，auto 档颜色跟主题走（深灰）
+   ＝落在一张深色照片上就是墨字压墨图。这里只兜用户没显式表态的两类：meta 仍停在 auto（不写
+   data-ap-meta 属性）、day/sys 选了 none——转白字＋一道细影（与 data-ap-meta=white 那档同值），
+   深浅照片两头都站得住；用户显式选过档（white/ink/black/gold）就以他选的为准，不越权。
+   .ap-preview 镜像同条并上＝预览里看到的就是聊天页会发生的事。 */
+body[data-ap-bg=on]:not([data-ap-meta]) .chat-area .message-meta,body[data-ap-bg=on]:not([data-ap-meta]) .ap-preview .ap-prev-meta{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+body[data-ap-day=none][data-ap-bg=on] .chat-area .day-label,body[data-ap-day=none][data-ap-bg=on] .ap-preview .ap-prev-day{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+body[data-ap-sys=none][data-ap-bg=on] .chat-area .sys-msg,body[data-ap-sys=none][data-ap-bg=on] .ap-preview .ap-prev-sys{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 
 /* 桌面背景图（图与三根杆由 js/desk.js 写进 body：--desk-bg / --desk-veil / --desk-zoom / --desk-size）：
    默认只显示在桌面（会话列表视图）上，其他页面一律干净底；桌面美化台里那枚「所有页面」开关
@@ -3761,9 +3829,10 @@ body[data-avatar-shape="square"] .sys-msg-img{border-radius:12px}
 .ms-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .ms-ev{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 11px;border-radius:11px;background:var(--page);border:1px solid var(--line);text-align:left;cursor:pointer}
 .ms-ev:active{opacity:.75}
-.ms-ev-at{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 字号钉在 11px＝整页文字下限（conn_mood C7 的门）：10px 是加情绪轨迹卡时带进来的破例，2026-10-14 归队 */
+.ms-ev-at{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .ms-ev-mo{font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:baseline;gap:5px}
-.ms-ev-sec{font-style:normal;font-size:10.5px;font-weight:400;color:var(--muted)}
+.ms-ev-sec{font-style:normal;font-size:11px;font-weight:400;color:var(--muted)}
 /* 「她现在什么档」＝最深那枚（ink 实底），整节扫一眼先落在它上面 */
 .ms-ev.now{background:var(--ink);border-color:var(--ink)}
 .ms-ev.now .ms-ev-at{color:color-mix(in srgb,var(--panel) 72%,transparent)}
@@ -6182,15 +6251,15 @@ input,select,textarea{border-radius:12px}
           <div class="fold-bd"><div class="ap-row"><span>形状</span><div class="avatar-shape-row" style="margin:0"><button type="button" class="shape-btn" data-shape="circle" aria-label="圆形" title="圆形"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="rounded" aria-label="圆角" title="圆角"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="square" aria-label="方形" title="方形"><i aria-hidden="true"></i></button></div></div><p class="data-note">全站头像一起换形状（会话列表、聊天气泡旁、信箱都算）：圆形／圆角／方形，点一下立即生效、重启仍在。</p></div>
         </div>
 
-        <div class="setting-card fold" data-tab="desk" data-fold="chatap">
-          <button type="button" class="fold-hd"><span class="fold-ti">聊天外观</span><span class="fold-sum" id="sumChatAp"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape" data-sum="sumChatAp"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">这六项对每位 TA 都生效。想给某一位单独换气泡颜色或背景图，去聊天页右上角 →「TA 的设置」。上传过自定义字体文件时（下一张「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
-        </div>
-
+        <!-- 「聊天外观」整卡 2026-10-15 搬去「TA 的设置」页（html/view-mate.html 外观组）：气泡形状/行距/字体/
+             消息时间/发送按钮/磨砂这些全是聊天页的东西，用户「很多内容明明是【聊天设置】里的」。
+             本格只留全站主题类：桌面美化∶通透∶圆角∶头像形状∶全站字体∶字号∶全屏。
+             读写链没动：档位 chips 走 js/settings.js 的 data-ap-set document 委托（写全局 appearance），
+             卡搬到哪页都照常生效；回显仍由 renderApSettings→echoApSets 一处管。 -->
 
         <div class="setting-card fold" data-tab="desk" data-fold="font">
           <button type="button" class="fold-hd"><span class="fold-ti">全站字体</span><span class="fold-sum" id="sumFont"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="setting-subhead">字体文件</div><div class="ap-frow"><input type="file" id="customFontInput" accept=".ttf,.otf,.woff,.woff2" hidden><button type="button" class="ap-btn" id="customFontUpload">上传字体文件</button><span class="ap-status" id="customFontStatus">未加载</span><button type="button" class="ap-btn sm" id="customFontRemove">移除</button></div><div class="setting-subhead">字体 CSS</div><textarea id="customGlobalFontCssText" class="ap-ta" rows="3" spellcheck="false" placeholder="body{ font-family:'PingFang SC',sans-serif; }"></textarea><div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customGlobalFontCssApply">应用字体 CSS</button><button type="button" class="ap-btn" id="customGlobalFontCssClear">清空</button></div><div class="ap-frow"><span class="ap-status" id="customGlobalFontCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customGlobalFontCssRemove">移除</button></div><p class="data-note">全站一份，对每位 TA 都生效（2026-10-12 定档：不再按人各存一份）。上传的字体文件<b>连字体本体一起</b>存进数据里＝重启、导出再导入都带着走；传上之后上面「聊天外观」里「字体」那一档以文件为准。「字体 CSS」这一框是给全站直接写一段样式（比如指定系统里已装的字体），两样都设时它排在字体文件那条之后＝同一条规则上它说话。</p><p class="data-note">一枚字体文件限 5MB（全站上传同一条上限）。中文字体常见 5~15MB，超了会当场挡下并说明原因：这份存档要整个读进内存，塞一枚过大的字体＝每次开机都慢一截、导出的文件也撑爆。</p></div>
+          <div class="fold-bd"><div class="setting-subhead">字体文件</div><div class="ap-frow"><input type="file" id="customFontInput" accept=".ttf,.otf,.woff,.woff2" hidden><button type="button" class="ap-btn" id="customFontUpload">上传字体文件</button><span class="ap-status" id="customFontStatus">未加载</span><button type="button" class="ap-btn sm" id="customFontRemove">移除</button></div><div class="setting-subhead">字体 CSS</div><textarea id="customGlobalFontCssText" class="ap-ta" rows="3" spellcheck="false" placeholder="body{ font-family:'PingFang SC',sans-serif; }"></textarea><div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customGlobalFontCssApply">应用字体 CSS</button><button type="button" class="ap-btn" id="customGlobalFontCssClear">清空</button></div><div class="ap-frow"><span class="ap-status" id="customGlobalFontCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customGlobalFontCssRemove">移除</button></div><p class="data-note">全站一份，对每位 TA 都生效（2026-10-12 定档：不再按人各存一份）。上传的字体文件<b>连字体本体一起</b>存进数据里＝重启、导出再导入都带着走；传上之后「TA 的设置 → 外观 → 聊天外观」里「字体」那一档以文件为准。「字体 CSS」这一框是给全站直接写一段样式（比如指定系统里已装的字体），两样都设时它排在字体文件那条之后＝同一条规则上它说话。</p><p class="data-note">一枚字体文件限 5MB（全站上传同一条上限）。中文字体常见 5~15MB，超了会当场挡下并说明原因：这份存档要整个读进内存，塞一枚过大的字体＝每次开机都慢一截、导出的文件也撑爆。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="uifont">
@@ -6342,30 +6411,46 @@ input,select,textarea{border-radius:12px}
         <div class="setting-card fold" data-fold="ap">
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">美化设置</span><span class="fold-sum" id="mateApSum"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
+            <!-- 预览升级（2026-10-14）：顶栏条＋时间轴小签＋系统消息行＋每条气泡下的时间小字＋输入栏条
+                 一并画进来，与聊天页读同一份档（选档样式在 theme.css，.ap-preview 镜像并进同一批选择器；
+                 两根条的浓淡直接引 --head-trans／--comp-row-trans＝透明度两根滑杆拖到哪预览当场变）；
+                 传了背景图连图带「压暗」纱都垫进预览＝所见即所得，不用来回切页核对。 -->
             <div class="ap-preview" aria-hidden="true">
-              <div class="ap-prev-msg"><span class="ap-prev-av" id="apPrevPartner">O</span><span class="ap-prev-bub partner">像这样陪你聊天</span></div>
-              <div class="ap-prev-msg me"><span class="ap-prev-av" id="apPrevMe">我</span><span class="ap-prev-bub mine">好呀，收到啦</span></div>
+              <div class="ap-prev-head">TA</div>
+              <div class="ap-prev-day">今天</div>
+              <div class="ap-prev-sys">TA 更换了头像</div>
+              <div class="ap-prev-msg"><span class="ap-prev-av" id="apPrevPartner">O</span><span class="ap-prev-col"><span class="ap-prev-bub partner">像这样陪你聊天</span><span class="ap-prev-meta">21:30</span></span></div>
+              <div class="ap-prev-msg me"><span class="ap-prev-av" id="apPrevMe">我</span><span class="ap-prev-col"><span class="ap-prev-bub mine">好呀，收到啦</span><span class="ap-prev-meta">21:31</span></span></div>
+              <div class="ap-prev-comp"><span class="ap-prev-pill">说点什么…</span><i class="ap-prev-send"></i></div>
             </div>
             <div class="ap-sec">
               <div class="ap-sec-t">气泡</div>
-              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineColor"><button type="button" class="ap-dot" data-v="ink" style="--dot:#111" title="墨黑" aria-label="墨黑"></button><button type="button" class="ap-dot" data-v="gray" style="--dot:#8a8a8e" title="烟灰" aria-label="烟灰"></button><button type="button" class="ap-dot" data-v="forest" style="--dot:#3f3f43" title="炭灰" aria-label="炭灰"></button><button type="button" class="ap-dot" data-v="coffee" style="--dot:#8e8e92" title="浅灰" aria-label="浅灰"></button><button type="button" class="ap-dot" data-v="mist" style="--dot:#a9c3e2" title="雾蓝" aria-label="雾蓝"></button><button type="button" class="ap-dot" data-v="blossom" style="--dot:#e4bdc3" title="樱粉" aria-label="樱粉"></button><button type="button" class="ap-dot" data-v="mint" style="--dot:#bfe0cc" title="薄荷" aria-label="薄荷"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="雪白" aria-label="雪白"></button></div></div>
-              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerColor"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#111" title="墨黑" aria-label="墨黑"></button><button type="button" class="ap-dot" data-v="gray" style="--dot:#8a8a8e" title="烟灰" aria-label="烟灰"></button><button type="button" class="ap-dot" data-v="mist" style="--dot:#a9c3e2" title="雾蓝" aria-label="雾蓝"></button><button type="button" class="ap-dot" data-v="blossom" style="--dot:#e4bdc3" title="樱粉" aria-label="樱粉"></button><button type="button" class="ap-dot" data-v="mint" style="--dot:#bfe0cc" title="薄荷" aria-label="薄荷"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="雪白" aria-label="雪白"></button></div></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineColor"><button type="button" class="ap-dot" data-v="ink" style="--dot:#111" title="墨黑" aria-label="墨黑"></button><button type="button" class="ap-dot" data-v="gray" style="--dot:#8a8a8e" title="烟灰" aria-label="烟灰"></button><button type="button" class="ap-dot" data-v="forest" style="--dot:#3f3f43" title="炭灰" aria-label="炭灰"></button><button type="button" class="ap-dot" data-v="coffee" style="--dot:#8e8e92" title="浅灰" aria-label="浅灰"></button><button type="button" class="ap-dot" data-v="mist" style="--dot:#a9c3e2" title="雾蓝" aria-label="雾蓝"></button><button type="button" class="ap-dot" data-v="blossom" style="--dot:#e4bdc3" title="樱粉" aria-label="樱粉"></button><button type="button" class="ap-dot" data-v="mint" style="--dot:#bfe0cc" title="薄荷" aria-label="薄荷"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="雪白" aria-label="雪白"></button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerColor"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#111" title="墨黑" aria-label="墨黑"></button><button type="button" class="ap-dot" data-v="gray" style="--dot:#8a8a8e" title="烟灰" aria-label="烟灰"></button><button type="button" class="ap-dot" data-v="mist" style="--dot:#a9c3e2" title="雾蓝" aria-label="雾蓝"></button><button type="button" class="ap-dot" data-v="blossom" style="--dot:#e4bdc3" title="樱粉" aria-label="樱粉"></button><button type="button" class="ap-dot" data-v="mint" style="--dot:#bfe0cc" title="薄荷" aria-label="薄荷"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="雪白" aria-label="雪白"></button></div><span class="ap-dotname"></span></div>
             </div>
             <div class="ap-sec">
               <div class="ap-sec-t">文字</div>
-              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div></div>
-              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
             </div>
             <div class="ap-sec">
               <div class="ap-sec-t">时间与提示</div>
-              <div class="ap-dotrow"><span class="ap-dotlab wide">时间轴</span><div class="ap-dots" id="apDayStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div></div>
-              <div class="ap-dotrow"><span class="ap-dotlab wide">消息时间</span><div class="ap-dots" id="apMetaColor"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随主题" aria-label="跟随主题">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div></div>
-              <div class="ap-dotrow"><span class="ap-dotlab wide">系统消息</span><div class="ap-dots" id="apSysStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div></div>
+              <div class="ap-dotrow"><span class="ap-dotlab wide">时间轴</span><div class="ap-dots" id="apDayStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab wide">时间颜色</span><div class="ap-dots" id="apMetaColor"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随主题" aria-label="跟随主题">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab wide">系统消息</span><div class="ap-dots" id="apSysStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div><span class="ap-dotname"></span></div>
             </div>
             <div class="ap-hr"></div>
             <div class="ap-sec">
               <div class="ap-sec-t">聊天背景</div>
               <div class="ap-bgrow"><div class="ap-bgthumb" id="apBgPreview">未设置背景图</div><div class="ap-bgbtns"><button type="button" class="ap-btn pri" id="apBgUpload">选择图片</button><button type="button" class="ap-btn" id="apBgClear">清除</button></div></div>
+              <!-- 「压暗」那根杆（2026-10-14）：照片太亮太花抢字时给整张图垫一层墨纱，0＝不垫。
+                   跟两枚透明度杆同一个口径——只在**这一位传了背景图**后才出现（没图时拖着不变＝死杆）；
+                   消息区与输入栏一起压（css/theme.css .chat-area 与 css/chat.css .composer 同一根 --chat-veil），
+                   上面那张预览也垫同一层，拖到哪预览当场变。 -->
+              <div id="apDimWrap" hidden>
+                <label class="ap-knob"><span>压暗</span><input type="range" id="apBgVeil" min="0" max="100" step="1" aria-label="背景压暗"><output id="apBgVeilOut">0%</output></label>
+                <p class="data-note">照片太亮太花抢字时往右拖：给整张背景图垫一层墨纱，0 是不压。消息区和输入栏一起压暗，配「消息时间＝白色」最经用。</p>
+              </div>
             </div>
             <!-- 两枚透明度滑杆：整节只在**这一位传了聊天背景图之后**才出现（没图时这两行背后只有画布色，
                  拖到底也看不出差别＝桌面美化台那根虚化杆的死法，BUGS #071 二批；本仓不留一枚「看着能调实则不变」的控件）。
@@ -6386,8 +6471,26 @@ input,select,textarea{border-radius:12px}
               <textarea id="customBubbleCssText" class="ap-ta" rows="3" spellcheck="false" placeholder=".message .bubble{ border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.18); }"></textarea>
               <div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customBubbleCssApply">应用气泡 CSS</button><button type="button" class="ap-btn" id="customBubbleCssClear">清空</button></div>
               <div class="ap-frow"><span class="ap-status" id="customBubbleCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customBubbleCssRemove">移除</button></div>
+              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡。写错不生效也不会弄坏页面，清空即可回头。</p>
             </div>
+            <div class="ap-hr"></div>
+            <!-- 「恢复默认」（2026-10-14）：这一位 TA 的外观档没有一键回头路，八格点回来太苦。
+                 两段式确认（同 player.js「再点一次就清」那一族，全仓不用原生 confirm）：
+                 点一下改口「再点一次确认」，3 秒不点自动回落。只清 chatAppearance[activeChat] 一本，
+                 其他 TA 与全局设置不动；_caSh() 下次写入时会按 chatAppearanceDefault 重新垫底。 -->
+            <div class="ap-resetrow"><button type="button" class="ap-btn" id="apResetAll">恢复本会话默认外观</button></div>
+            <p class="data-note">只清这一位 TA 的：气泡配色、文字、时间样式、背景图、压暗与透明度、气泡 CSS 一起回出厂。其他 TA 与全局设置不受影响。</p>
           </div>
+        </div>
+
+        <!-- 聊天外观（2026-10-15 自 设置 → 外观 整卡搬来）：气泡形状/行距/字体/消息时间/发送按钮/顶栏磨砂
+             全是聊天页的东西，用户「很多内容明明是【聊天设置】里的」。读写链一字未动：档位 chips 仍走
+             js/settings.js 那个 data-ap-set document 委托——写的是全局 data.appearance＝这七项全站一份、
+             对每位 TA 生效（某一位单独的气泡颜色/背景图仍归上一张「美化设置」）；回显由
+             renderApSettings→echoApSets 一处管（renderProfile 进本页就会走到）。 -->
+        <div class="setting-card fold" data-fold="chatap">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天外观</span><span class="fold-sum" id="sumChatAp"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape" data-sum="sumChatAp"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">这七项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
         </div>
           </div>
         </div>
@@ -6569,6 +6672,23 @@ input,select,textarea{border-radius:12px}
     <p class="bk-body">聊天记录、字卡和信件只存在这台设备的浏览器里——清缓存、换浏览器、重装系统，都会让它们一起消失。花十秒导出一份收好，换设备也找得回来。</p>
     <div class="bk-acts"><button type="button" class="bk-btn bk-later" id="bkLater">稍后再说</button><button type="button" class="bk-btn bk-go" id="bkGo">去备份</button></div>
     <div class="bk-note">导出的是一个 JSON 文件，建议另存到网盘或电脑上</div>
+  </div>
+</div>
+
+<!-- updateRemind：「线上有新版」应用内弹窗（BUGS #410，js/update-check.js 触发）。
+     开屏公告里那行 #ageGateUpdate（#331）只在进入前看得见；这一枚管「已经进来了才部署新版」的场合：
+     周期复查（回前台＋每 30min）命中新版才弹，绝不自动重载（mochi #279 那族教训）。
+     「立即刷新」走 update-check.js 的 doRefresh（先落待换版标记 ordinal-upd-wait 再 reload＝
+     刷完回来能验证有没有真的换到版）；「稍后」只收弹窗＋本会话不再弹（内存布尔，不落存储）。
+     样式在 css/base.css「新版提醒弹窗」那一节。挂在 app-shell 末尾＝与 backupRemind 同址。 -->
+<div class="up-mask" id="updateRemind" hidden>
+  <div class="up-panel" role="alertdialog" aria-modal="true" aria-labelledby="upTitle">
+    <div class="up-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8 8 0 1 0-2.2 6.2"/><path d="M20 4.5v7h-7"/></svg></div>
+    <div class="up-title" id="upTitle">发现新版本</div>
+    <div class="up-when" id="upWhen"></div>
+    <p class="up-body">这一版之后线上又更新了一些东西。刷新一下就进新版，只要几秒；聊天、字卡这些数据都存在本机，不会丢。</p>
+    <div class="up-acts"><button type="button" class="up-btn up-later" id="upLater">稍后</button><button type="button" class="up-btn up-go" id="upGo">立即刷新</button></div>
+    <div class="up-note">刷新会重新加载页面，正在看的这一屏会回到开头</div>
   </div>
 </div>
 
@@ -7766,6 +7886,9 @@ const defaults = {
     // （掐取在 js/settings.js 的 applyAppearance 一处）。0 出厂＝用户报的那句「顶部栏半透明能看到聊天消息」
     // 的默认解，也意味着这不再是一枚「档位」而是一根杆——旧档里那三个字符串由 js/db.js 的 _caVeil 认成数字。
     headVeil: 0, compVeil: 0,
+    // 背景压暗（0~100，js/db.js _caVeil 同杆夹取）：给整张背景图垫一层墨纱（--chat-veil），
+    // 照片太亮太花抢字时用；0＝不垫＝与没这根杆时逐字节相同。也只在传过背景图时生效（同上两杆口径）
+    bgVeil: 0,
     customBubbleCss: ''
   },
   chatAppearance: {},
@@ -10292,7 +10415,7 @@ function ensureData(raw) {
     if (!id) return;
     if (!raw.chatAppearance[id] || typeof raw.chatAppearance[id] !== 'object') raw.chatAppearance[id] = {};
     const o = raw.chatAppearance[id];
-    o.headVeil = _caVeil(o.headVeil); o.compVeil = _caVeil(o.compVeil);
+    o.headVeil = _caVeil(o.headVeil); o.compVeil = _caVeil(o.compVeil); o.bgVeil = _caVeil(o.bgVeil);
     for (const k of Object.keys(cad)) if (typeof o[k] !== typeof cad[k]) o[k] = cad[k];
     for (const k of Object.keys(_caEnums)) if (_caEnums[k].indexOf(o[k]) < 0) o[k] = cad[k];
   };
@@ -30148,6 +30271,8 @@ function applyAppearance() {
   // theme.css 那条「输入栏不能透」与门 B10 钉的都是这件事）——滑到 100 也只是让图从带子里透上来，
   // 不让用户把自己正在打的那行字垫到图上。
   b.style.setProperty('--comp-row-trans', Math.min(_ct, 28));
+  // 背景压暗（bgVeil，0~100）：同一处掐「有没有图」——没图时恒 0，墨纱一层不垫（CSS 那头 var 缺省也是 0）
+  b.style.setProperty('--chat-veil', a.chatBg ? a.bgVeil : 0);
   // 0 档不挂这个属性＝css/chat.css 那条 backdrop-filter 整条不输出：完全不透的一栏糊与不糊同色，
   // 常驻一层磨砂等于白付一趟合成（#071·#096 那条滚动发热）。
   if (_vt > 0) b.dataset.apHeadveil = 'on'; else delete b.dataset.apHeadveil;
@@ -30553,15 +30678,29 @@ function renderPyPunctChips() {
     if (!chip) return;
     _caSh()[key] = chip.dataset.v;
     grid.querySelectorAll('.ap-dot').forEach(c => c.classList.toggle('active', c === chip));
+    echoApDotNames();
     applyAppearance();
     await save();
   });
 });
 
-// 两枚透明度滑杆（美化设置里那一节，BUGS #314 二批）：拖到哪就存到哪，写的是【这一位 TA 自己那份】
-// （_caSh() 与上面那排 chips 同一个存储体，不留第二条写入路径）。不弹 toast——底下那两栏当场跟着变就是反馈。
+// 色点行右端的档名读数（2026-10-14）：八枚圆点一枚模样，选中了哪档靠行尾这行小字说。
+// 档名不另存一份——就读选中那枚的 title（墨黑/雾蓝/跟随主题…），两处不同源必有一处先漂。
+function echoApDotNames() {
+  ['#apMineColor', '#apPartnerColor', '#apMineText', '#apPartnerText', '#apDayStyle', '#apMetaColor', '#apSysStyle'].forEach(sel => {
+    const g = $(sel);
+    if (!g) return;
+    const d = g.querySelector('.ap-dot.active');
+    const out = g.parentElement.querySelector('.ap-dotname');
+    if (out) out.textContent = d ? (d.title || '') : '';
+  });
+}
+
+// 三根滑杆（聊天栏/输入栏透明度＋背景压暗，BUGS #314 二批与 2026-10-14 压暗那批）：拖到哪就存到哪，
+// 写的是【这一位 TA 自己那份】（_caSh() 与上面那排 chips 同一个存储体，不留第二条写入路径）。
+// 不弹 toast——底下那两栏当场跟着变就是反馈。
 // 区间只由 db._caVeil 一处夹（这里只挡「读数不是个数」这一种脏值，不重复夹一遍上下限＝两处必有一处先漂）。
-[['#apHeadVeil', 'headVeil', '#apHeadVeilOut'], ['#apCompVeil', 'compVeil', '#apCompVeilOut']].forEach(([sel, key, outSel]) => {
+[['#apHeadVeil', 'headVeil', '#apHeadVeilOut'], ['#apCompVeil', 'compVeil', '#apCompVeilOut'], ['#apBgVeil', 'bgVeil', '#apBgVeilOut']].forEach(([sel, key, outSel]) => {
   const el = $(sel);
   if (!el) return;
   el.addEventListener('input', () => {
@@ -30596,6 +30735,32 @@ $('#apBgClear').onclick = async () => {
   renderApSettings();
   await save();
 };
+
+// 「恢复本会话默认外观」（2026-10-14）：这一位 TA 的外观档此前没有一键回头路。
+// 两段式确认（player.js「再点一次就清」同族，全仓不用原生 confirm）：点一下改口，
+// 3 秒不点自动回落。只清 chatAppearance[activeChat] 一本，其他 TA 与全局设置不动；
+// _caSh() 下次写入会按 chatAppearanceDefault 重新垫底，db.ensureData 的 _caFill 也认这本缺页。
+const AP_RESET_LABEL = '恢复本会话默认外观';
+let _apResetArmed = false, _apResetTimer = 0;
+$('#apResetAll').addEventListener('click', async () => {
+  const btn = $('#apResetAll');
+  if (!_apResetArmed) {
+    _apResetArmed = true;
+    btn.textContent = '再点一次确认恢复';
+    clearTimeout(_apResetTimer);
+    _apResetTimer = setTimeout(() => { _apResetArmed = false; btn.textContent = AP_RESET_LABEL; }, 3000);
+    return;
+  }
+  clearTimeout(_apResetTimer);
+  _apResetArmed = false;
+  btn.textContent = AP_RESET_LABEL;
+  if (data.chatAppearance) delete data.chatAppearance[data.activeChat];
+  applyAppearance();
+  renderApSettings();
+  await save();
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
+  showToast('已恢复默认外观');
+});
 
 // 桌面前台弹窗开关：即点即存（js/deskpop.js deskPopEnabled 读取）
 $('#deskPopupToggle').addEventListener('change', async e => {
@@ -30874,6 +31039,11 @@ function renderApSettings() {
   const _rng = (sel, outSel, v) => { const e = $(sel); if (e) e.value = v; const o = $(outSel); if (o) o.textContent = v + '%'; };
   _rng('#apHeadVeil', '#apHeadVeilOut', a.headVeil);
   _rng('#apCompVeil', '#apCompVeilOut', a.compVeil);
+  // 「压暗」杆：同一口径——没图时整块收着（含那行说明小字），有图才把存的值填回杆与读数
+  _rng('#apBgVeil', '#apBgVeilOut', a.bgVeil);
+  const _dim = $('#apDimWrap');
+  if (_dim) _dim.hidden = !a.chatBg;
+  echoApDotNames();
   const _chk = (id, v) => { const e = $(id); if (e) e.checked = !!v; };
   _chk('#bgKeepAlive', a.bgKeepAlive);
   _chk('#bgNotify', a.bgNotify);
@@ -31945,8 +32115,9 @@ function renderFoldSummaries() {
   // 而且这一件本身只在传过背景图时生效（没图时那两枚滑杆压根不出现），摘要报一个屏上看不见的数＝一句假话，
   // 所以把「有图」也当成这道闸的一部分。群聊那一本没有这些键（_caFill 只补单聊与活跃会话），undefined 折成 0。
   const _veil = v => (ca.chatBg && Number(v) > 0 ? Math.round(Number(v)) + '%' : '');
-  const _vh = _veil(ca.headVeil), _vc = _veil(ca.compVeil);
-  const _veilTxt = (_vh ? '聊天栏' + _vh : '') + (_vh && _vc ? '·' : '') + (_vc ? '输入栏' + _vc : '');
+  const _vh = _veil(ca.headVeil), _vc = _veil(ca.compVeil), _vd = _veil(ca.bgVeil);
+  let _veilTxt = (_vh ? '聊天栏' + _vh : '') + (_vh && _vc ? '·' : '') + (_vc ? '输入栏' + _vc : '');
+  if (_vd) _veilTxt += (_veilTxt ? '·' : '') + '压暗' + _vd;
   _set('#mateApSum', '我方 ' + _dotLabel('#apMineColor') + ' · 对方 ' + _dotLabel('#apPartnerColor') + (_apAlt ? ' · 提示已调' : '') + (ca.chatBg ? ' · 有背景图' : '') + (_veilTxt ? ' · ' + _veilTxt : ''));
   const _grp = (typeof _isGroupChat === 'function') && _isGroupChat();
   // TA 自己标那两枚问签的概率（BUGS #350）出厂 0＝什么都不报（同上面那两枚薄纱档那条：默认档不上摘要），
@@ -37581,10 +37752,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.3.8';
+window.APP_VER = 'v9.3.9';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.3.8' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.3.9' + s; }
 
 (async function init() {
   try {
@@ -38436,41 +38607,142 @@ function env(name) {
   });
 
 })();
-// ===== 开屏「线上有新版」提醒（mochi 的同名机制移植：比一次线上版本号，提醒刷新进入新版）=====
+// ===== 「线上有新版」检测＋提醒（BUGS #331 开屏那一行 ＋ #410 周期复查·应用内弹窗·待换版验证闭环）=====
 // 宿主＝开屏公告页那一行（html/age-gate.html 的 #ageGateUpdate）——选这一处而不是应用内浮条：
 // 本站的开屏公告每次打开都要重读一遍（BUGS #258），所以这一条每次进入都看得见，又不打断正在进行的会话。
-// 刻意不做自动重载／待换版登记／保活闸门（mochi #279·#965·#992 那一族）：那些防的是「用着用着页面自己重开」，
+// 刻意不做自动重载／待换版登记／保活闸门（mochi #279·#965·#992 那族）：那些防的是「用着用着页面自己重开」，
 // 而这一条长在用户还没进应用的那一刻，且只有他本人点下去才换版＝没有可打断的东西。
 // 也不移植 mochi 的「先 PRECACHE_NOW 预取新 index 再 reload」：本站 sw.js 对导航与 .json 都是
 // network-first＋cache:'reload'（旧 SW 也照拉线上），刷新必然拿最新那一份，那套是给 cache-first 入口兜底的。
 // version.json 由 tools/assemble.py 每次出包写（内容＝这一页自己的 window.APP_VER）；apk 壳里不随包，
 // 且 file:// 双击与包内都拿不到「线上新版」——两条都在下面第一道闸里静默跳过，不留一条必失败的请求。
+// —— #410 补的三块（#331 的行与两条哨兵一字未动）——
+// ① 周期复查：回前台（距上次 >5min）＋每 30min 定时（仅页面可见）。开屏首查照旧，只有复查命中才弹应用内
+//    弹窗 #updateRemind（html/sheet.html，样式 css/base.css「新版提醒弹窗」节）——「稍后」＝本会话不再弹。
+// ② 待换版标记 localStorage['ordinal-upd-wait']：点刷新前先落 {from∶want∶count}，新页首查「已是最新」才清。
+//    没有它，「点了刷新却还在旧包」没有任何证据可查＝假进入无声。
+// ③ 刷新验证三态：回来仍是旧版→那行改口「刚才刷新没换到」（连败两轮→「换址强刷／关浏览器」）；
+//    版本号都拉不到→「网络不稳，没法确认版本」（#410 假进入的主根因＝失败被静默吞掉）；已是最新→清标记静默进。
 (function () {
   if (!/^https?:$/.test(location.protocol)) return;
   const wrap = document.getElementById('ageGateUpd'), btn = document.getElementById('ageGateUpdate');
   if (!wrap || !btn) return;
+  const WAIT_KEY = 'ordinal-upd-wait';
+  const WAIT_TTL = 86400000;          // 待换版标记一天过期＝死档自清
+  const RETRY_LIMIT = 2;              // 刷新连败两轮后那行改口收手，不再无限「再试一次」
+  const RECHECK_GAP = 5 * 60 * 1000;  // 回前台复查的最小间隔（省流量，version.json 不到 100B 但也不必频发）
+  let lastCheckTs = 0;
+  let popupDone = false;              // 本会话已弹过弹窗＝不再弹（那行照旧更新）
+  let failedReloads = 0;              // 刚才的刷新没换到版的次数（从待换版标记读来）
+
   // 版号是 X.Y.Z 三段（tools/assemble.py 的 bump 就这么拼），折成一个数才能分「更新／更旧」两向：
   // 只认线上更新这一向——线上更旧（本机是未发布的调试包）或相等时提示刷新是假话，刷完还是这一版。
   const num = v => { const m = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(String(v || '')); return m ? (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]) : 0; };
-  const check = function () {
-    fetch('./version.json?ts=' + Date.now(), { cache: 'reload' }).then(function (r) {
-      return r.ok ? r.json() : null;
-    }).then(function (d) {
+
+  function readWait() {
+    try {
+      const w = JSON.parse(localStorage.getItem(WAIT_KEY) || 'null');
+      if (w && w.from && w.want && Date.now() - w.ts < WAIT_TTL) return w;
+    } catch (e) {}
+    clearWait();
+    return null;
+  }
+  function clearWait() { try { localStorage.removeItem(WAIT_KEY); } catch (e) {} }
+  function writeWait(want, count) {
+    try { localStorage.setItem(WAIT_KEY, JSON.stringify({ from: window.APP_VER, want: want, count: count || 0, ts: Date.now() })); } catch (e) {}
+  }
+
+  function fetchVer() {
+    return fetch('./version.json?ts=' + Date.now(), { cache: 'reload' }).then(function (r) { return r.ok ? r.json() : null; });
+  }
+
+  // 层位卫生（同 #365 备份弹窗那族）：开屏门／小测门／别的弹窗还开着、页面在后台＝等，不让开就不弹。
+  function gateUp() {
+    const g = document.getElementById('ageGate');
+    return !!(g && g.classList.contains('on') && !g.classList.contains('gone'));
+  }
+  function layerBusy() {
+    try { if (typeof _bkLayerBusy === 'function' && _bkLayerBusy()) return true; } catch (e) {}
+    return false;
+  }
+
+  function showRow(text) { btn.textContent = text; wrap.hidden = false; }
+
+  function askPopup(ver, tries) {
+    if (popupDone) return;
+    const mask = document.getElementById('updateRemind');
+    if (!mask) return;
+    if ((gateUp() || layerBusy() || document.hidden) && (tries || 0) < 20) { setTimeout(function () { askPopup(ver, (tries || 0) + 1); }, 1500); return; }
+    if (gateUp() || layerBusy() || document.hidden) return;   // 30s 没让开＝本轮不弹（那行还在，不丢信息）
+    const when = document.getElementById('upWhen');
+    if (when) when.textContent = '最新 ' + ver + ' · 这一页还是 ' + window.APP_VER;
+    const go = document.getElementById('upGo'), later = document.getElementById('upLater');
+    if (go) go.onclick = function () { mask.hidden = true; doRefresh(); };
+    if (later) later.onclick = function () { mask.hidden = true; popupDone = true; };
+    mask.hidden = false;
+    popupDone = true;
+  }
+
+  // 刷新进入新版：先再确认一次线上仍是新版再落待换版标记（可能用户刚刷过、或线上已回滚）；
+  // 确认失败也照刷＝用户点了就是要点。上一次刷新已经失败过＝换址导航（?v= 时间戳）把 HTTP 缓存
+  // 与 SW 缓存全部绕开（GitHub Pages 文件本身有 10 分钟边缘缓存，这是最硬的穿透手段）。
+  function doRefresh() {
+    fetchVer().then(function (d) {
+      const remote = num(d && d.ver);
+      if (remote && remote > num(window.APP_VER)) writeWait(d.ver, failedReloads);
+    }).catch(function () {}).then(function () {
+      if (failedReloads > 0) { try { location.replace('./?v=' + Date.now()); return; } catch (e) {} }
+      try { location.reload(); } catch (e) {}
+    });
+  }
+
+  function check(isRecheck) {
+    lastCheckTs = Date.now();
+    const pending = readWait();
+    if (pending) failedReloads = pending.count || 0;
+    fetchVer().then(function (d) {
       const remote = num(d && d.ver), mine = num(window.APP_VER);
-      if (!remote || !mine || remote <= mine) return;
-      window.__updStale = true;   // 后台通知自检读它（那一段把「先升级」排在排查步骤最前）
-      btn.textContent = '线上已有新版 ' + d.ver + '（这一页是 ' + window.APP_VER + '）· 点按刷新进入';
-      wrap.hidden = false;
+      if (!remote || !mine || remote <= mine) {
+        // 已是最新（或拿不到可比较的号）＝换版成功，清掉待换版标记；没标记时维持 #331 的静默。
+        failedReloads = 0;
+        clearWait();
+        return;
+      }
+      window.__updStale = true;
+      if (pending) {
+        // 刚点过刷新回来还是旧版＝那次刷新没拿到新包（弱网下 SW 对导航 network-first 失败兜底回旧缓存）。
+        failedReloads += 1;
+        writeWait(d.ver, failedReloads);
+        if (failedReloads >= RETRY_LIMIT) showRow('刷了两轮还是旧包（网络不稳）· 点按换址强刷，或彻底关掉浏览器再重开');
+        else showRow('刚才刷新没换到新版 · 线上仍是 ' + d.ver + ' · 点按再试');
+      } else {
+        showRow('线上已有新版 ' + d.ver + '（这一页是 ' + window.APP_VER + '）· 点按刷新进入');
+        if (isRecheck) askPopup(d.ver);
+      }
     }).catch(function () {
-      // 线上取不到＝静默：这一页没有「线上新版」可说，也不拿一次失败的 fetch 去吓用户（本站无后端，重试无意义）。
+      if (pending) {
+        // 用户明确点过刷新却没换到版，这次连版本号都拉不到＝不再静默（假进入的主根因是失败被吞）。
+        showRow('网络不稳，暂时没法确认版本 · 连上网后再点一次刷新');
+      }
+      // 线上取不到且没有待换版＝静默：这一页没有「线上新版」可说，也不拿一次失败的 fetch 去吓用户。
     }).then(function () {
       // 无论哪条路都留一个「这一发查完了」的读数：hidden 在「查过且相等」与「压根没查完」两态下长得一模一样，
       // 门不钉这一步就会把「没量到」读成「已是最新」（本仓「0 也可能是空转」那一族）。
       window.__updChecked = true;
     });
-  };
-  btn.onclick = function () { try { location.reload(); } catch (e) {} };
-  check();
+  }
+
+  btn.onclick = function () { doRefresh(); };
+  check(false);
+
+  // #410 周期复查：回前台（距上次 >5min）＋每 30min 定时（仅页面可见时）。只有复查命中才弹应用内弹窗。
+  function recheck() {
+    if (document.hidden) return;
+    if (Date.now() - lastCheckTs < RECHECK_GAP) return;
+    check(true);
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) recheck(); });
+  setInterval(recheck, 30 * 60 * 1000);
 })();
 // FIX 2026-09-01 #007 file:// 协议下 SW 注册被拒绝且未捕获，控制台抛 5 个 SecurityError（BUGS.md #007）
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
