@@ -115,8 +115,12 @@ body[data-view=more]     .tabbar{display:flex}
 @media (prefers-reduced-motion:reduce){.tab-item svg{transition:none}}
 /* 主视图列表在 tab 栏上方多留一口呼吸（滚动容器内加 padding；tab 是文档流里的 flex 项，不遮内容）。
    信箱不在此列：它现在是下钻页（没有 tab 栏），底部需求是
-   **让开右下那枚 FAB**（52px + 22px 底距），归 css/mailbox.css 自管（见 BUGS #064 病灶 F）。 */
-body[data-view=chats]   .chats-list,
+   **让开右下那枚 FAB**（52px + 22px 底距），归 css/mailbox.css 自管（见 BUGS #064 病灶 F）。
+   ⚠ 首页会话卡 2026-10-14 从这条共享规则里**摘出**（BUGS #417）：`.chats-list` 是一张自带
+   面∶边∶圆角∶overflow:hidden 的容器卡（css/chats.css:18），这条 padding 落在卡**里面**＝
+   卡底多出一截空白（用户圈图报「丑」）；卡与 tab 栏之间的呼吸由它自己的
+   `margin:0 16px 20px` 那口 20px 承担，一件事不给两份。
+   cards 那半边留着不动：`.group-list` 是裸容器没有面（css/cards.css:15），padding 不可见、无此病。 */
 body[data-view=cards]   .group-list{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 body[data-view=settings] .settings-list{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 
@@ -191,7 +195,7 @@ body[data-view=settings] .settings-list{padding-bottom:calc(20px + env(safe-area
    实底主键引 --ink/--page（同 css/player.css 那枚 .pl-btn.pri 的口径，不写死 #fff）。 */
 .bk-mask{position:fixed;inset:0;z-index:130;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:22px}
 .bk-mask[hidden]{display:none}
-.bk-panel{width:min(330px,100%);max-height:calc(100dvh - 44px);overflow-y:auto;background:var(--surface);border-radius:var(--r-card);padding:24px 22px 18px;text-align:center;animation:bkIn .28s ease}
+.bk-panel{width:min(330px,100%);max-height:calc(100vh - 44px);max-height:calc(100dvh - 44px);overflow-y:auto;background:var(--surface);border-radius:var(--r-card);padding:24px 22px 18px;text-align:center;animation:bkIn .28s ease}
 @keyframes bkIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 .bk-badge{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;background:var(--well);display:flex;align-items:center;justify-content:center;color:var(--ink)}
 .bk-badge svg{width:23px;height:23px}
@@ -215,7 +219,7 @@ body[data-view=settings] .settings-list{padding-bottom:calc(20px + env(safe-area
    触发与「待换版验证闭环」全在 js/update-check.js（BUGS #410）。 */
 .up-mask{position:fixed;inset:0;z-index:130;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:22px}
 .up-mask[hidden]{display:none}
-.up-panel{width:min(330px,100%);max-height:calc(100dvh - 44px);overflow-y:auto;background:var(--surface);border-radius:var(--r-card);padding:24px 22px 18px;text-align:center;animation:upIn .28s ease}
+.up-panel{width:min(330px,100%);max-height:calc(100vh - 44px);max-height:calc(100dvh - 44px);overflow-y:auto;background:var(--surface);border-radius:var(--r-card);padding:24px 22px 18px;text-align:center;animation:upIn .28s ease}
 @keyframes upIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 .up-badge{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;background:var(--well);display:flex;align-items:center;justify-content:center;color:var(--ink)}
 .up-badge svg{width:23px;height:23px}
@@ -3035,6 +3039,17 @@ body[data-ap-fontfamily=serif] .app-shell{font-family:Georgia,"Times New Roman",
 body[data-ap-fontfamily=round] .app-shell{font-family:-apple-system,"PingFang SC","Hiragino Maru Gothic ProN","Yuanti SC","Microsoft YaHei UI",sans-serif}
 body[data-ap-fontfamily=custom] .app-shell{font-family:'ordinal-custom',-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
 
+/* 聊天气泡字体与字号（这一位 TA 各一份，2026-10-15 新增，入口在「TA 的设置 → 美化设置」）：
+   字体 inherit／字号 medium 是默认档＝不写属性＝零输出（写手在 js/settings.js applyAppearance）。
+   作用面＝这一本的聊天气泡正文（.chat-area .bubble；.chat-area 就是 #messageList 本体）——
+   字体直接落在 .bubble 上，天然压过 .app-shell 那条继承来的全局字族；recalled 那枚小签自带 12px 不跟字号档。
+   预览镜像并进同一批选择器（同 tail 档那条先例，调档时卡里的小气泡当场变）。 */
+body[data-ap-chatfont=serif] .chat-area .bubble,body[data-ap-chatfont=serif] .ap-preview .ap-prev-bub{font-family:Georgia,"Times New Roman","Songti SC","SimSun",serif}
+body[data-ap-chatfont=round] .chat-area .bubble,body[data-ap-chatfont=round] .ap-preview .ap-prev-bub{font-family:-apple-system,"PingFang SC","Hiragino Maru Gothic ProN","Yuanti SC","Microsoft YaHei UI",sans-serif}
+body[data-ap-chatfont=system] .chat-area .bubble,body[data-ap-chatfont=system] .ap-preview .ap-prev-bub{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+body[data-ap-chatfs=small] .chat-area .bubble:not(.recalled),body[data-ap-chatfs=small] .ap-preview .ap-prev-bub{font-size:13px;line-height:1.6}
+body[data-ap-chatfs=large] .chat-area .bubble:not(.recalled),body[data-ap-chatfs=large] .ap-preview .ap-prev-bub{font-size:17px;line-height:1.5}
+
 /* 毛玻璃：顶栏+输入栏半透明模糊。
    顶栏不直接铺色：底色改挂 ::before，随 --surface 走（功能页 .topbar 与聊天页 .chat-head 共用这一条纱，桌面视图两者都不显示）。
    厚度阶梯记档（2026-10-05 用户「聊天里顶部栏还是有莫名其妙的光影」，量具 tools/_probe_veil_ladder.js ∶
@@ -4566,7 +4581,10 @@ html.gate-early #ageGate{display:flex}
 html.gate-early #ageGate.on{animation:none}
 #ageGate.gone{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s ease,visibility .45s ease}
 @keyframes agIn{from{opacity:0}to{opacity:1}}
-.ag-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* BUGS #419：flex:1 后面必须跟 min-height:0——WebKit（iOS Safari／国产壳的老内核）不给「overflow 滚动容器自动最小尺寸归零」这条规格豁免，
+   漏写＝.ag-scroll 被内容撑到全高、整页又钉死在 fixed 容器里，滚不动也点不到：底部的勾选行与「确认进入」全被推到屏幕外（某些手机型号高发，
+   桌面 Chrome 吃豁免所以一直复现不了）。同族课：BUGS #204、#339；quiz-gate.css 的 .qg-scroll 一直是正形 */
+.ag-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .ag-inner{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 34px) 22px calc(24px + env(safe-area-inset-bottom,0px))}
 .ag-brand{font-size:11px;letter-spacing:4px;color:var(--muted);margin-bottom:8px}
 /* 版号（#ageGateVer）：最顶一行，一眼核对线上部署是不是新版。运行时读 window.APP_VER（js/app.js 启动时填），
@@ -5625,6 +5643,142 @@ input,select,textarea{border-radius:12px}
 /* 「减少动态」那一档：弹簧撤掉（回弹本身就是动效），塌下去的幅度留着＝按住仍要看得见（不靠动效也能反馈，
    同 chat.css 那条 .message.animate 的降级口径：关动画、不关反馈） */
 @media (prefers-reduced-motion:reduce){.bubble,.card-item,.poke-card,.as-badge-src,.voice-speak,.ann-hero,.ag-enter,.qg-enter,.fab,.soft-btn,.primary-btn,.cf-min-btn,.chat-row,.mailbox-row,.wish-row,.search-row,.hub-row,.more-line,.bind-row,.cards-pick-row,.member-pick,.av-ledger-item,.ask-hist-item,.ms-ev,.fold-hd,.set-entry-row,.cards-menu-item,.sticker-grid img,.settings-tab,.stats-tab,.scope-chip,.cj-tab,.cj-chip,.cj-chip-set,.sticker-tab,.sticker-cat-chip,.sticker-txt,.av-chip,.av-kind,.kchip,.fchip,.contact-chip,.cards-scope,.cards-group-tab,.fav-tools-btn,.fav-seg-btn,.silent-fchip,.msg-actions button,.icon-btn,.ask-kind,.ask-time-mode,.ask-time-unit,.taask-opt,.poke-who,.qg-opt,.wish-ok,.wish-pin-tg,.wish-ann,.wish-del,.wish-save,.wish-export,.wish-panel-close,.letter-act-btn,.letter-send-btn,.letter-cancel-btn,.mate-go,.scroll-bottom-btn,.home-add,.home-search,.send-btn,.game-btn,.merge-scheme,.ap-btn,.search-cancel,.search-clear,.chat-head-name{transition:none}}
+/* ===== 输入框 contenteditable 化的样式镜像（Android · BUGS #418）=====
+   与 js/input-ce.js 配套：那边把 Android 上的文本类输入框换成 .ce-box（contenteditable div），
+   原 input 退场成 .ce-ghost（1px、不可点、Tab 跳过）。本件管两件事——
+   ① [基础层] .ce-box 与 .ce-ghost 自己的形制，以及占位符（div 没有 ::placeholder）；
+   ② [镜像层] 全站那些**元素限定**的输入框规则（`.composer input`、`.ask-field input[type="text"]`
+      …）在 div 上不再命中，逐条照抄一份 .ce-box 版。
+   ⚠ 基础层一律走 :where()（特异性 0）——它只补「没有别处管」的那些属性，
+     绝不压过各页自己的 .类名 规则（`.cards-modal-textarea{line-height:1.7}` 这类是 (0,1,0)，
+     本件排在 css_order 最后，若用裸 .ce-box 就会把全站同类规则的声明静默盖掉）。
+   ⚠ 镜像层不是「新设计」，是同一件事在另一个元素上重述一遍：除非原规则改了，这里别自作主张。
+   ⚠ 只在 Android（html.ce-on）上有效果：桌面/iOS 不转换，屏上没有 .ce-box 元素，
+     这里的镜像规则一条都不命中，原生 input 的样式与伪类（:placeholder-shown 等）原样保留。 */
+
+/* ── ① 基础层 ── */
+/* 幽灵锚点：零布局足迹（宽高钳死、不占流、不可点、不进 Tab）。
+   ⚠ left:-9999px 而不是 top:0/left:0——负偏移不进可滚动溢出，绝不会像 mochi #399
+     那样把祖先的滚动区撑出一个幻影高度。 */
+input.ce-ghost, textarea.ce-ghost {
+  position:absolute; top:0; left:-9999px;
+  width:1px !important; height:1px !important;
+  min-height:0 !important; max-height:none !important; min-width:0 !important;
+  overflow:hidden; opacity:0; pointer-events:none;
+  padding:0 !important; border:0 !important; margin:0 !important;
+}
+/* 基础形制（:where＝零特异性，谁都能压过它） */
+:where(.ce-box) {
+  display:block; box-sizing:border-box;
+  outline:none; caret-color:var(--ink);
+  white-space:pre-wrap; word-break:break-word;
+}
+:where(.ce-box).ce-one   { white-space:nowrap; word-break:normal; overflow:hidden; }
+:where(.ce-box).ce-multi { overflow-y:auto; }
+/* 占位符：div 没有 ::placeholder，用 ::before 画。
+   ⚠ 判据是 ce-empty 类（js 侧按 textContent 维护）而不是 :empty——contenteditable 里
+     删干净后常留一枚 <br> 垫底，:empty 会当场失效、占位符凭空消失。 */
+.ce-box.ce-empty::before {
+  content:attr(data-ph); color:var(--muted); pointer-events:none;
+}
+/* 固定高单行的文字要跟着垂直居中（原生 input 是居中，div 默认顶对齐＝文字贴顶）。
+   三处固定高的宿主：.poke-input(29px) · .search-field input(38px) · .pl-search-in(44px)。 */
+.ce-box.poke-input       { line-height:29px; }
+.search-field .ce-box    { line-height:38px; }
+.ce-box.pl-search-in     { line-height:44px; }
+
+/* ── ② 镜像层（顺序＝原规则在各 css 里的先后，保证同特异度之间的胜负关系不变）── */
+/* [theme] button,input,select{font:inherit;color:inherit} —— 字体继承这一条丢了，转换后字会换脸。
+   ⚠ 只补 .ce-box 这一半（元素那一半原样留在 theme.css）：这样本件连「元素选择器」都不碰，
+     桌面（不转换）下零影响；用 :where(.ce-box)（特异性 0）而不是裸 .ce-box——原规则是元素
+     选择器 (0,0,1)，抬成类 (0,1,0) 会盖过 `.app-modal-input{font-size:16px}` 这类同级类规则＝字体静默变档。 */
+:where(.ce-box) { font:inherit; color:inherit; }
+
+/* [chat] .composer input */
+.composer .ce-box {
+  margin:0; flex:1; min-width:0; background:transparent; border:0;
+  padding:8px 6px; border-radius:20px; outline:none;
+  -webkit-appearance:none; appearance:none;
+  font-size:15px; text-align:left; max-width:none;
+}
+.composer .ce-box.ce-empty::before { color:var(--muted); }
+.composer .ce-box:focus { box-shadow:inset 0 0 0 1.5px var(--accent); }
+.composer .composer-row .ce-box { background:transparent; box-shadow:none; }
+.composer .composer-row .ce-box:focus { box-shadow:none; }
+/* [theme] .composer input{font-size:max(1em,16px)} */
+.composer .ce-box { font-size:max(1em,16px); }
+/* ⚠ 「输入框空时发送键淡档」原靠 #messageInput:placeholder-shown——转换后原生 value 恒空＝
+   恒真，那条会永远生效（有字也是灰的）。这里先把恒真那条中性化，再按 ce-empty 重述。
+   ⚠ 中性化那条**必须与原规则同权重**（(2,5,0)：`.composer` ＋ `:has(#messageInput:placeholder-shown)`
+   ＋ `:not(:has(#composerAttach:not([hidden])))` ＋ `.send-btn`）——少一个 :not 就压不住原规则、
+   有字也是灰的（量具 F1 会红）。故 :not 照留，只是**写在前头**换个顺序：
+   tools/_smoke_send_btn_262.js 的 A8 靠「原规则那句话在产物里恰一次」判产物同步，
+   换个顺序既保权重又不撞那句话（连注释里也别把原串整句抄进来——注释同样进产物）。 */
+body.ce-on .composer:not(:has(#composerAttach:not([hidden]))):has(#messageInput:placeholder-shown) .send-btn { opacity:1; }
+body.ce-on .composer:has(#messageInput.ce-empty):not(:has(#composerAttach:not([hidden]))) .send-btn { opacity:.4; }
+
+/* [chats] .chat-form input,.chat-form textarea（添加联系人／建群的表单） */
+.chat-form .ce-box {
+  margin-top:5px; width:100%; padding:10px 11px; border:1px solid transparent;
+  border-radius:10px; background:var(--page); color:var(--ink); outline:none;
+  font-size:max(1em,16px); font-family:inherit; box-sizing:border-box;
+}
+.chat-form .ce-box:focus { border-color:var(--ctl-on-ring); }
+
+/* [search] .search-field input（搜索页那条胶囊） */
+.search-field .ce-box {
+  flex:1; min-width:0; height:100%; border:0; background:none; outline:none;
+  font-size:max(1em,16px); color:var(--ink); padding:0;
+}
+.search-field .ce-box.ce-empty::before { color:var(--muted); font-size:13px; }
+
+/* [settings] :where(#settingsView,#mateView,#deskStation) :is(input,select)（设置行右边那枚值） */
+:where(#settingsView,#mateView,#deskStation) :is(.ce-box,select) {
+  display:block; flex:1; min-width:0; max-width:58%; width:auto;
+  padding:8px 12px; border:1px solid transparent; border-radius:10px;
+  background:var(--page); color:var(--ink); outline:none; margin:0;
+  font-size:13px; text-align:right;
+}
+:where(#settingsView,#mateView,#deskStation) :is(.ce-box:focus,select:focus) { border-color:transparent; background:var(--bubble); }
+/* [settings] .setting-card textarea */
+.setting-card .ce-box {
+  display:block; width:100%; max-width:100%; text-align:left; flex:none;
+  background:var(--page); border-radius:10px; padding:10px 12px; font-size:12px;
+}
+
+/* [mate] 名字／固定昵称／成员字段／步进格 */
+.mate-fixed-row .ce-box {
+  flex:1; min-width:0; background:transparent; border:0; border-radius:0; box-shadow:none;
+  padding:0; text-align:left; max-width:100%; color:var(--ink);
+  font-size:12.5px; font-weight:600; font-family:inherit;
+}
+.mate-fixed-row .ce-box.ce-empty::before { color:var(--muted); font-weight:400; }
+.mate-head .mate-name .ce-box, .mate-mine .mate-name .ce-box {
+  background:transparent; border:0; border-radius:0; box-shadow:none;
+  padding:0; text-align:left; max-width:100%; color:var(--ink);
+  font-size:16.5px; font-weight:700;
+}
+.mate-mine .mate-name .ce-box { font-size:15px; font-weight:600; }
+.mate-mem-fields .ce-box { width:96px; flex:none; text-align:center; }
+.mate-stp-row .ce-box { flex:0 1 auto; width:56px; min-width:44px; max-width:none; text-align:center; }
+
+/* [ask] 问问TA 那道题与答案（.ask-field input[type="text"]） */
+.ask-field .ce-box {
+  width:100%; background:var(--page); border:1px solid var(--line); border-radius:10px;
+  padding:10px 12px; font-size:max(1em,16px); outline:none; color:var(--ink);
+  -webkit-appearance:none; appearance:none;
+}
+.ask-field .ce-box:focus { border-color:var(--ctl-on-ring); }
+.ask-q-wrap .ce-box { padding-right:46px; }
+
+/* [player] .pl-note input（网易云那条说明下的输入） */
+.pl-note .ce-box { width:100%; margin-top:8px; }
+
+/* [mono] 圆角收口（后加载胜出，故镜像也放最后）。
+   ⚠ 同 theme 那条：只补 .ce-box 那一半、且用 :where 保特异性 0，
+     否则 (0,1,0) 会压过各页自己的 `.app-modal-input{border-radius:10px}`。 */
+:where(.ce-box) { border-radius:12px; }
+.chat-form input, .chat-form textarea, .app-modal-input, .cards-modal-input, .cards-modal-textarea, .chat-form .ce-box { border-radius:12px; }
 </style>
 </head>
 <body>
@@ -5741,7 +5895,10 @@ input,select,textarea{border-radius:12px}
          十枚 685px 仍在一屏（724）之内。样式见 css/more.css 的 .more-line 一族（零卡片容器·发丝线分行）。
          信箱未拆那枚角标仍住这一页（用户定档「只跟到更多页那一行」；朋友圈那一行随整族下线删净），
          id 沿用 tileMailDot＝写手 js/hub.js 的 updateHomeIndex 一处不改名，类名仍是 .unread-badge。
-         点击不新写绑定：settings.js 的 $$('[data-view]') 统一委托，行上带 data-view 就够。
+         点击不新写绑定：settings.js 加载时那一次 $$('[data-view]') 一次性绑定就够（本列由 js/hub.js 派生、
+         hub 排在 settings 之前加载＝绑定时这些行已在 DOM 里，不是事件委托）。值以 # 开头的交给 js/hub.js 的
+         _hubRoute 一处路由（2026-10-14 修「点了没反应」：路由原先只住在 bindHubView 里＝只管使用大全那本册子，
+         这一页的 #search·#uifont·#diag 三行走的是上面那条一次性绑定，落进 showView('#xxx') 静默 return）。
          2026-10-09 三批（BUGS #223·配色）：那枚箭头原来是**字符** ›（实测宽 5px，与 1.8 描边的矢量线稿
          不是一套＝BUGS #174 那枚 × 同一族），十枚一起换成 8×14 矢量 path；图标圆托与族色见 css/more.css 头注释。
          2026-10-10 四批（BUGS #243·用户第二次复报「太丑」）：十行零差异＝没有层次，故插两条节头分三组
@@ -6270,7 +6427,7 @@ input,select,textarea{border-radius:12px}
 
         <div class="setting-card fold" data-tab="desk" data-fold="light">
           <button type="button" class="fold-hd"><span class="fold-ti">卡片通透</span><span class="fold-sum" id="sumLight"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>通透程度</span><div class="contact-chip-row" style="margin:0" data-ap-set="light" data-sum="sumLight"><button type="button" class="contact-chip" data-v="airy">通透</button><button type="button" class="contact-chip" data-v="balanced">均衡</button><button type="button" class="contact-chip" data-v="deep">厚重</button></div></div><p class="data-note">管的是卡片与气泡<b>透多少</b>，不管颜色（底色全站只留「雾蓝」一档，屏上没有可选的族）。三档都是量过的组合，点一下整屏当场换：<b>通透</b>（alpha .70）最透、层次偏平；<b>均衡</b>（默认 .78）折中；<b>厚重</b>（.86）卡片最实、通透感最弱。⚠ 透与层次是一对反向值：越透就越接近底、明度差被吃掉，所以没有「又最透又最有层次」那一档。面的弧度在下一张「卡片圆角」里调，聊天气泡不吃那一档（它有自己的四档，在【TA 的设置 → 外观】的「聊天外观」里）。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>通透程度</span><div class="contact-chip-row" style="margin:0" data-ap-set="light" data-sum="sumLight"><button type="button" class="contact-chip" data-v="airy">通透</button><button type="button" class="contact-chip" data-v="balanced">均衡</button><button type="button" class="contact-chip" data-v="deep">厚重</button></div></div><p class="data-note">管的是卡片与气泡<b>透多少</b>，不管颜色（底色全站固定一档，屏上没有可选的族）。三档都是量过的组合，点一下整屏当场换：<b>通透</b>（alpha .70）最透、层次偏平；<b>均衡</b>（默认 .78）折中；<b>厚重</b>（.86）卡片最实、通透感最弱。⚠ 透与层次是一对反向值：越透就越接近底、明度差被吃掉，所以没有「又最透又最有层次」那一档。面的弧度在下一张「卡片圆角」里调，聊天气泡不吃那一档（它有自己的四档，在【TA 的设置 → 外观】的「聊天外观」里）。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="corner">
@@ -6464,6 +6621,17 @@ input,select,textarea{border-radius:12px}
               <div class="ap-sec-t">文字</div>
               <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
               <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+            </div>
+            <!-- 聊天气泡字体与字号（2026-10-15，用户「聊天设置美化里缺少修改聊天字号和字体的功能」）：
+                 都是【这一位 TA 各一份】的聊天文字档，读写落 chatAppearance[activeChat]（js/settings.js 那两行 chips
+                 的自有写入路径）。与全局那两样刻意分开：全局「聊天外观」卡的「字体」走 .app-shell 整站、设置→外观的
+                 「字号」走 zoom——那两条改了，别的页面跟着变；这两行只管这一本的聊天气泡正文。默认档（跟随全局／标准）
+                 零输出，不写覆盖块。预览里的小气泡一起吃这两档（theme.css 那两条并入 .ap-prev-bub）。 -->
+            <div class="ap-sec">
+              <div class="ap-sec-t">字体与字号</div>
+              <div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" id="apChatFont"><button type="button" class="contact-chip" data-v="inherit">跟随全局</button><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div>
+              <div class="ap-row"><span>字号</span><div class="contact-chip-row" style="margin:0" id="apChatFontSize"><button type="button" class="contact-chip" data-v="small">小</button><button type="button" class="contact-chip" data-v="medium">标准</button><button type="button" class="contact-chip" data-v="large">大</button></div></div>
+              <p class="data-note">两档都只管<b>这一位 TA 聊天气泡里的字</b>，别的页面与别位 TA 不动：<b>字体</b>改这一本气泡用的字族（「跟随全局」＝用设置 → 外观「全站字体」那一档，选系统／衬线／圆体则只覆盖这一本的气泡）；<b>字号</b>把气泡正文调小／调大（标准是出厂大小，小＝13px、大＝17px）。全站文字整体缩放仍在设置 → 外观的「字号」里；顶栏与输入栏的字不跟这两档。</p>
             </div>
             <div class="ap-sec">
               <div class="ap-sec-t">时间与提示</div>
@@ -7962,7 +8130,13 @@ const defaults = {
     // 背景压暗（0~100，js/db.js _caVeil 同杆夹取）：给整张背景图垫一层墨纱（--chat-veil），
     // 照片太亮太花抢字时用；0＝不垫＝与没这根杆时逐字节相同。也只在传过背景图时生效（同上两杆口径）
     bgVeil: 0,
-    customBubbleCss: ''
+    customBubbleCss: '',
+    // 聊天气泡字体与字号（2026-10-15，入口在「TA 的设置 → 美化设置」）：各一位 TA 各一份。
+    // 与全局那两样是两件事——那两样一个走 .app-shell 整站（appearance.fontFamily）、一个走 zoom（uiFontScale）；
+    // 这里只作用于**这一本的聊天气泡正文**（用户定档「只放大聊天气泡文字」）。
+    // chatFont 出厂 'inherit'＝跟随全局「全站字体」＝不写覆盖块、零输出。上面那条「别把六项排版与字体加回来」
+    // 指的是**同名键**（会被 _caFill 逐会话填满后永久压住同名全局值），这里两个键全局没有对应项，不存在那个问题。
+    chatFont: 'inherit', chatFontSize: 'medium'
   },
   chatAppearance: {},
   anniversary: null,
@@ -8390,6 +8564,13 @@ function downloadBlob(bytes, name, mime) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
+// 本机小记录（面板高矮∶各页 tab 停靠∶筛选落在谁身上这类不进备份的键）写入的唯一出口。
+// iOS 无痕模式与存储配额满时 setItem 是**直接抛异常**而不是返回 false，而全站 JS 拼成一块
+// 内联 script——一处抛＝那一行后面的模块全不执行（#021·#111 那一族），故必须就地吞掉。
+// 吞掉的后果只是「这一格下次进来回到默认」，主数据不在这里（走 IndexedDB 与 db.js 的 lsSet）。
+function lsWrite(key, val) {
+  try { localStorage.setItem(key, val); return true; } catch (e) { return false; }
+}
 
 // ===== 跨tab调度锁：多开时只让一个标签页跑主动发送/写信调度器 =====
 const TAB_LOCK_KEY = 'ordinal-tab-lock';
@@ -8525,6 +8706,10 @@ async function copyTextToClipboard(text) {
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
+    // #418：这枚 textarea 是程序性临时件（document.execCommand('copy') 的载体），
+    // 不是给用户打字的——打上豁免标，别让 js/input-ce.js 把它换成 contenteditable
+    // （换了之后 select() 选的是 ce-box，execCommand 的复制语义就不是原来那条了）
+    ta.setAttribute('data-ce-off', '1');
     ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
     document.body.appendChild(ta);
     ta.select();
@@ -8588,6 +8773,398 @@ window.mochiFilePick = function (opts) {
   };
   if (!opts.noClick) { try { input.click(); } catch (e) {} }
 };
+// ===== 输入框 contenteditable 化（Android）· BUGS #418 =====
+// 病灶：Chrome 手机版一聚焦原生 <input type=text>／<textarea>，键盘上方就挂出「🔑💳📍」那条
+// 自动填充附件条。本站 #412 去 <form> 只治了「文档里存在 <form>」那一支（那条是文档级探测），
+// 本条是第二支、也是用户反复报的那一支：**聚焦原生文本域本身**就弹，autocomplete=off、
+// readonly、关掉浏览器设置都拦不住。参考实现对岸 mochi（src/js/mobile-adapt.js 的 ceConvert
+// ＋三层防线），那边真机验过：只有把「显示与输入」整个交给 contenteditable 才彻底不弹。
+//
+// 本站口径（与 mochi 的每一处差异都写死在这儿，别照着 mochi 全量搬）：
+//  ① 只在 **Android** 上启用（mochi 是「非 iOS 全量」）。桌面没有那条条，就不动它——
+//     原生 input 的 :placeholder-shown、原生光标 API、原生撤销全留在桌面；
+//     iOS 同样不转（mochi 定档：contenteditable 在 iOS Safari 上聚焦不弹键盘、
+//     :empty::before 占位异常、还会抢原生输入），iPhone 保留原生输入框。
+//  ② 只转**文本类**：input（无 type／text／search）与 textarea。
+//     ⚠ number（本站 80 枚概率格）不转：转了丢原生数字键盘与上下限，且自动填充条不为数字域弹出；
+//     ⚠ password（#quizGatePw 内测密码）不转：转成明文显示器不偿失；
+//     ⚠ checkbox／range／file／date 一族本来就不该转（那份名单见 CE_SKIP_TYPES）。
+//  ③ 原 input 退场为「幽灵锚点」（.ce-ghost：1px、不可点、Tab 跳过），显示与输入由紧跟其前的
+//     .ce-box 接管；value／placeholder／focus／blur／光标（selectionStart 一族）／事件
+//     （input·change·keydown·keyup·click·composition）全由代理打通 ⇒ 业务代码零改动。
+//     ⚠ 唯一需要业务侧配合的是「焦点判据」：转换后 activeElement 是 ce-box 而不是原 input，
+//       document.activeElement === 某输入框 的写法全部改用 inputFocused（见本文件末尾）。
+//  ④ 调试开关：URL 带 ?ceon=1 时桌面也启用——量具 tools/_smoke_input_ce.js 靠它在桌面跑真链路，
+//     也让「桌面想看效果」有个口子。真机不受影响（Android 本来就走）。
+//
+// 四层防线（时序设计照搬 mochi，缺一层就有窗口期——用户报的「还是有」正是窗口期的形状）：
+//   ① 加载时全量扫一遍（DOM 已在＝脚本在 body 末尾）；
+//   ② MutationObserver 只扫「本批新增节点」的子树（全量重扫在大 DOM 上是实测卡顿源）；
+//   ③ focus 原型层拦截：任何代码路径（弹窗打开即 focus、动态插入后立刻 select）都先同步转换、
+//      再聚焦 ce-box ⇒ 原生 input 从头到尾没持过焦，Chrome 看不到「聚焦的表单字段」；
+//   ④ focusin 捕获阶段兜底：label 点击这类「内核自己发起的聚焦」绕过 .focus()，
+//      这里把焦点当场移交给 ce-box（已转换的一并移交，别让它停在幽灵上）。
+(function () {
+  'use strict';
+
+  // 焦点判据：转换后焦点在 ce-box 上，activeElement === 原 input 恒 false。
+  // 无条件定义（桌面/iOS 上 __ceBox 永不存在，退化成原来的 === 判定，零行为差异）。
+  window.inputFocused = function (el) {
+    return !!el && (document.activeElement === el || (el.__ceBox && el.__ceBox === document.activeElement));
+  };
+  window.ceBoxOf = function (el) { return (el && el.__ceBox) || null; };
+
+  var CE_FORCE = /[?&]ceon=1(&|$)/.test(location.search);
+  var _ua = navigator.userAgent || '';
+  var _isIOS = /iP(hone|ad|od)/.test(_ua) || (/Macintosh/.test(_ua) && (navigator.maxTouchPoints || 0) > 1);
+  if (_isIOS) return;
+  if (!/Android/i.test(_ua) && !CE_FORCE) return;
+
+  // 屏上与量具可读的开关位；body 上挂 ce-on 供 CSS 分档（见 css/input-ce.css）
+  window.__ceOn = true;
+  try { document.documentElement.classList.add('ce-on'); document.body.classList.add('ce-on'); } catch (e) {}
+
+  var CE_SEL = 'input:not([type]), input[type="text"], input[type="search"], textarea';
+  var CE_SKIP_TYPES = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'button', 'submit', 'reset',
+    'date', 'time', 'datetime-local', 'month', 'week', 'number', 'password', 'email', 'tel', 'url'];
+
+  function _ceSkip(inp) {
+    if (!inp || inp.nodeType !== 1) return true;
+    if (inp.tagName !== 'INPUT' && inp.tagName !== 'TEXTAREA') return true;
+    if (inp.__ceBox || inp.dataset.ceDone) return true;
+    if (inp.readOnly || inp.disabled) return true;
+    if (inp.hasAttribute('data-ce-off')) return true;      // 程序性临时输入框（剪贴板助手等）明确豁免
+    if (CE_SKIP_TYPES.indexOf((inp.getAttribute('type') || 'text').toLowerCase()) >= 0) return true;
+    return false;
+  }
+
+  // 多行取值：按 DOM 结构还原换行（contenteditable 里按 Enter 落的是字面 \n 或块级 <div>；
+  // 部分国产内核的 innerText 会丢文本节点里的 \n ⇒ 两个都算、取换行更多的那个）
+  function ceMultiText(box) {
+    var out = '';
+    var endNl = function () { return out.slice(-1) === '\n'; };
+    (function walk(node) {
+      for (var i = 0; i < node.childNodes.length; i++) {
+        var n = node.childNodes[i];
+        if (n.nodeType === 3) { out += n.nodeValue || ''; continue; }
+        if (n.nodeType !== 1) continue;
+        var tag = n.tagName;
+        if (tag === 'BR') { out += '\n'; continue; }
+        var block = tag === 'DIV' || tag === 'P' || tag === 'LI' || tag === 'PRE' || tag === 'BLOCKQUOTE';
+        if (block) {
+          if (out && !endNl()) out += '\n';
+          walk(n);
+          if (out && !endNl()) out += '\n';
+        } else walk(n);
+      }
+    })(box);
+    return out;
+  }
+
+  // 光标：把「输入框里的文本偏移」翻译成 DOM Range（chat.js 的 @点名 靠它把名字插回原处）
+  function _ceOffset(box) {
+    var total = (box.textContent || '').length;
+    var sel = window.getSelection && window.getSelection();
+    if (!sel || !sel.rangeCount) return total;
+    var r = sel.getRangeAt(0);
+    if (!box.contains(r.startContainer) && r.startContainer !== box) return total;
+    try {
+      var pre = r.cloneRange();
+      pre.selectNodeContents(box);
+      pre.setEnd(r.startContainer, r.startOffset);
+      return pre.toString().length;
+    } catch (e) { return total; }
+  }
+  // 文本偏移 → DOM 位置（文本节点 + 节点内偏移）
+  function _ceLoc(box, pos) {
+    var left = Math.max(0, pos | 0), found = null;
+    (function walk(n) {
+      for (var i = 0; i < n.childNodes.length; i++) {
+        var c = n.childNodes[i];
+        if (c.nodeType === 3) {
+          var len = (c.nodeValue || '').length;
+          if (left <= len) { found = { node: c, off: left }; return true; }
+          left -= len;
+        } else if (c.nodeType === 1) { if (walk(c)) return true; }
+      }
+      return false;
+    })(box);
+    return found || { node: box, off: box.childNodes.length };
+  }
+  function _cePlaceCaret(box, pos) {
+    var p = _ceLoc(box, pos);
+    try {
+      var r = document.createRange();
+      r.setStart(p.node, p.off); r.collapse(true);
+      var s = window.getSelection();
+      s.removeAllRanges(); s.addRange(r);
+      box.focus();
+    } catch (e) {}
+  }
+  function _ceSetRange(box, a, b) {
+    var p = _ceLoc(box, a), q = _ceLoc(box, Math.max(a, b));
+    try {
+      var r = document.createRange();
+      r.setStart(p.node, p.off); r.setEnd(q.node, q.off);
+      var s = window.getSelection();
+      s.removeAllRanges(); s.addRange(r);
+      box.focus();
+    } catch (e) {}
+  }
+  function _ceSelectAll(box) {
+    try {
+      var r = document.createRange();
+      r.selectNodeContents(box);
+      var s = window.getSelection();
+      s.removeAllRanges(); s.addRange(r);
+    } catch (e) {}
+  }
+
+  // 空／非空标记：**类挂两处**——原 input 上那份给 `:has(#messageInput.ce-empty)` 用
+  // （composer 的发送键淡档），ce-box 上那份给 `::before` 占位符用（div 没有 ::placeholder）。
+  // ⚠ 判据是 textContent 而不是 :empty：contenteditable 删干净后常留一枚 <br> 垫底，:empty 会当场失效。
+  function _ceSyncEmpty(inp, box) {
+    var empty = !(box.textContent || '').length;
+    try { inp.classList.toggle('ce-empty', empty); box.classList.toggle('ce-empty', empty); } catch (e) {}
+  }
+
+  function ceConvert(inp) {
+    if (_ceSkip(inp)) return;
+    var isMulti = inp.tagName === 'TEXTAREA';
+    // 原生值必须在装 value 代理之前抓（装了之后再读 .value 读到的就是新 box 的文本＝恒空）
+    var preVal = inp.getAttribute('value');
+    if (preVal === null && inp.value !== undefined) preVal = inp.value;
+    inp.dataset.ceDone = '1';
+    var origClass = inp.className || '';
+    inp.classList.add('ce-ghost');
+    inp.setAttribute('aria-hidden', 'true');
+    inp.tabIndex = -1;                       // 幽灵不进 Tab 序（键盘/无障碍都走 ce-box）
+    var box = document.createElement('div');
+    box.className = 'ce-box ' + origClass + (isMulti ? ' ce-multi' : ' ce-one');
+    box.setAttribute('contenteditable', 'true');
+    box.setAttribute('spellcheck', 'false');
+    box.dataset.for = inp.id || '';
+    var inpMode = inp.getAttribute('inputmode');
+    if (inpMode) box.setAttribute('inputmode', inpMode);
+    var ech = inp.getAttribute('enterkeyhint');
+    if (ech) box.setAttribute('enterkeyhint', ech);       // 聊天页那枚「发送」回车键
+    var ph = inp.getAttribute('placeholder') || '';
+    if (ph) box.setAttribute('data-ph', ph);
+    box.style.display = 'block';
+    box.style.boxSizing = 'border-box';
+    if (!isMulti) box.style.minHeight = '24px';
+    // 复制原 inline style（元素选择器上的 margin 之类转换后会丢；box 已自管的三件跳过）
+    if (inp.getAttribute('style')) {
+      var skip = ['display', 'min-height', 'box-sizing'];
+      try {
+        var st = inp.style;
+        for (var si = 0; si < st.length; si++) {
+          var pn = st[si];
+          if (skip.indexOf(pn) >= 0) continue;
+          var pv = st.getPropertyValue(pn);
+          if (pv) box.style.setProperty(pn, pv);
+        }
+      } catch (e) {}
+    }
+    // 原输入框被业务按需隐藏（openModal 的 noInput 档就是这样）→ box 必须跟着隐藏，
+    // 否则屏上多出一个空框。
+    // ⚠ 两条路都要：① 属性观察器管 setAttribute('hidden')；② hidden 属性访问器管 `inp.hidden = true`
+    //   ——访问器那一支是**同步**的，弹窗那种「设完 hidden 立刻显示遮罩」的时序里差一帧就会
+    //   闪出一个空输入框（观察器是微任务，赶不上）。
+    function syncCeHidden() { box.style.display = inp.hidden ? 'none' : 'block'; }
+    try { new MutationObserver(syncCeHidden).observe(inp, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) {}
+    try {
+      var hidDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'hidden');
+      if (hidDesc && hidDesc.get && hidDesc.set) {
+        Object.defineProperty(inp, 'hidden', {
+          get: function () { return hidDesc.get.call(inp); },
+          set: function (v) { hidDesc.set.call(inp, v); syncCeHidden(); },
+          configurable: true
+        });
+      }
+    } catch (e) {}
+    // maxlength：contenteditable 不原生生效，手动按码点截断（UTF-16 slice 会切开 emoji 代理对）
+    function clamp() {
+      var maxLen = parseInt(inp.getAttribute('maxlength'), 10) || 0;
+      if (maxLen <= 0) return;
+      var t = box.textContent || '';
+      if (t.length <= maxLen) return;
+      box.textContent = Array.from(t).slice(0, maxLen).join('');
+      var r = document.createRange();
+      r.selectNodeContents(box); r.collapse(false);
+      var s = window.getSelection();
+      s.removeAllRanges(); s.addRange(r);
+    }
+    box.addEventListener('input', clamp);
+    box.addEventListener('compositionend', clamp);
+    // 单行：Enter 不落换行（与原 input 一致）；群聊 @点名／回车发送都靠转发出去的 keydown
+    if (!isMulti) box.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+    inp.__ceBox = box;
+    box.__ceInp = inp;
+    try { inp.parentNode.insertBefore(box, inp); } catch (e) {}
+    // ===== 兼容代理：原代码怎么写，它还怎么读 =====
+    Object.defineProperty(inp, 'value', {
+      get: function () {
+        if (isMulti) {
+          try {
+            var itTxt = box.innerText || '';
+            var walkTxt = ceMultiText(box);
+            var itN = (itTxt.match(/\n/g) || []).length;
+            var wkN = (walkTxt.match(/\n/g) || []).length;
+            return wkN > itN ? walkTxt : (itTxt || walkTxt || box.textContent || '');
+          } catch (e) {}
+        }
+        return box.textContent || '';
+      },
+      set: function (v) { box.textContent = (v == null ? '' : String(v)); _ceSyncEmpty(inp, box); },
+      configurable: true
+    });
+    Object.defineProperty(inp, 'placeholder', {
+      get: function () { return box.getAttribute('data-ph') || ''; },
+      set: function (v) { if (v) box.setAttribute('data-ph', v); else box.removeAttribute('data-ph'); },
+      configurable: true
+    });
+    // 历史代码大量按 class 取输入框；转换后首个命中可能是继承同名类的 ce-box（div 没有 value）
+    // ⇒ 给 box 也挂一份双向转发，旧写法零改动
+    try {
+      Object.defineProperty(box, 'value', {
+        get: function () { return inp.value; },
+        set: function (v) { inp.value = v; },
+        configurable: true
+      });
+    } catch (e) {}
+    // 光标三件（chat.js 的 @点名插字、cards/mate/invite/wish 的「打开即全选」）
+    try {
+      Object.defineProperty(inp, 'selectionStart', {
+        get: function () { return _ceOffset(box); },
+        set: function (v) { _cePlaceCaret(box, +v || 0); }, configurable: true
+      });
+      Object.defineProperty(inp, 'selectionEnd', {
+        get: function () { return _ceOffset(box); },
+        set: function (v) { _cePlaceCaret(box, +v || 0); }, configurable: true
+      });
+    } catch (e) {}
+    inp.setSelectionRange = function (a, b) {
+      if (a === undefined) return;
+      if (b === undefined || b === a) _cePlaceCaret(box, a);
+      else _ceSetRange(box, a, b);
+    };
+    inp.select = function () { _ceSelectAll(box); };
+    // 聚焦：任何代码路径调 .focus() 都落在 ce-box 上（原 input 一次都没持过焦）
+    inp.focus = function () { try { box.focus({ preventScroll: true }); } catch (e) { try { box.focus(); } catch (e2) {} } };
+    inp.blur = function () { try { box.blur(); } catch (e) {} };
+    // 事件转发（keydown 要带 key/keyCode/isComposing：回车发送与输入法选字都读它）
+    // _ceChangeFired：这一轮聚焦里内核有没有自己派过 change——见下方失焦补派那一支。
+    // ⚠ 实测（本仓量具 tools/_smoke_input_ce.js D4）：Chrome 对 contenteditable **会**在失焦时
+    //   派一次 change，而某些内核（mochi 真机实录的小米/OPPO 一族）不派。两头发=业务收两次
+    //   （设置页那些「change 就落库」的会存两遍），所以补派必须问一句「派过没」，永不重发。
+    var _ceChangeFired = false;
+    ['input', 'change', 'keydown', 'keyup', 'click', 'compositionstart', 'compositionend'].forEach(function (ev) {
+      box.addEventListener(ev, function (e) {
+        if (ev === 'change') _ceChangeFired = true;
+        var clone = new Event(ev, { bubbles: true, cancelable: true });
+        if (e.data !== undefined) clone.data = e.data;
+        if (ev === 'keydown' || ev === 'keyup') {
+          clone.key = e.key; clone.keyCode = e.keyCode; clone.isComposing = e.isComposing;
+        }
+        if (ev === 'input' && e.inputType !== undefined) clone.inputType = e.inputType;
+        try { inp.dispatchEvent(clone); } catch (err) {}
+      });
+    });
+    // 空／非空标记（CSS 侧：composer 的发送键淡档原来靠 :placeholder-shown，
+    // 转换后原生 value 恒空＝那条恒真，见 css/input-ce.css 的同名镜像）
+    box.addEventListener('input', function () { _ceSyncEmpty(inp, box); });
+    // contenteditable 在部分内核上不自发 change（原生 input 会）——失焦时内容变过就补派一次，
+    // 语义与原生一致；否则「改了但没存，退出即回默认」（设置页那一票全靠 change 落库）。
+    // ⚠ 补派走 setTimeout(0) 且先问 _ceChangeFired：内核自己派过就不补（两发＝存两遍）。
+    //    延迟到下一个宏任务跑，两种派发顺序（先 change 后 blur / 先 blur 后 change）都能被标记到。
+    var changeVal = null;
+    box.addEventListener('focus', function () { changeVal = box.textContent || ''; _ceChangeFired = false; });
+    box.addEventListener('blur', function () {
+      try {
+        if (changeVal !== null && (box.textContent || '') !== changeVal) {
+          changeVal = null;
+          setTimeout(function () {
+            var fired = _ceChangeFired;
+            _ceChangeFired = false;
+            if (fired) return;
+            try { box.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+          }, 0);
+          _ceSyncEmpty(inp, box);
+          return;
+        }
+      } catch (e) {}
+      changeVal = null;
+      _ceChangeFired = false;
+      _ceSyncEmpty(inp, box);
+    });
+    box.addEventListener('focus', function () { try { inp.dispatchEvent(new Event('focus', { bubbles: true })); } catch (e) {} });
+    box.addEventListener('blur', function () { try { inp.dispatchEvent(new Event('blur', { bubbles: true })); } catch (e) {} });
+    if (preVal) box.textContent = preVal;
+    syncCeHidden();
+    _ceSyncEmpty(inp, box);
+  }
+
+  function ceScan(root) {
+    if (!root || root.nodeType !== 1) return;
+    try {
+      if (root.matches && root.matches(CE_SEL)) ceConvert(root);
+      if (!root.querySelectorAll) return;
+      var list = root.querySelectorAll(CE_SEL);
+      for (var i = 0; i < list.length; i++) ceConvert(list[i]);
+    } catch (e) {}
+  }
+
+  // ① 加载全量（脚本在 body 末尾 ⇒ DOM 已就绪）
+  try {
+    var all = document.querySelectorAll(CE_SEL);
+    for (var i0 = 0; i0 < all.length; i0++) ceConvert(all[i0]);
+  } catch (e) {}
+
+  // ② 动态新增（只扫本批子树）
+  try {
+    new MutationObserver(function (muts) {
+      for (var mi = 0; mi < muts.length; mi++) {
+        var added = muts[mi].addedNodes;
+        for (var ai = 0; ai < added.length; ai++) {
+          var n = added[ai];
+          if (n && n.nodeType === 1) ceScan(n);
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+
+  // ③ focus 原型层拦截：未转换的文本域被 focus() 时先同步转换再聚焦 ce-box
+  var _origInpFocus = HTMLInputElement.prototype.focus;
+  HTMLInputElement.prototype.focus = function () {
+    if (this.__ceBox) { try { this.__ceBox.focus(); } catch (e) {} return; }
+    if (!_ceSkip(this)) {
+      ceConvert(this);
+      if (this.__ceBox) { try { this.__ceBox.focus(); } catch (e) {} return; }
+    }
+    return _origInpFocus.apply(this, arguments);
+  };
+  var _origTaFocus = HTMLTextAreaElement.prototype.focus;
+  HTMLTextAreaElement.prototype.focus = function () {
+    if (this.__ceBox) { try { this.__ceBox.focus(); } catch (e) {} return; }
+    if (!_ceSkip(this)) {
+      ceConvert(this);
+      if (this.__ceBox) { try { this.__ceBox.focus(); } catch (e) {} return; }
+    }
+    return _origTaFocus.apply(this, arguments);
+  };
+
+  // ④ focusin 捕获兜底：内核自己发起的聚焦（label 点击、表单定向）绕过 .focus()，
+  //    这里当场把焦点移交给 ce-box——原 input 随即失焦，Chrome 收回那条条。
+  document.addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA')) return;
+    if (t.__ceBox) { try { t.__ceBox.focus(); } catch (err) {} return; }
+    if (_ceSkip(t)) return;
+    ceConvert(t);
+    if (t.__ceBox) { try { t.__ceBox.focus(); } catch (err) {} }
+  }, true);
+})();
 // ===== 聊天情绪出厂词表（前作「星言」的三级链 ＋ 前作「mochi」的逻辑连接词，两作同为作者自有前作） =====
 // 三档形状统一：g=组名 / w=组权重 / c=词表 / t=词 / r=稀有度 / l=心意等级。
 // ⚠ 这一件是**出厂默认**，用户改过的词表住在 data.emotionLib（见 js/emotion.js 的 _emoLib）——
@@ -10478,7 +11055,8 @@ function ensureData(raw) {
   }
   // 辅助文字三项（时间轴 dayStyle／消息时间 metaColor／系统消息 sysStyle）枚举校验：
   // _caFill 只按 typeof 补类型，认不出「同类型脏值」，这里逐会话把非法档位拉回出厂值（BUGS #196）
-  const _caEnums = { dayStyle: ['auto', 'white', 'ink', 'none'], metaColor: ['auto', 'black', 'white', 'gold'], sysStyle: ['auto', 'white', 'ink', 'none'] };
+  // 聊天气泡字体/字号（2026-10-15）也在这里夹：_caFill 只按 typeof 补类型，认不出同类型脏值
+  const _caEnums = { dayStyle: ['auto', 'white', 'ink', 'none'], metaColor: ['auto', 'black', 'white', 'gold'], sysStyle: ['auto', 'white', 'ink', 'none'], chatFont: ['inherit', 'system', 'serif', 'round'], chatFontSize: ['small', 'medium', 'large'] };
   // 两栏透明度（headVeil／compVeil）自此是 0~100 的数字，不再是三档（BUGS #314 二批）。旧档那三个字符串
   // 按各档**当时的实际 alpha** 折成数字（实＝纱 .94→0∶柔＝.8376→16∶透＝.7247→28，见 css/chat.css 那段注释）
   // ——改的是字段类型，旧值不搬家＝用户选过的档被这圈 typeof 直接顶成 0（本仓「填 0 真落 0」那一族的反面）。
@@ -12655,7 +13233,8 @@ function renderProfile() {
     // 正被编辑的那一枚不回写：保存链是 400ms 防抖（_autoSaveCard），用户刚打了一半、这一发就把
     // 夹好的数盖回框里——旧写法下「清空→写回 1→接着打的数字长在它后面」＝「输入数字强制变两位数」
     // 的第二条腿（BUGS #211 二批）。定数改在失焦那一刻：blur 触发 change → 再走一次本函数。
-    if (document.activeElement === e) return;
+    // ⚠ 判据走 inputFocused（js/input-ce.js）：Android 上文本框是 ce-box，焦点不在原 input 上（#418）
+    if (window.inputFocused(e)) return;
     const k = id.replace(/^#/, '');
     const dv = (defaults.behavior && typeof defaults.behavior[k] === 'number') ? defaults.behavior[k] : '';
     e.value = (typeof v === 'number' && isFinite(v)) ? v : dv;
@@ -14897,7 +15476,7 @@ async function _composerSend() {
   // 键盘弹起会把可视区压矮（visualViewport 变小的每一帧都在改 clientHeight），贴底循环可能
   // 恰好在键盘动画中途就收工了。焦点落在输入框时再多跑一轮稳定循环，确保键盘完全弹起后仍然贴底。
   requestAnimationFrame(() => {
-    if (document.activeElement === input) scrollChatToBottom();
+    if (window.inputFocused(input)) scrollChatToBottom();   // ⚠ inputFocused：Android 焦点在 ce-box 上（#418）
   });
   partnerReply(sentFromChat, text);
 }
@@ -15038,8 +15617,11 @@ $('#messageList').addEventListener('pointerdown', (e) => {
     if (typeof closeStickerDrawer === 'function') closeStickerDrawer();
     else $('#stickerDrawer').classList.remove('open');
   }
-  if (e.target === $('#messageList') && document.activeElement === $('#messageInput')) {
-    document.activeElement.blur();
+  // ⚠ inputFocused：Android 上输入框是 ce-box，焦点不在原 input 上（#418）；
+  //    收焦点仍然收在「真正持焦的那一枚」上——box 才是能 blur 的那个。
+  if (e.target === $('#messageList') && window.inputFocused($('#messageInput'))) {
+    const ae = document.activeElement;
+    if (ae && typeof ae.blur === 'function') ae.blur();
   }
 }, { passive: true });
 
@@ -17811,7 +18393,10 @@ function toast(msg) {
   clearTimeout(_collectToastTimer);
   _collectToastTimer = setTimeout(() => document.body.removeAttribute('data-toast'), 2000);
 }
-function collectStore() { return window._collectStore || { get: k => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v) }; }
+// 默认那一份走 lsWrite（js/utils.js）：iOS 无痕模式下 setItem 直接抛异常，全站 JS 拼成一块
+// 内联 script＝这一处抛＝后面所有模块都不执行（#021·#111 那一族）。_collectStore 那枚桩是
+// 探针留的入口，原样留着不动。
+function collectStore() { return window._collectStore || { get: k => localStorage.getItem(k), set: (k, v) => lsWrite(k, v) }; }
 // 收藏按联系人分开存：key = collect-msgs:<会话id>；旧全局 key 自动并入 c0
 // cid 可由调用方指定：TA 的自动收藏发生在延迟回调里，那一刻用户可能已经切走会话，
 // 不传就会把 A 收的记进 B 的册子（BUGS #156）。不传＝此刻这一本。
@@ -19321,7 +19906,11 @@ function renderMbSettings() {
     else note.textContent = `${_mbOwnerName(who)} 已单独设过，这里改的只是他这一份，不影响别人。`;
   }
   const cfg = _mbCfg(who);
-  _MB_SET_FIELDS.forEach(f => { const el = $(f[0]); if (el) el.value = cfg[f[1]]; });
+  // 正在编辑的那一格不回写：改动一落（400ms 防抖）本函数就整片回写，会把刚敲进去的一半数字夹回上限、
+  // 光标也被推到末尾——清空后过 400ms 又被写回下限，屏上于是永远停在那个上限（两处条数上限都是 999）。
+  // 别处的数字格（设置页 _autoSaveCard）保存时本来就不回写，这里对齐它；失焦后本函数照旧把夹过的值补回屏上。
+  const _focused = document.activeElement;
+  _MB_SET_FIELDS.forEach(f => { const el = $(f[0]); if (el && el !== _focused) el.value = cfg[f[1]]; });
   const chk = (sel, v) => { const el = $(sel); if (el) el.checked = !!v; };
   chk('#mbSetPunct', cfg.punctEnabled);
   chk('#mbSetWriteEn', cfg.writeEnabled);
@@ -19383,6 +19972,12 @@ function closeMbSettings() {
   if (mask) mask.addEventListener('click', e => { if (e.target === mask) closeMbSettings(); });
   const sheet = $('#mbSetSheet');
   if (sheet) { sheet.addEventListener('input', _mbSetQueueSave); sheet.addEventListener('change', _mbSetQueueSave); }
+  // 点进数字格先全选：点一下再敲＝换掉原来那个数；不选的话新数接在旧数后面，接一次就超过上限、被夹成上限
+  // （条数上限 999），屏上看着像「怎么打都变 999」。number 型不支持 setSelectionRange，只有 select() 能全选。
+  if (sheet) sheet.addEventListener('focusin', e => {
+    const el = e.target;
+    if (el && el.matches && el.matches('input[type=number]')) el.select();
+  });
   const bar = $('#mbSetWho');
   if (bar) bar.addEventListener('click', e => {
     const b = e.target.closest('[data-mb-set-who]');
@@ -27147,7 +27742,7 @@ const HUB_GROUPS = [
       { ico: '<path d="M4 4.5h16v15H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>', name: '许可与关于', desc: '禁止二传二改，禁止商用倒卖', nav: '#about' },
       { ico: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>', name: '桌面美化', desc: '壁纸（六款内置渐变或自己选一张）· 压暗 · 缩放 · 取景 · 铺到 只有首页/所有页面 · 导航条薄纱', nav: '#desk', more: { d: '壁纸 · 压暗 · 铺到哪' } },
       { ico: '<path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2.5h6.5A2.5 2.5 0 0 1 21 9v9.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5z"/>', name: '数据备份', desc: '导出 / 导入，7 天没备份会提醒', nav: '#data', more: { d: '导出 · 导入 · 7 天提醒' } },
-      { ico: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>', name: '设置', desc: '三格：提醒 · 外观 · 数据', nav: 'settings', more: { d: '提醒 · 外观 · 数据', i: '<line x1="3" y1="6" x2="5.5" y2="6"/><line x1="10.5" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="12.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="7.5" y2="18"/><line x1="12.5" y1="18" x2="21" y2="18"/><circle cx="8" cy="6" r="2.5"/><circle cx="15" cy="12" r="2.5"/><circle cx="10" cy="18" r="2.5"/>' } }
+      { ico: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>', name: '设置', desc: '四格：提醒 · 外观 · 数据 · 关于', nav: 'settings', more: { d: '提醒 · 外观 · 数据 · 关于', i: '<line x1="3" y1="6" x2="5.5" y2="6"/><line x1="10.5" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="12.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="7.5" y2="18"/><line x1="12.5" y1="18" x2="21" y2="18"/><circle cx="8" cy="6" r="2.5"/><circle cx="15" cy="12" r="2.5"/><circle cx="10" cy="18" r="2.5"/>' } }
     ]
   }
 ];
@@ -27219,14 +27814,14 @@ function bindHubView() {
 }
 
 // '#' 那种动作直达的**唯一路由**（2026-10-14 BUGS：原本这段只活在 bindHubView 里，而「更多」那一列的行
-// 走的是 js/settings.js 的 [data-view] 委托＝showView 只认纯视图名，'#' 开头一律静默 return
+// 走的是 js/settings.js 的 [data-view] 一次性绑定＝showView 只认纯视图名，'#' 开头一律静默 return
 // ＝更多页那四枚（字号·诊断信息·桌面美化·数据备份，同病的还有 搜索聊天记录·问问TA）点了没反应。
 // 抽成全局函数后两处共用一个投递口：bindHubView 走这里，settings.js 见 '#' 开头的 data-view 也交到这里。
 // 冒烟尺 _smoke_hub_rows.js 的 A2 静态扫的是 hub.js 全文找 "nav === '#…'" 分支，抽函数不挪走分支＝尺照过）
 function _hubRoute(nav) {
     if (nav === '#ask') { showView('chat'); const b = document.getElementById('askBtn'); if (b) b.click(); return; }
     if (nav === '#chat') { showView('chat'); enterChatAtLatest(); return; }   // 功能中心进聊天＝打开会话，定位到最新（BUGS #014）
-    if (nav === '#data') { showView('settings'); const t = document.querySelector('.settings-tab[data-tab="data"]'); if (t) t.click(); return; }
+    if (nav === '#data') { _hubGoFold('data', 'data'); return; }   // 数据备份那一格住在 数据 这一格里（:195 的「安装到桌面」走的是同一条路）
     if (nav === '#desk') { openDeskStation(); return; }   // 美化台浮在首页那一面上，openDeskStation 内部自己 showView('chats')
     if (nav === '#search') { if (typeof openSearch === 'function') openSearch('all'); return; }   // 统一搜索是全屏浮层，不走 showView（这一条搜全部五类＝聊天/信/收藏/字卡/心愿，首页那条只搜聊天记录，FIX 2026-10-09 #226）
     // ↓ 以下是聊天页内的动作行：先进会话，再触发对应的按钮/面板（入口全在 view-chat.html 输入栏与消息长按条）
@@ -30467,6 +31062,12 @@ function applyAppearance() {
   if (a.customFontCss) {
     b.dataset.apFontfamily = 'custom';
   }
+  // 聊天气泡字体/字号（这一位 TA 各一份，值取自 chatAppearance 合成视图；入口在「TA 的设置 → 美化设置」）：
+  // 与上面全局那两样（.app-shell 整站 / zoom 全站）不是一件事——这里只写这一本的聊天消息区。
+  // 默认档零输出（同 density 的 cozy）：字体 inherit＝跟随全局「全站字体」、字号 medium＝出厂 →
+  // 两条都不写属性＝不留一圈「看着选着、实则与出厂逐字节相同」的覆盖块。
+  if (a.chatFont && a.chatFont !== 'inherit') b.dataset.apChatfont = a.chatFont; else delete b.dataset.apChatfont;
+  if (a.chatFontSize === 'small' || a.chatFontSize === 'large') b.dataset.apChatfs = a.chatFontSize; else delete b.dataset.apChatfs;
   b.dataset.apGlass = a.glass ? 'on' : 'off';
   b.dataset.apGlasslite = a.glassLite === true ? 'on' : 'off';
   b.dataset.apDepth = _apDepth();
@@ -30914,6 +31515,24 @@ function renderPyPunctChips() {
   });
 });
 
+// 聊天气泡字体/字号 chips（2026-10-15，居「TA 的设置 → 美化设置」）：与上面那排色点同一个存储体 _caSh()，
+// 即【这一位 TA 自己那份】。这两行刻意不带 data-ap-set——那是全局 appearance 的委托入口（settings.js 那条
+// document 委托只认 chip.closest('[data-ap-set]') 的容器），不写＝不会被它吃掉，自成这一条写入路径。
+[['#apChatFont', 'chatFont'], ['#apChatFontSize', 'chatFontSize']].forEach(([sel, key]) => {
+  const row = $(sel);
+  if (!row) return;
+  row.addEventListener('click', async e => {
+    const chip = e.target.closest('.contact-chip');
+    if (!chip) return;
+    if (_caSh()[key] === chip.dataset.v) return;
+    _caSh()[key] = chip.dataset.v;
+    row.querySelectorAll('.contact-chip').forEach(c => c.classList.toggle('active', c === chip));
+    applyAppearance();
+    if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
+    await save();
+  });
+});
+
 // 色点行右端的档名读数（2026-10-14）：八枚圆点一枚模样，选中了哪档靠行尾这行小字说。
 // 档名不另存一份——就读选中那枚的 title（墨黑/雾蓝/跟随主题…），两处不同源必有一处先漂。
 function echoApDotNames() {
@@ -31288,6 +31907,10 @@ function renderApSettings() {
   _mark('#apDayStyle', a.dayStyle);
   _mark('#apMetaColor', a.metaColor);
   _mark('#apSysStyle', a.sysStyle);
+  // 聊天气泡字体/字号两行是 .contact-chip（不是色点那排 .ap-dot），另开一枚回显
+  const _markChip = (sel, v) => { const g = $(sel); if (g) g.querySelectorAll('.contact-chip').forEach(c => c.classList.toggle('active', c.dataset.v === v)); };
+  _markChip('#apChatFont', a.chatFont || 'inherit');
+  _markChip('#apChatFontSize', a.chatFontSize || 'medium');
   // 两枚透明度滑杆：这一本没传背景图时那一节整块收着（屏上不留一枚拖了不生效的杆，同「输入栏那根杆是死的」
   // 那批的口径），传了就把存的值同时填进杆与它自己那枚读数——两处不一起写＝屏上念的数与底下的观感不一致。
   const _veilSec = $('#apVeilSec');
@@ -32374,7 +32997,12 @@ function renderFoldSummaries() {
   const _vh = _veil(ca.headVeil), _vc = _veil(ca.compVeil), _vd = _veil(ca.bgVeil);
   let _veilTxt = (_vh ? '聊天栏' + _vh : '') + (_vh && _vc ? '·' : '') + (_vc ? '输入栏' + _vc : '');
   if (_vd) _veilTxt += (_veilTxt ? '·' : '') + '压暗' + _vd;
-  _set('#mateApSum', '我方 ' + _dotLabel('#apMineColor') + ' · 对方 ' + _dotLabel('#apPartnerColor') + (_apAlt ? ' · 提示已调' : '') + (ca.chatBg ? ' · 有背景图' : '') + (_veilTxt ? ' · ' + _veilTxt : ''));
+  // 聊天气泡字体/字号（2026-10-15）也上摘要：默认档（跟随全局／标准）不报，非默认才说，免得摘要长出一串与出厂相同的字。
+  const _fontLbl = { system: '系统', serif: '衬线', round: '圆体' };
+  const _fL = (ca.chatFont && ca.chatFont !== 'inherit') ? ('字体' + (_fontLbl[ca.chatFont] || ca.chatFont)) : '';
+  const _fS = (ca.chatFontSize === 'small' || ca.chatFontSize === 'large') ? ('字号' + (ca.chatFontSize === 'small' ? '小' : '大')) : '';
+  const _txtAdj = [_fL, _fS].filter(Boolean).join('·');
+  _set('#mateApSum', '我方 ' + _dotLabel('#apMineColor') + ' · 对方 ' + _dotLabel('#apPartnerColor') + (_apAlt ? ' · 提示已调' : '') + (ca.chatBg ? ' · 有背景图' : '') + (_veilTxt ? ' · ' + _veilTxt : '') + (_txtAdj ? ' · ' + _txtAdj : ''));
   const _grp = (typeof _isGroupChat === 'function') && _isGroupChat();
   // TA 自己标那两枚问签的概率（BUGS #350）出厂 0＝什么都不报（同上面那两枚薄纱档那条：默认档不上摘要），
   // 用户开起来之后卡头才说得出这件事——不然「回复节奏」这张卡的摘要会长出一串与他无关的 0%
@@ -32947,7 +33575,7 @@ function applyDeskPanelH() {
 }
 const _deskHBtn = $('#deskPanelH');
 if (_deskHBtn) _deskHBtn.addEventListener('click', () => {
-  localStorage.setItem(DESK_H_KEY, deskPanelLow() ? 'tall' : 'low');
+  lsWrite(DESK_H_KEY, deskPanelLow() ? 'tall' : 'low');
   applyDeskPanelH();
 });
 
@@ -38018,10 +38646,10 @@ updateHomeIndex();
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.4.6';
+window.APP_VER = 'v9.5.3';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.4.6' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.5.3' + s; }
 
 (async function init() {
   try {
@@ -38125,7 +38753,9 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
         _vvApplied = next;
         // 键盘弹起后若焦点在聊天输入框，按合帧后的最终高度补一次贴底（#049：只补一帧不够，
         // 但完整的贴底稳定由 render.js 的 _stickLoop 负责，这里只做「容器刚被压矮」这一次对齐）
-        if (next && document.activeElement === $('#messageInput')) { const l = $('#messageList'); if (l) l.scrollTop = l.scrollHeight; }
+        // ⚠ 判据走 inputFocused（js/input-ce.js）：Android 上输入框已换成 ce-box，
+        //    焦点落在 box 上，activeElement === 原 input 恒 false（#418）
+        if (next && window.inputFocused($('#messageInput'))) { const l = $('#messageList'); if (l) l.scrollTop = l.scrollHeight; }
       };
       const _vvFix = () => { if (_vvQueued) return; _vvQueued = true; requestAnimationFrame(_vvApply); };
       _vv.addEventListener('resize', _vvFix);
