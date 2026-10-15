@@ -1,0 +1,64 @@
+/* ===== 统一搜索（半屏浮层） ===== */
+/* 点首页搜索条打开：浮层压在当前那一面之上，点遮罩或「取消」收回；随主题取色板变量 */
+.search-mask{position:absolute;inset:0;background:var(--scrim);z-index:12;display:flex;align-items:flex-end;justify-content:center;animation:searchFade .16s ease}
+@keyframes searchFade{from{opacity:0}to{opacity:1}}
+.search-sheet{display:flex;flex-direction:column;width:100%;max-height:78vh;min-height:0;background:var(--surface);border-radius:var(--r-panel) var(--r-panel) 0 0;box-shadow:none;padding-bottom:env(safe-area-inset-bottom,0px);animation:searchUp .22s cubic-bezier(.22,1,.36,1)}
+@keyframes searchUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.search-head{flex:none;display:flex;align-items:center;gap:8px;padding:12px 12px 8px}
+.search-field{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:38px;padding:0 4px 0 13px;border-radius:19px;background:var(--bubble);color:var(--muted)}
+.search-cancel{flex:none;min-width:44px;padding:8px 2px;font-size:15px;color:var(--muted);text-align:right}
+.search-cancel:active{opacity:.5}
+.search-field-icon{flex:none;opacity:.7}
+.search-field input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;font-size:max(1em,16px);color:var(--ink);padding:0}
+.search-field input::placeholder{color:var(--muted);font-size:13px}
+.search-clear{flex:none;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:17px;line-height:1}
+.search-clear:active{opacity:.5}
+/* 按谁筛那一行（BUGS #438）：类名复用收藏页∶信箱∶字卡库那族 .fchips/.fchip＝全站只有一种筛选 chips、零新组件；
+   两条几何闸都带上，缺一条就长成屏上「看得见点不着」或「点得到看不见」：
+   ① flex:none ＝这一行是 .search-sheet（列 flex）的直接子块，而带 overflow-x:auto 的容器按规范拿不到自动
+      最小尺寸＝名单一长被压扁成一条缝（BUGS #080/#082 同一族）；
+   ② 上下内距各 12px ＝ .fchips 那条 overflow-x:auto 会顺手把纵向也裁（一轴非 visible 时另一轴的 visible 按
+      规范回落成 auto），而 css/base.css 把 chip 的命中区垫到 44px＝29px 的盒上下各探出 ~8px，内距不够时那半截
+      被这一行自己的盒子剪掉＝点 chip 下方落空（信箱 #mbOwners 那行的 F3 实测抓的，BUGS #091）。
+   写成 #id 而不是补一条 .search-who-row：collect.css 那条 .fchips 的上下内距不是 12px，谁在后面取决于
+   css_order＝不拿顺序当赌注（字卡库 #265／信箱 #091 同一手）。选中态那层观感由 css/mono.css 一处供，这里不再写一份。 */
+#searchWho{flex:none;padding:12px 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#searchWho::-webkit-scrollbar{display:none}
+#searchWho .fchip{display:flex;align-items:center;gap:5px}
+#searchWho .fchip .n{font-size:11px;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+/* 状态栏里「只看 某人」那一枚：整面 .search-who 是个没限定作用域的类（结果行自己的名字就用着它），
+   故这一条必须从 .search-status 往下问，不给它一个只属于状态栏的名字＝将来两处互相顶掉 */
+.search-status .search-filter-who{font-weight:600;color:var(--ink)}
+.search-status{flex:none;padding:10px 18px 0;font-size:11px;color:var(--muted);letter-spacing:.5px}
+.search-status .hl{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.search-body{flex:1;overflow:auto;overscroll-behavior:contain;padding:10px 0 18px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.search-body::-webkit-scrollbar{display:none;width:0;height:0}
+.search-empty{padding:64px 26px;text-align:center;color:var(--muted);font-size:13px;line-height:2;letter-spacing:.5px}
+.search-empty svg{display:block;margin:0 auto 14px;opacity:.4}
+.search-empty .hl{font-style:normal;font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--muted)}
+.search-row{display:flex;gap:10px;width:auto;margin:0 14px 9px;text-align:left;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:none}
+.search-row:active{opacity:.65}
+.search-main{flex:1;min-width:0}
+.search-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.search-who{font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:5px}
+.search-who small{font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.5px}
+.search-time{font-size:11px;color:var(--muted);flex:none}
+.search-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:3px;font-size:14px;line-height:1.6;color:var(--ink);word-break:break-all;white-space:pre-wrap}
+.search-text .hl{font-style:normal;font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--muted)}
+/* 跳转定位：目标消息气泡外圈闪烁两次后消失 */
+.message.locate-flash .bubble{animation:locateFlash 1.15s ease-out 2}
+@keyframes locateFlash{0%,100%{box-shadow:none}25%,70%{box-shadow:0 0 0 3px var(--accent)}}
+
+/* ===== 统一搜索（分类分组 + 分类图标 + 命中闪烁） ===== */
+.search-group{display:flex;align-items:baseline;justify-content:space-between;padding:12px 4px 6px;position:sticky;top:0;z-index:1}
+.search-group-name{font-size:11px;color:var(--ink);letter-spacing:1px;font-weight:600}
+.search-group-n{font-size:11px;color:var(--muted)}
+.search-row-simple .search-kind-ic{flex:none;width:30px;height:30px;border-radius:9px;background:var(--page);border:1px solid var(--line)}
+.search-kind-letter,.search-kind-collect{background:transparent;border:0;position:relative}
+.search-kind-letter::after,.search-kind-collect::after,.search-kind-card::after,.search-kind-wish::after{content:'';position:absolute;inset:8px;background:var(--ink);opacity:.55;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:14px 14px;mask-size:14px 14px}
+.search-kind-letter::after{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='M3 7l9 6 9-6'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='M3 7l9 6 9-6'/%3E%3C/svg%3E")}
+.search-kind-collect::after{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0112 7.1a4.9 4.9 0 017.5 2.8c0 5.3-7.5 10.6-7.5 10.6z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 20.5S4.5 15.2 4.5 9.9A4.9 4.9 0 0112 7.1a4.9 4.9 0 017.5 2.8c0 5.3-7.5 10.6-7.5 10.6'/%3E%3C/svg%3E")}
+.search-kind-card::after{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='8.5' cy='10' r='1.5'/%3E%3Cpath d='M21 15l-5-5-5 5'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='8.5' cy='10' r='1.5'/%3E%3Cpath d='M21 15l-5-5-5 5'/%3E%3C/svg%3E")}
+.search-kind-wish::after{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 2.8l2.1 6.1 6.1 2.1-6.1 2.1L12 19.2l-2.1-6.1-6.1-2.1 6.1-2.1z'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 2.8l2.1 6.1 6.1 2.1-6.1 2.1L12 19.2l-2.1-6.1-6.1-2.1 6.1-2.1z'/%3E%3C/svg%3E")}
+.search-hit{animation:searchHit 1.5s ease}
+@keyframes searchHit{0%{box-shadow:0 0 0 0 rgba(var(--ink-rgb),.28)}22%{box-shadow:0 0 0 4px rgba(var(--ink-rgb),.14)}100%{box-shadow:0 0 0 0 rgba(var(--ink-rgb),0)}}

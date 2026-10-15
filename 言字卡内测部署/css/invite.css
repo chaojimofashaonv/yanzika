@@ -1,0 +1,94 @@
+/* ===== 邀请（独立一册）· 一页清单 ＋ 聊天里那张双向卡 =====
+   2026-10-11 用户「但还是感觉这两个功能加在一起很莫名其妙，还是分开吧」＝撤销 BUGS #270 那次「并入心愿」：
+   页面回到 html/view-invite.html、写手与册子回到 js/invite.js（data.invites），心愿页自此没有邀请入口。
+   形制沿「独白」范式（与心愿∶「更多」那一页同源）＝零卡片容器·发丝线分行·左缘一道细竖线定边界，
+   颜色一律走变量（BUGS #110·#193·#205 那条「换底不换影必复发」的铁律：这里连一枚色值都不写死）。
+   .iv-* 是这一页的类名前缀，与聊天那张卡的 .inv-* 一族**各管一面**（同一枚类名两处用＝下次改一面必顶另一面）。
+   页题 h2 的衬线由 css/editorial.css 那份名单供（`.inv-head h2` 早在册），本件不重复写字形。 */
+
+/* ---------- 页头 ---------- */
+body[data-view="invite"] .topbar-title-text{display:none}   /* 顶栏标题与页内大标只留一处（与心愿/信箱同口径） */
+#inviteView{background:radial-gradient(circle at 100% 0,rgba(255,255,255,.74),transparent 30%),linear-gradient(180deg,transparent,var(--page) 76%)}
+.inv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:calc(var(--topbar-h) + env(safe-area-inset-top,0px) + 16px) 20px 0}
+.inv-brand{min-width:0}
+.inv-head h2{font-size:26px;line-height:1.05;font-weight:800;letter-spacing:4px;color:var(--ink);margin:0}
+.inv-sub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:8px;min-width:0}
+.inv-en{font-size:11px;letter-spacing:2px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* 计数是全页唯一的计数出处（行上不再各报一遍）；衬线数字弱化一档，不跟页题抢 */
+.inv-nums{flex:none;display:inline-flex;align-items:baseline;gap:3px;font-size:11px;letter-spacing:.6px;color:var(--muted);opacity:.85;white-space:nowrap}
+.inv-nums .iv-n{font-family:Georgia,"Times New Roman",serif;font-size:13px;font-weight:400;color:var(--ink);letter-spacing:0;margin-left:1px;opacity:.9}
+.inv-nums .iv-sep{color:var(--line);font-weight:400;margin:0 3px}
+
+/* ---------- 清单：一行一次邀请 ---------- */
+.iv-list{padding:14px 22px calc(96px + env(safe-area-inset-bottom,0px))}
+.iv-row{position:relative;padding:10px 0 11px 13px;border-bottom:1px solid var(--line);cursor:pointer;transition:opacity .15s}
+/* 左缘那道细竖线＝这一行的边界（不给卡片容器：一条邀请是一句话说出来，不是一条待办记录） */
+.iv-row::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:2px;background:var(--bar-ink);opacity:.34}
+.iv-quote{margin:0;font-size:15px;line-height:1.6;color:var(--ink);word-break:break-word}
+.iv-meta{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:6px;font-size:11px;color:var(--muted)}
+.iv-tick{flex:none;letter-spacing:.3px}
+.iv-date{flex:none;display:inline-flex;align-items:baseline;gap:3px;color:var(--muted)}
+.iv-date b{font-family:Georgia,"Times New Roman",serif;font-size:13px;font-weight:400;color:var(--ink);opacity:.72}
+.iv-date i{font-style:normal;letter-spacing:.4px}
+/* 状态签：待答那一枚给一圈弱虚线（与心愿页「TA 提议 · 等你点头」同一说法）＝它要人动一下；
+   已答的是历史，历史不该长得像待办（一枚记号只承载一个语义，#090 那枚墨点红过一次） */
+.iv-state{flex:none;font-size:11px;line-height:1;letter-spacing:.3px;color:var(--muted)}
+.iv-state.wait{color:color-mix(in srgb,var(--ink) 62%,transparent);border:1px dashed var(--ctl-ring);border-radius:999px;padding:2px 8px}
+/* 行内去处：只描边不填底（实心一枚会把 meta 行那排小字压过去），按下才提墨度。
+   28px 命中垫层由 css/base.css 那份名单供（.iv-go 在册），故这里不写 min-height——写了会和那层打架 */
+.iv-go{flex:none;border:1px solid var(--ctl-ring);background:none;color:var(--muted);border-radius:999px;padding:2px 8px;font-size:11px;letter-spacing:.3px;font-family:inherit;line-height:1.4}
+.iv-go:active{color:var(--ink);border-color:var(--ctl-on-ring)}
+.iv-del{flex:none;margin-left:auto;width:22px;height:22px;border:0;background:none;color:var(--muted);font-size:16px;line-height:1;font-family:inherit;display:grid;place-items:center}
+.iv-del:active{color:var(--ink)}
+.iv-row.sent{cursor:default}
+.iv-row.sent .iv-quote{color:color-mix(in srgb,var(--ink) 78%,transparent)}
+
+/* ---------- 空态：线稿主角＋一句去处（与心愿页那两栏同一形制） ---------- */
+.iv-empty{padding:64px 24px 80px;text-align:center}
+.iv-empty-ico{width:60px;height:60px;margin:0 auto 17px;border-radius:50%;background:var(--bubble);border:1px solid var(--hair);color:var(--muted);display:flex;align-items:center;justify-content:center;box-shadow:none}
+.iv-empty-ico svg{width:25px;height:25px}
+.iv-empty-t{font-size:15px;color:var(--ink);letter-spacing:1px}
+.iv-empty-hint{margin-top:8px;font-size:11px;line-height:1.7;color:var(--muted)}
+
+/* ---------- 撤销条：屏底浮层，5 秒自动收（浮件才许带影：--float-shadow 一族） ---------- */
+.iv-undo{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--ctl-ring);box-shadow:var(--float-shadow);font-size:12px;color:var(--ink)}
+.iv-undo[hidden]{display:none}
+.iv-undo button{border:0;background:none;color:var(--ink);font-weight:600;font-size:12px;font-family:inherit;padding:6px 4px}
+
+/* 那枚「加一条」坐在屏底右下：.fab 本体是 52px 圆形 grid（带文字会竖排两行），
+   这里与心愿页同一手法改成胶囊 flex＝两个面用同一种悬浮钮，不各画一套 */
+.iv-fab{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;height:44px;min-width:96px;padding:0 18px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.iv-fab span{display:inline}
+
+/* ---------- 面板里的候选那一行（BUGS #291）：从心愿册挑一句来邀请 ----------
+   芯片皮肤·选中态·描边一律沿用全站那对 .fchips/.fchip（收藏页供，信箱∶字卡库∶播放器三面已在用）
+   ＝这里只排行，不画第二种形状；44→28px 的命中垫层由 css/base.css 那份「次要内联」名单供
+   （这一排会换行，垫 44 会上下互抢——同「读你/情绪」两行只做 30px 那一课）。
+   长句子在一枚芯片里放不下： nowrap ＋省略号，完整那句挂 title（悬停/长按可读），不撑破面板 */
+.iv-picks{margin-top:13px}
+.iv-picks[hidden]{display:none}
+.iv-picks-cap{display:block;font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:7px}
+.iv-picks-row{display:flex;flex-wrap:wrap;gap:7px}
+.iv-picks-row:empty{display:none}
+.iv-picks-row .fchip{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:6px 13px;font-family:inherit}
+
+/* ---------- 聊天里那张卡：三枚按钮（同意／拒绝／稍后），答过留一行结果 ----------
+   同 taask 一族但更简：没有选项单选，只有一排三个动作。两张卡共用同一套形制，只差主语：
+   dir 'ta'＝TA 邀请我（三枚按钮在我这侧）、dir 'me'＝我邀请 TA（.mine-side，不画任何按钮） */
+.inv-card{width:100%;min-width:224px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:var(--r-card);padding:11px 13px 10px;font-size:13px;line-height:1.55}
+.message:not(.mine) .bubble.inv-card{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+/* 我方发出的那一张坐在右侧：右对齐主语与状态，其余形制与 TA 那张一字不差（一件事只改说得清的那一维） */
+.message.mine .bubble.inv-card.mine-side{text-align:right}
+.inv-card.mine-side .inv-head-row{flex-direction:row-reverse}
+.inv-card.mine-side .inv-badge{color:var(--muted);background:none;border:1px solid var(--ctl-ring)}
+.inv-head-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+.inv-badge{font-size:11px;letter-spacing:1px;color:var(--accent);background:var(--page);border-radius:6px;padding:2px 7px}
+.inv-state{font-size:11px;color:var(--muted)}
+.inv-text{margin:0 0 9px;font-size:13.5px;color:var(--ink)}
+.inv-acts{display:flex;gap:6px}
+.inv-act{flex:1;appearance:none;text-align:center;padding:8px 4px;border-radius:11px;border:1px solid var(--line);background:var(--page);color:var(--ink);font-size:13px;cursor:pointer}
+.inv-act:active{opacity:.75}
+.inv-act:disabled{opacity:1}
+.inv-act.ok{border-color:var(--ctl-on-ring);background:var(--surface);font-weight:600}
+.inv-act.no{color:var(--muted)}
+.inv-result{margin-top:8px;font-size:11.5px;color:var(--muted)}

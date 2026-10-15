@@ -1,0 +1,20 @@
+/* ===== MiniMax 语音：气泡内右下角的播放键 ===== */
+/* 键骑在气泡自己的右下内缘（render.js 把它插进 .bubble 内，与「主动」小签同族，BUGS #087）。
+   .voice-speak-guard 是行内零高度占位：末行文字排到它前面就换行，因此键永不压在字上；
+   颜色走 color:inherit＋opacity，随气泡本色（会话外观 11 档/自定义底色都跟得上），不写死 --muted。
+   图形是**纯三角无外圈**（js/minimax.js _MM_ICON，BUGS #125）：描边环在 16px 下实渲只剩 1.25px
+   发丝线又虚又小，实心盘虽不虚但用户不要那圈盘。纯三角靠光学居中（右指三角重心偏左）才不显歪。
+   既然没有盘，hover 就给一圈 9% currentColor 扩散补「这里可按」的 tactile。 */
+.voice-speak{position:absolute;right:8px;bottom:5px;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:none;background:transparent;color:inherit;opacity:.62;cursor:pointer;border-radius:50%;transition:opacity .15s ease,transform .1s ease}
+.voice-speak::after{content:'';position:absolute;inset:-3px;border-radius:50%;transition:background-color .15s ease}
+.voice-speak:hover::after{background:color-mix(in srgb,currentColor 9%,transparent)}
+.voice-speak-guard{display:inline-block;width:28px;height:0;vertical-align:bottom}
+.voice-speak svg{width:17px;height:17px}
+.voice-speak:active{transform:scale(.88)}
+.voice-speak:hover{opacity:.85}
+.voice-speak.playing{opacity:1;color:var(--accent)}
+.voice-speak.busy{opacity:.3;pointer-events:none}
+/* 长按＝重新合成（念错了的重念出口）。按下即刻给一圈实底反馈，让人知道「按住了、正在重念」，
+   不然 0.5 秒里屏幕上毫无变化，用户只会以为键坏了 */
+.voice-speak.resynth{opacity:.9;color:var(--accent)}
+.voice-speak.resynth::after{background:color-mix(in srgb,currentColor 16%,transparent)}

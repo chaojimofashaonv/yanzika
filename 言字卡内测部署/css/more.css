@@ -1,0 +1,80 @@
+/* ===== 更多（底部导航第四枚）：2026-10-09 起首页那一面磁贴墙删净后，全部功能入口只在这一页 =====
+   2026-10-09 二批：这一页的排版由「4 列方格 10 枚」改成「一行一个 ＋ 一句说明」
+   （四案真尺寸对比稿＝tools/更多排版预览.html，出图件＝tools/_shot_more_layout.js；用户点乙·不分分组）。
+   换掉 .func-grid／.func-tile 的两条量出来的因由：
+   ①十枚排 4 列＝末行只剩两枚、右下缺两格，列表总高 412px 而这一屏有 724px、底下空 312px；
+   ②方格放不下解释，「系统字卡／头像昵称／聊天统计」这类名字光看线稿猜不出来。
+   一行一个把说明带上了（真产物 390×844 现值见下面三批那段）。
+   旧方格那一版的两个数（列表 412px ∶ 屏底空 312px）由四案对比稿现量：node tools/_shot_more_layout.js。
+   形制走心愿页那套「独白」范式＝零卡片容器·发丝线分行；
+   与「使用大全」（css/hub.css 的 .hub-row）刻意分开：那一面是整册目录（一块玻璃卡＋40px 方底图标＋开关），
+   这一面只是直达，所以不垫卡壳也不放开关。
+   ⚠ 页头让开悬浮顶栏那条公式不能漏（同 cards.css 的 .cards-greet；漏掉 var(--topbar-h) 就是 BUGS #017
+   那回「大页题压在顶栏那一行」）。底部那口呼吸保留——tab 栏是 .app-shell 里文档流的 flex 项、不遮内容。
+   2026-10-10 三批（BUGS #243·用户第二次复报「太丑」）：先把口味量成三条物理因（不是再调一档浓淡）——
+   ①**十行零差异**：名称字号∶字重、图标着色、行高各只有一种值＝没有层次，眼睛找不到起点；
+   ②**整页只有一个色相的三档浓淡**：圆托底均亮 209~218（页面底 236）、线稿染同族 95%、图标着墨只占托面
+     7.5%＝一团淡蓝里几根更淡的线，读不出画的到底是什么；
+   ③**页头挂着从首页漏来的一行装饰**（实测占 75px 宽、在这一页零信息量）＝见 css/chats.css 那条收窄。
+   五案在真产物页面里逐案注入实拍（出图件 tools/_shot_more_look.js，同页读数都打在件里与交付目录），
+   用户点「戊·白岛托＋分节」：图标托由「族色淡圆底」换成白岛托＋墨色线稿（治②，那一格最暗由 84 掉到 34、
+   线稿对比 2.39→3.33）；插两条节头分三组＋行内距收到 7px（治①，行高 58→52 换回屏底余量）。
+   2026-10-13 晚三处一起收口（用户复报「排版和 ui 太乱」量的三条物理因）：①三组 8/5/2 失衡——「工具」
+   那一组点开只有两行、屏底空 172px（现量 lastBottom 613 ∶ tab 顶 785）＝读起来像页面没画完；
+   ②「陪伴」那 19 项在这一页一个都没有＝常用功能反而找不到；③行高 51.4px 配 36px 托，密度和一屏
+   装完的预算对不上。落地＝组别重平衡（hub.js 那本册子给字卡库∶字卡适应度∶问问TA∶搜索∶联系人与群聊∶
+   桌面美化∶数据备份七行补 more 字段，三组各 8 行）＋行高 51.4→66（圆托 36→42∶线稿 19→23∶上下内距
+   7→12∶名称 15→15.5），8×66＋页头约 200 ＝屏底余约 31px，三组任一都一屏装完不需滚。
+   旧格数留证（412px ∶ 312px ∶ 749.4px ∶ 785.3px ∶ 单行 51.4px 都在 BUGS #220/#243/#300 那几版的账里）。
+   判据照旧取「末行底边 ＋ 底内距 ≤ tab 顶现量」（门 C2），不拿 724 那个 844−56−64 的估算当承诺。
+   ⚠ 这一族的颜色自此分三处各司其职∶岛面＝--island-grad（跟「光影三档」走）∶描边与线稿＝--ink-rgb
+   （跟底色那一族走·现全站只留雾蓝，BUGS #245）∶落影芯＝--shadow-rgb（同样跟底色那一族走）。三样都不写死数值——
+   在这里写死一个蓝，就等于「切了族而这一页还是雾蓝」（BUGS #110·#193 各踩过一次的那条铁律）。 */
+.more-greet{padding:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 20px) 20px 2px}
+/* 页头右侧那一枚＝整册目录的入口（原先是这一列的最后一行，2026-10-13 二批改到这里＝目录不列它自己）。
+   align-self:stretch 让它自己顶满页头那一列的高＝命中区天生 ≥44，不必进 css/base.css 那两份热区名单
+   （这里垫伪元素会往下去抢一排 tag 的点击：页头与 tag 行之间只有 10px 缝）。
+   不给图标不给箭头：那两样是「一行直达」的形状，这一枚不是一行。 */
+.more-hub{align-self:stretch;display:flex;align-items:center;padding:0 2px;border:0;background:none;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.2px;-webkit-tap-highlight-color:transparent}
+.more-hub:active{opacity:.6}
+/* 一排组 tag＝一屏只画一组（2026-10-13 二批·用户定档「丁·一行 tag 切组」）。
+   ⚠ 这里**只排行列**：面∶字色∶描边∶圆角与「选中那一态长什么样」全由 css/mono.css ③ 那份全站名单供
+   （`.more-tag` 已并进那条名单＝与统计页∶世界感知∶收藏那几排同源同写法），本件再写一遍 background∶color
+   就是两层实现互相顶（#154∶#311 各红过一次的那一族）。左沿 18px 与下面那些行的文字左沿对齐
+   （.more-list 的 16px ＋ .more-line 的 2px），不是随手一个数。 */
+.more-tags{display:flex;gap:8px;padding:10px 18px 12px}
+.more-tag{flex:1;min-width:0;padding:14px 0;font-size:13px;font-family:inherit;line-height:1.2}
+/* 一组＝一个包裹块，只靠 hidden 切（名单只有一处＝js/hub.js 那张表；CSS 里按组名再列一份白名单＝
+   第二本账，册子加一组要么永远藏不住、要么整组被漏掉）。
+   发丝线分行与「组内末行收线」由 .more-line / body .more-line:last-child 自己说完，这里不加一层。 */
+.more-grp{display:block}
+.more-list{padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+/* 一行＝图标白岛托 ∶ 名称＋说明 ∶ 未读角标（有才占位）∶ 箭头。行高 ≥ 全站 44 地板，不必再垫伪元素
+   二批（BUGS #223）那轮把右边那枚箭头从**字符** ›（实测宽 5px，跟 1.8 描边的矢量线稿不是一套，
+   同 BUGS #174 那枚 × 那一族）换成 8×14 矢量 path，名称抬到 15px；它当时给的图标托是「10% 族色淡圆底」，
+   三批（本文件头那段）判它治不了②——同一族色上再垫一层同族色，只是把淡蓝摊成两块淡蓝——换成白岛＋墨线稿。
+   ⚠ 圆托的 42×42 是**含描边的实际渲染**＝全站有那条 *{box-sizing:border-box}（css/theme.css 中段），
+   别按「42 是内容尺寸、描边落在外面所以看着是 44」去理解它。（theme.css 里还留着一句「本仓没有全局
+   border-box」的旧注释，与那条通配规则自相矛盾＝别家批的账，本批只在自己这一族按实测写、未代改那句。）
+   行高 66 ＝ 圆托 42 ＋ 上下内距 12；这里不写 box-sizing，写了也是同一个数。
+   （2026-10-13 晚：36×36／19px／内距 7／名称 15 那一档是 #220~#300 那几版的账，当晚复报「太乱」后
+   连组别一起重排，旧尺寸留证不追改；门 B2 的期望值同批跟到 42×42∶23px∶15.5px。）
+   ⚠ 节头是 <div> 不是 <button>，也不挂 data-view——挂上去＝点一行标题会被 settings.js 那条统一委托
+   当成一次导航（「看着能点实则无反应」那一族的反面：它真会点走）。组尾那行不再画发丝线，
+   分隔这件事由节头那一条线说完（两条平行细线隔 13px＝脏）。
+   2026-10-11 十批（用户「帮我把【更多】里的 念想和玩料 的分类删掉 这分类实在是莫名其妙的」）：
+   两条节头随宿主整族摘除（html/view-more.html 同批），.more-sec 三条与那条「组尾收线」一并删净＝
+   这一页回到不分节的直列，每行各画一条发丝线、末行由 :last-child 收线；分节的账收档 #243。 */
+.more-line{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:12px 2px;border-bottom:1px solid var(--hair);color:var(--ink);-webkit-tap-highlight-color:transparent}
+.more-line:last-child{border-bottom:none}
+.more-line:active{background:var(--press)}
+.more-ico{flex:none;width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:var(--island-grad);border:1px solid var(--ctl-hair);box-shadow:0 1px 2px rgba(var(--shadow-rgb),.06);color:rgba(var(--ink-rgb),.82)}
+.more-ico svg{width:23px;height:23px}
+.more-tx{flex:1;min-width:0}
+.more-tx b{display:block;font-size:15.5px;font-weight:600;letter-spacing:.3px}
+.more-tx small{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+/* 未读角标沿用全站那一族（theme.css 定尺寸∶css/glass.css 末位定白岛面与墨字），
+   只是在这里它坐进 flex 行里而不是贴在卡角上＝把 theme.css 那条 absolute 就地收回（不收回会飞出屏外） */
+.more-line .unread-badge{position:static;flex:none}
+.more-chev{flex:none;width:8px;height:14px;color:rgba(var(--ink-rgb),.34)}
+.more-chev svg{display:block;width:8px;height:14px}

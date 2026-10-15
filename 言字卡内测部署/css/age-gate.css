@@ -1,0 +1,78 @@
+/* 开屏公告 · 纯免责声明页（版式仍是对比稿 tools/mockup_notice_v3.html 选的甲案，只是删掉了书末版权页那一整块）
+   一张白纸上排编号条款：零卡片壳、无圆点竖线；许可与署名归设置页「关于 · 许可」那一格，这一页不再重复说。
+   红线警示用红细线分隔（红线只留给未满 18 那一条与内测禁令那条）。
+   勾选框与确认按钮不固定、随条款排在末尾，须滑到底才看得见（配合 js 滑底门控）。
+   配色全走主题令牌（--shell-bg/--ink/--muted/--hair/--danger-ink/--island-grad），跟着素雪底色这一族令牌走 */
+#ageGate{--red:var(--danger-ink);position:fixed;inset:0;z-index:10000;background:var(--shell-bg);display:none;flex-direction:column}
+#ageGate.on{display:flex;animation:agIn .32s ease}
+/* 首屏前置（html/head.html 那段脚本挂的类）：读档期间公告就已经在屏上，桌面不再先闪出来。
+   .on 随后由 age-gate.js 补上时不再重放 agIn，免得已经看着的一页又淡一次 */
+html.gate-early #ageGate{display:flex}
+html.gate-early #ageGate.on{animation:none}
+#ageGate.gone{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s ease,visibility .45s ease}
+@keyframes agIn{from{opacity:0}to{opacity:1}}
+/* BUGS #419：flex:1 后面必须跟 min-height:0——WebKit（iOS Safari／国产壳的老内核）不给「overflow 滚动容器自动最小尺寸归零」这条规格豁免，
+   漏写＝.ag-scroll 被内容撑到全高、整页又钉死在 fixed 容器里，滚不动也点不到：底部的勾选行与「确认进入」全被推到屏幕外（某些手机型号高发，
+   桌面 Chrome 吃豁免所以一直复现不了）。同族课：BUGS #204、#339；quiz-gate.css 的 .qg-scroll 一直是正形 */
+.ag-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.ag-inner{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 34px) 22px calc(24px + env(safe-area-inset-bottom,0px))}
+.ag-brand{font-size:11px;letter-spacing:4px;color:var(--muted);margin-bottom:8px}
+/* 版号（#ageGateVer）：最顶一行，一眼核对线上部署是不是新版。运行时读 window.APP_VER（js/app.js 启动时填），
+   assemble.py --bump 推过 APP_VER 后这里自动跟着变，不用改这一页 */
+.ag-ver{font-size:10.5px;letter-spacing:1.5px;color:var(--muted);opacity:.75;font-variant-numeric:tabular-nums;margin-bottom:10px}
+.ag-title{font-size:22px;font-weight:650;letter-spacing:-.2px;color:var(--ink);margin:0 0 6px}
+.ag-sub{font-size:11.5px;color:color-mix(in srgb,var(--ink) 55%,transparent);letter-spacing:.2px;margin:0 0 20px}
+/* 「线上有新版」那一行（js/update-check.js 比过 version.json 才摘掉 hidden）：次级动作＝描边不加底，
+   全页唯一的主操作仍是纸尾那枚「确认进入」白岛；红线色只留给「未满 18」与「内测禁令」两条条款，这一行不许跟着变红 */
+.ag-upd{margin:0 0 18px}
+.ag-update{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:10px 12px;border-radius:15px;border:1px solid color-mix(in srgb,var(--ink) 22%,transparent);background:transparent;color:var(--ink);font-size:12.5px;line-height:1.5;letter-spacing:.2px;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .15s}
+.ag-update:active{opacity:.6}
+.ag-upd-note{font-size:11px;line-height:1.6;color:var(--muted);margin-top:7px}
+.ag-warn{display:flex;gap:9px;padding:0 0 14px;border-bottom:1px solid color-mix(in srgb,var(--red) 16%,transparent);margin-bottom:6px}
+.ag-warn>svg{flex:none;width:15px;height:15px;margin-top:2px;stroke:var(--red);stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ag-warn-t{font-size:13.5px;font-weight:650;color:var(--red);letter-spacing:.3px;margin-bottom:4px}
+.ag-warn p{font-size:11.5px;line-height:1.7;margin:0;color:color-mix(in srgb,var(--ink) 62%,transparent)}
+.ag-warn strong{font-weight:650;color:var(--ink)}
+.ag-list{display:flex;flex-direction:column}
+.ag-row{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--hair)}
+.ag-row:last-child{border-bottom:0}
+.ag-no{flex:none;width:20px;font-size:11px;line-height:1.6;color:var(--muted);letter-spacing:.5px;font-variant-numeric:tabular-nums;padding-top:2px}
+.ag-rowc{min-width:0}
+.ag-row h4{font-size:12.5px;font-weight:650;color:var(--ink);margin:0 0 4px;letter-spacing:.1px}
+.ag-row p{font-size:12px;line-height:1.72;color:color-mix(in srgb,var(--ink) 72%,transparent);margin:0;text-align:left}
+.ag-row strong{font-weight:650;color:var(--ink)}
+.ag-row.hot h4{color:var(--red)}
+/* 内测二传/搬运禁令那条（.ban）：不只标题，整条正文都标红 */
+.ag-row.ban p{color:var(--red)}
+.ag-row.ban strong{color:var(--red)}
+/* 第 10 条「署名 · 设计与参考」：旧写法把五种内容用 <br> 堆成一坨密不透风的大段文字，难读。
+   改成「左标签·右内容」的定义式排版（grid 两列：标签列 auto 内容列 1fr），借鉴／网络两族各自带项点列表。
+   仍守本页铁律＝白纸·发丝线·零卡片：不新增颜色，行分隔用比条款间 --hair 更淡一档的发丝线，全走 --ink 混色令牌 */
+.ag-ref{margin-top:2px}
+.ag-ref-item{display:grid;grid-template-columns:auto 1fr;gap:0 10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.ag-ref-item:first-child{border-top:0;padding-top:0}
+.ag-ref-k{font-size:11px;font-weight:650;color:color-mix(in srgb,var(--ink) 50%,transparent);letter-spacing:.4px;white-space:nowrap;padding-top:2px}
+.ag-ref-v{font-size:12px;line-height:1.7;color:color-mix(in srgb,var(--ink) 72%,transparent);min-width:0}
+.ag-ref-list{list-style:none;margin:2px 0 0;padding:0}
+.ag-ref-list li{position:relative;padding-left:13px;margin-top:4px}
+.ag-ref-list li:first-child{margin-top:0}
+.ag-ref-list li::before{content:'';position:absolute;left:2px;top:8px;width:3px;height:3px;border-radius:50%;background:color-mix(in srgb,var(--ink) 38%,transparent)}
+.ag-foot{margin-top:2px;padding-top:18px;border-top:1px solid var(--hair)}
+.ag-hint{font-size:11px;color:var(--muted);text-align:center;letter-spacing:.6px;margin-bottom:10px;transition:color .2s}
+#ageGate.readok .ag-hint{color:color-mix(in srgb,var(--ink) 62%,transparent)}
+.ag-check{position:relative;display:flex;align-items:flex-start;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ag-check input{position:absolute;left:-9999px;opacity:0}
+/* glass.css 把全站 checkbox 撑成 44×26 开关（width/height 带 !important），这枚视觉隐藏的框会因此在 flex 行里占掉 44px 槽位、把整行推进 54px；此处按 id 特异度收回，勾选仍由 .ag-box 呈现 */
+#ageGate .ag-check input[type=checkbox]{position:absolute;left:-9999px;width:0 !important;height:0 !important;min-width:0;flex:none;margin:0;opacity:0}
+.ag-box{flex:none;width:20px;height:20px;border-radius:6px;border:1px solid color-mix(in srgb,var(--ink) 22%,transparent);background:#fff;box-shadow:inset 0 1px 0 #fff;display:grid;place-items:center;margin-top:1px;transition:background .15s,border-color .15s,opacity .2s}
+.ag-box svg{width:11px;height:9px;stroke:var(--ink);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:14;stroke-dashoffset:14;transition:stroke-dashoffset .18s ease .05s}
+.ag-check input:checked ~ .ag-box{background:var(--island-grad);border-color:color-mix(in srgb,var(--ink) 55%,transparent)}
+.ag-check input:checked ~ .ag-box svg{stroke-dashoffset:0}
+.ag-check input:disabled ~ .ag-box{opacity:.4}
+.ag-check input:focus-visible ~ .ag-box{outline:2px solid var(--ctl-on-ring);outline-offset:2px}
+.ag-check-label{font-size:12px;line-height:1.55;color:color-mix(in srgb,var(--ink) 55%,transparent)}
+.ag-enter{width:100%;height:48px;border-radius:15px;border:1px solid rgba(255,255,255,.95);background:var(--island-grad);color:var(--ink);box-shadow:inset 0 1px 0 #fff;font-size:15px;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:opacity .2s,transform .12s;-webkit-tap-highlight-color:transparent;margin-top:11px}
+.ag-enter:active{transform:scale(.98);opacity:.7}
+.ag-enter:disabled{background:rgba(255,255,255,.5);color:var(--muted);box-shadow:none;border-color:var(--line);cursor:default}
+.ag-foot-note{font-size:11px;color:var(--muted);text-align:center;margin-top:9px;letter-spacing:.3px}
+@media(prefers-reduced-motion:reduce){#ageGate.on{animation:none}.ag-box,.ag-box svg,.ag-hint,.ag-enter{transition:none}}

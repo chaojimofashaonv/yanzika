@@ -1,0 +1,104 @@
+/* ===== 后台运行（mochi 移植）：长提示条 / 通知恢复条 / 权限警示 / 弹窗 ===== */
+
+#bgNotifyPermWarn {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color:var(--danger-ink);
+  white-space: pre-wrap;
+}
+
+#bgToast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(12px);
+  max-width: 86vw;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--ink, #222);
+  color: var(--surface, #fff);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s, transform .22s;
+  z-index: 3000;
+}
+#bgToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+#notify-heal-bar {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 420px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  z-index: 2600;
+  background: var(--surface, #fff);
+  color: var(--ink, #222);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#notify-heal-bar[hidden] { display: none; }
+#notify-heal-txt { flex: 1; min-width: 0; }
+#notify-heal-refresh,
+#notify-heal-close {
+  flex: none;
+  border: 1px solid var(--eer, #e5e5e5);
+  background: none;
+  color: var(--ink, #222);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+}
+#notify-heal-close { padding: 5px 9px; }
+
+.bg-modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0, .4);
+  z-index: 3200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.bg-modal {
+  width: min(86vw, 360px);
+  max-height: 76vh;
+  overflow: auto;
+  background: var(--surface, #fff);
+  color: var(--ink, #222);
+  border-radius: 18px;
+  padding: 18px 16px 14px;
+  box-shadow: none;
+}
+.bg-modal.big { width: min(92vw, 420px); }
+.bg-modal h3 { margin: 0 0 10px; font-size: 15px; }
+.bg-modal .bg-modal-txt {
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  margin: 0 0 14px;
+}
+.bg-modal-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.bg-modal-btns button {
+  border: 1px solid var(--eer, #e5e5e5);
+  background: none;
+  color: var(--ink, #222);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+}

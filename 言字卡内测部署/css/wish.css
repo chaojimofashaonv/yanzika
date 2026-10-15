@@ -1,0 +1,208 @@
+/* ===== 心愿 · 排印清单（v2 精简版）=====
+   上一版太乱的四个根因，这里逐条拆掉：
+   ① 层级堆叠：kicker + 30px 大标 + 副标题 + 导出钮 + 两张大统计卡 + 药丸 tab + chips + 月份头，八层压在一条内容上。
+      → 收成三层：页头（大标+英文小标 / 右列导出+数字）→ 下划线分段 → 清单。
+   ② 数字重复两遍：统计卡一组、tab 徽标又一组。→ 只留在页头右列，tab 后面跟一个弱化等宽数字。
+   ③ 框套框：卡片自身描边 + 落影 + 卡内竖分隔线 + meta 上边框，一行四个框。→ 卡内一律不发丝线，日期改为
+      左侧一列衬线数字（无右竖线），meta 直接跟在正文下方的行内。
+   ④ 药丸与实心块过多：统计卡药丸、tab 凹槽、chips 药丸、FAB 药丸。→ 只保留 chips 与 FAB 两处药丸，
+      tab 改下划线式（与信箱 v3 同款）。 */
+
+/* 顶栏文字由页内大标承担（与信箱同口径） */
+body[data-view="wish"] .topbar-title-text{display:none}
+#wishView{background:
+  radial-gradient(circle at 100% 0,rgba(255,255,255,.74),transparent 30%),
+  linear-gradient(180deg,transparent,var(--page) 76%)}
+
+/* ---------- 页头 ---------- */
+.wish-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:calc(var(--topbar-h) + env(safe-area-inset-top,0px) + 16px) 20px 0}
+.wish-brand{min-width:0}
+.wish-brand h2{font-size:26px;line-height:1.05;font-weight:800;letter-spacing:4px;color:var(--ink);margin:0}
+.wish-export{flex:none;height:30px;margin-top:3px;border:1px solid var(--ctl-ring);background:var(--ctl-glass,var(--surface));color:var(--ink);border-radius:999px;padding:0 12px 0 9px;font-size:11px;letter-spacing:1px;font-family:inherit;display:inline-flex;align-items:center;gap:4px;box-shadow:none}
+.wish-export svg{width:13px;height:13px}
+.wish-export:active{opacity:.68}
+/* 计数：独立一行，是全页唯一的计数出处；衬线数字，弱化不抢标题 */
+/* 副标行：英文小标在左（窄屏时省略号收缩，不被计数挤没），计数在右，同一条基线 */
+.wish-sub{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:8px;min-width:0}
+.wish-en{font-size:11px;letter-spacing:2px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wish-nums{flex:none;display:inline-flex;align-items:baseline;gap:3px;font-size:11px;letter-spacing:.6px;color:var(--muted);opacity:.85;white-space:nowrap}
+.wish-nums .wn-n{font-family:Georgia,"Times New Roman",serif;font-size:13px;font-weight:400;color:var(--ink);letter-spacing:0;margin-left:1px;opacity:.9}
+.wish-nums .wn-sep{color:var(--line);font-weight:400;margin:0 3px}
+
+/* ---------- 分段：下划线式（不用药丸底） ---------- */
+.wish-tabs{display:flex;gap:20px;align-items:center;padding:14px 20px 0}
+.wish-tab{position:relative;border:0;background:none;font-family:inherit;font-size:13px;letter-spacing:1px;color:var(--muted);padding:0 1px 10px;display:inline-flex;align-items:baseline;gap:5px}
+.wish-tab.active{color:var(--ink);font-weight:600}
+/* 下划线走 ::before —— ::after 已被 base.css 的触控热区补偿占用（44px 命中层），不能复用 */
+.wish-tab.active::before{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:2px;background:var(--bar-ink)}
+
+/* ---------- 归属筛选（多联系人时才有） ---------- */
+/* flex:none 必须有 —— 与游戏页那行 .games-who 同一刀（BUGS #080；那一族 2026-10-11 回到主站＝两处此刻都带 flex:none）：.view.active 是 flex-direction:column，
+   本行带 overflow-x:auto 拿不到 flex 项的自动最小尺寸，心愿条目一多（清单超高视口）就被压扁。
+   实测塌成 13px＝只剩上内距、chips 26→11.3px、与下方清单间隙归 0。 */
+.wish-owners{flex:none;display:flex;gap:7px;padding:13px 20px 0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.wish-owners::-webkit-scrollbar{width:0;height:0;display:none}
+.wish-owners:empty{display:none}
+.wish-ow{flex:none;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--ctl-ring);color:var(--muted);font-size:11px;font-family:inherit}
+.wish-ow.on{color:var(--ink);font-weight:600;background:var(--island-grad);border-color:var(--ctl-on-ring)}
+
+/* ---------- 清单：零容器，一句话一栏 ----------
+   范式换了：一条心愿是「写下来的话」，不是「一条记录」。所以不给卡片气泡、不给日期列、
+   不给常态状态圆钮 —— 只用左侧一道 2px 细竖线定边界，条目之间靠发丝线与留白。 */
+.wish-list{padding:0 22px calc(96px + env(safe-area-inset-bottom,0px))}
+.wish-mg{display:flex;align-items:center;gap:8px;padding:20px 0 7px}
+.wish-mg b{font-size:11px;letter-spacing:3px;color:var(--ink);font-weight:600;flex:none}
+.wish-mg .rule{flex:1;height:1px;background:var(--line)}
+.wish-mg span{font-size:11px;letter-spacing:1.2px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.wish-group{display:flex;flex-direction:column;gap:0}
+
+/* 一条 = 正文 + 一行 meta。无背景、无描边、无落影；左缘一道细竖线代替容器边 */
+.wish-row{position:relative;padding:9px 0 11px 13px;border-bottom:1px solid var(--line);cursor:pointer;transition:opacity .15s}
+.wish-group .wish-row:last-child{border-bottom:0}
+.wish-row:active{opacity:.66}
+/* 常规细线 2px；置顶加粗到 3px 并转实墨（v2 冒烟 V2 钉的就是这个宽度） */
+.wish-row::before{content:'';position:absolute;left:0;top:14px;bottom:13px;width:2px;border-radius:2px;background:var(--bar-ink);opacity:.34}
+.wish-row.pin::before{width:3px;background:var(--ink);opacity:1}
+/* 已实现：竖线收掉，正文转灰（不再叠删除线，长句上会糊成一片） */
+.wish-row.done::before{opacity:0}
+
+.wish-quote{font-size:15px;line-height:1.78;letter-spacing:.2px;color:var(--ink);word-break:break-word;margin:0;padding-right:30px}
+.wish-row.done .wish-quote{color:color-mix(in srgb,var(--ink) 42%,transparent)}
+
+.wish-meta{display:flex;align-items:center;flex-wrap:wrap;gap:0 7px;margin-top:6px;font-size:11px;letter-spacing:.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* 日期：降级为 meta 行内的一枚小字附注（月已由分组头说过，这里只补日与周几） */
+.wish-date{display:inline-flex;align-items:baseline;gap:3px;flex:none}
+.wish-date b{font-family:Georgia,"Times New Roman","Songti SC",SimSun,serif;font-size:12.5px;font-weight:400;color:color-mix(in srgb,var(--ink) 74%,transparent);font-variant-numeric:tabular-nums;line-height:1}
+.wish-date i{font-style:normal;font-size:11px;line-height:1;white-space:nowrap}
+.wish-clock{font-size:11px;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wish-pinflag{color:var(--ink);font-weight:700;flex:none}
+/* 期限签：与「置顶」「已实现」同位。逾期用实墨描边点出来 —— 语气不同，别只靠颜色（纯白主题下淡色差异也读不出） */
+.wish-dueflag{flex:none;font-size:11px;line-height:1;letter-spacing:.3px;color:var(--muted)}
+.wish-dueflag.late{color:color-mix(in srgb,var(--ink) 72%,transparent);border:1px solid var(--ctl-ring);border-radius:999px;padding:3px 8px}
+/* 面板里的期限档位：沿用 .wish-ow 那一族药丸，不另造控件 */
+.wish-due-row{margin-top:13px}
+.wish-due-row[hidden]{display:none}
+.wish-due-cap{display:block;font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:7px}
+.wish-due-chips{display:flex;gap:7px;flex-wrap:wrap}
+.wish-due-chips .wish-ow{padding:6px 13px}
+/* 候选那一行（「或者挑一句 TA 想过的」＋行末「＋ 加一句」）2026-10-13 整行撤（用户「我添加当然是
+   我自己输入文字添加」）：.wish-pool-add 那条虚线描边随宿主一起删，别留一个没有宿主的规则 */
+/* 「谁说的」唯一出处：我记的 → 稍强；TA 说的 → 弱一点，不与正文抢 */
+.wish-tick{color:var(--muted);font-weight:400;flex:none}
+.wish-row.mine .wish-tick{color:color-mix(in srgb,var(--ink) 78%,transparent);font-weight:600}
+.wish-doneflag{display:inline-flex;align-items:center;gap:3px;flex:none;color:var(--muted);letter-spacing:.6px}
+.wish-doneflag svg{width:11px;height:11px}
+/* TA 提议中：待你点头——弱虚线框小签，和已实现的实签区分 */
+.wish-doneflag.prop{color:color-mix(in srgb,var(--ink) 62%,transparent);border:1px dashed var(--ctl-ring);border-radius:999px;padding:2px 8px}
+.wish-row.done .wish-meta{opacity:.72}
+
+/* 凭证图：正文下一枚 44px 圆角小图（点行进编辑可解除） */
+.wish-proof{display:block;width:44px;height:44px;object-fit:cover;border-radius:11px;border:1px solid var(--hair);margin-top:7px}
+
+/* 邀请那一层的待答签与两枚去处随 2026-10-11 的分家一起搬去 css/invite.css（用户「还是分开吧」＝撤销
+   BUGS #270 那次并入心愿）：心愿页自此不再画「等人回话」那一族，行里少一枚读数 */
+
+/* ✓ 常态隐身（心愿不是待办清单，不该每行挂个圈）：
+   整行保持 44px 命中区，悬停/聚焦才显形，触屏点一下即可标记实现 */
+.wish-ok{position:absolute;right:-4px;top:5px;width:44px;height:44px;border:0;background:none;color:var(--muted);display:grid;place-items:center;border-radius:50%;font-family:inherit;opacity:0;transition:opacity .14s}
+.wish-ok svg{width:19px;height:19px;padding:4px;box-sizing:content-box;border:1px solid var(--ctl-ring);border-radius:50%;background:var(--bubble)}
+.wish-row:hover .wish-ok,.wish-ok:focus-visible{opacity:1}
+.wish-ok:active{opacity:.55}
+.wish-row.done .wish-ok{opacity:1;color:var(--ink)}
+.wish-row.done .wish-ok svg{background:var(--ink);color:var(--page);border-color:var(--ink)}
+
+/* ---------- 空态 ---------- */
+.wish-empty{padding:64px 24px 80px;text-align:center}
+.wish-empty-ico{width:60px;height:60px;margin:0 auto 17px;border-radius:50%;background:var(--bubble);border:1px solid var(--hair);color:var(--muted);display:flex;align-items:center;justify-content:center;box-shadow:none}
+.wish-empty-ico svg{width:25px;height:25px}
+.wish-empty-t{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.wish-empty-hint{font-size:12px;line-height:1.8;color:var(--muted)}
+
+/* ---------- 删除后的撤销条：沉底浮层 ---------- */
+.wish-undo{position:fixed;left:max(16px,calc(50% - 224px));right:max(16px,calc(50% - 224px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 8px 10px 16px;border-radius:999px;background:var(--island-grad);border:1px solid var(--ctl-ring);box-shadow:var(--float-shadow);font-size:12px;color:var(--ink);animation:wishUndoIn .22s cubic-bezier(.22,.6,.36,1)}
+.wish-undo[hidden]{display:none}
+.wish-undo button{flex:none;border:0;background:none;color:var(--ink);font-weight:700;font-size:12px;letter-spacing:2px;font-family:inherit;padding:6px 12px;border-radius:999px}
+.wish-undo button:active{background:var(--press)}
+@keyframes wishUndoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- FAB：右下唯一入口 ---------- */
+/* base 的 .fab 是 52px 圆形 + display:grid（图标文字会竖排成两行），这里改回 flex 横排 */
+.wish-fab{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;height:44px;min-width:96px;padding:0 18px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.wish-fab span{display:inline}
+
+/* ===== 记一条 / 改这条：底部面板 ===== */
+.wish-mask{position:absolute;inset:0;z-index:16;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;animation:wishMaskIn .18s ease}
+.wish-mask[hidden]{display:none}
+@media(min-width:521px){.wish-mask{align-items:center}}
+.wish-panel{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--ctl-ring);border-radius:var(--r-panel) var(--r-panel) 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:none;animation:wishIn .28s cubic-bezier(.22,.6,.36,1)}
+@media(min-width:521px){.wish-panel{border-radius:var(--r-panel)}}
+/* 从聊天页打开时面板压在聊天输入框之上：--surface 是半透玻璃（rgba(255,255,255,.78)），
+   底下那排「说点什么…／表情／发送」会透上来，两层控件叠在一起看着像坏版；
+   换成 --panel（.96）也还漏 4%，截图上仍有一丝灰影。这里必须给**完全不透明**的底：
+   用 color-mix 把半透明色按 100% 提到同色不透明版，日间得到 #fff，夜色跟着深色段一起变。
+   只在这个来源下生效 —— 心愿页自己打开时仍是玻璃质感，不动全站观感。
+   两条选择器各管一个遮罩：#wishMask 是记一条/改文字，#wishProofMask 是纯图的凭证挑选，
+   两者同样从聊天页底部升起、同样压在输入框上，毛病一致，一起改。 */
+body[data-view="chat"] .wish-mask .wish-panel,
+body[data-view="chats"] .wish-mask .wish-panel,
+body[data-view="chat"] #wishProofMask .wish-panel,
+body[data-view="chats"] #wishProofMask .wish-panel{background:var(--panel-solid);z-index:2}
+@keyframes wishMaskIn{from{opacity:0}to{opacity:1}}
+@keyframes wishIn{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
+.wish-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.wish-panel-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.2px}
+/* 「这条是从聊天里带来的…」：草稿来源提示，一行弱化小字，说完就收（不占竖向空间是次要的，
+   主要是把「原文只是草稿」这件事说在动手之前，BUGS #166） */
+.wish-panel-hint{margin:-4px 0 10px;font-size:11.5px;line-height:1.55;color:var(--muted);letter-spacing:.2px}
+.wish-panel-hint[hidden]{display:none}
+/* 待挂凭证预览：图 + 一句说明，贴在输入框下面，「这张不带」在动作行里 */
+.wish-proof-draft{display:flex;align-items:center;gap:10px;margin-top:11px}
+.wish-proof-draft[hidden]{display:none}
+.wish-proof-draft img{width:44px;height:44px;flex:none;border-radius:9px;object-fit:cover;background:var(--bubble)}
+.wish-proof-draft span{font-size:11.5px;color:var(--muted);letter-spacing:.2px}
+.wish-panel-close{width:32px;height:32px;border-radius:50%;color:var(--muted);font-size:17px;display:grid;place-items:center;background:var(--bubble);border:0;font-family:inherit}
+.wish-panel-close:active{opacity:.65}
+.wish-input{width:100%;box-sizing:border-box;border:1px solid var(--ctl-ring);outline:none;background:var(--bubble);color:var(--ink);border-radius:15px;padding:13px 14px;font-size:max(1em,16px);line-height:1.65;font-family:inherit;resize:none;max-height:40vh}
+.wish-input:focus{border-color:var(--ink);background:var(--surface)}
+.wish-owner-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+.wish-owner-row:empty{display:none}
+.wish-owner-row .wish-ow{padding:6px 13px}
+.wish-panel-actions{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-top:16px}
+.wish-del{border:1px solid var(--danger-hair);background:none;color:var(--danger-ink);border-radius:999px;padding:9px 16px;font-size:12px;font-family:inherit;margin-right:auto}
+.wish-del[hidden]{display:none}
+.wish-del:active{opacity:.7}
+.wish-save{border:1px solid var(--ctl-ring);background:var(--island-grad);color:var(--ink);border-radius:999px;padding:10px 25px;font-size:12px;font-weight:700;font-family:inherit;box-shadow:var(--island-shadow)}
+.wish-save:active{opacity:.75}
+.wish-panel-extras{display:flex;gap:7px;margin-top:12px}
+.wish-panel-extras:empty{display:none}
+.wish-pin-tg{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ctl-ring);background:var(--surface);color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12px;font-family:inherit}
+.wish-pin-tg.on{color:var(--ink);font-weight:600;background:var(--island-grad);border-color:var(--ctl-on-ring)}
+.wish-pin-tg[hidden]{display:none}
+.wish-pin-tg:active{opacity:.75}
+.wish-ann{border:1px solid var(--line);background:none;color:var(--ink);border-radius:999px;padding:9px 16px;font-size:12px;font-family:inherit}
+.wish-ann[hidden]{display:none}
+.wish-ann:active{opacity:.7}
+
+/* 凭证挑选弹层的候选行：一句话 + 归属名，竖排清单 */
+.wish-proof-list{display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow-y:auto}
+.wish-proof-opt{display:flex;align-items:baseline;gap:8px;text-align:left;border:1px solid var(--ctl-ring);background:var(--bubble);border-radius:14px;padding:11px 13px;font-family:inherit;font-size:14px;color:var(--ink);line-height:1.5}
+/* 「记一条新的」＝出口，不是候选：实一点的底 + 强调字重，跟下面那串「挂到已有那条」拉开 */
+.wish-proof-opt.new{border-color:var(--ctl-on-ring);background:var(--island-grad);color:var(--ink)}
+.wish-proof-opt.new span{font-weight:700}
+.wish-proof-opt.new i{color:var(--ink);opacity:.7}
+.wish-proof-opt:active{opacity:.66}
+.wish-proof-opt span{flex:1;min-width:0;word-break:break-word}
+.wish-proof-opt i{flex:none;font-style:normal;font-size:11px;color:var(--muted)}
+.wish-proof-empty{font-size:12px;color:var(--muted);text-align:center;padding:18px 8px;margin:0}
+
+@media(max-width:350px){
+  .wish-head{padding-left:16px;padding-right:16px}
+  .wish-brand h2{font-size:24px;letter-spacing:3px}
+  .wish-en{letter-spacing:1.4px}
+  .wish-tabs{padding-left:16px;padding-right:16px;gap:16px}
+  .wish-owners{padding-left:16px;padding-right:16px}
+  .wish-list{padding-left:16px;padding-right:16px}
+  .wish-row{padding:9px 0 11px 11px}
+  .wish-quote{padding-right:26px}
+  .wish-fab{min-width:88px;padding:0 14px}
+}

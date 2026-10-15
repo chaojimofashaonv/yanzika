@@ -1,0 +1,569 @@
+/* 顶栏让位那一口内距只在这一处算（BUGS #348）：`.chat-area` 的 padding-top 与下面那块骨架条
+   `#msgSkel` 共用这一枚令牌——两处各写一份 calc，日后改 --topbar-h 或动安全区必漂。 */
+#chatView{--chat-top-pad:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px) + 6px)}
+/* 聊天区（明亮底，内容从顶栏下滚过；每条消息=一张字卡）
+   overscroll-behavior 由 none 改 contain（BUGS #348，用户「滑动页面没有做动画」）：none 是一刀把
+   「过界回弹」也关掉（橡皮筋与链式同归它管），于是滑到顶/底是一片死局。全站另外 16 个滚动容器
+   （含 .view 自己，theme.css:310）早就写 contain 且都带 -webkit-overflow-scrolling:touch，没有人报过
+   「安卓下拉刷新被唤起来」——下拉刷新只在手势会链到视口时触发，contain 把链断了它就不来。
+   ⚠ theme.css:260 那条 html,body 的 none 刻意不动：根元素上 contain 按规范与 none 同解，
+   改它＝做一件不发生的事，还顺手把那条注释的承诺（整页不被拖动）写成假话。 */
+.chat-area{flex:1;overflow:auto;padding:var(--chat-top-pad) 14px 10px;background:var(--chat-page);scroll-behavior:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;contain:layout style}
+/* 打开会话／切人那段空窗的骨架条（BUGS #348）。为什么真有一段空窗：js/render.js 的 renderMessages
+   清空重建时按 12ms 预算分片画（#048），实测 260 条的会话从 list.innerHTML='' 到首片上屏空着 51~113ms，
+   懒加载图还会在此之后继续撑高行——用户那句「没有加载聊天记录的缓冲动画，会以为是 bug」量的就是这个。
+   三件承重：①它是 `.chat-area` 的**兄弟**、不进 #messageList——那三处读 `list.children` 的数学
+   （分页窗口／贴底／入场动画，#232·#316·#048）就此一字不变，也不用在那三个读点各加一道「跳过骨架」；
+   ②`flex:none`：`.view.active` 是 flex 列，直接子块带 overflow 时拿不到自动最小尺寸会被压扁（#080 那一族）；
+   ③`pointer-events:none`：这几条不是能点的东西，别在真内容画出来之前抢走落在它上面的那一下（「看着能点
+   实则无反应」那一族的反面）。默认折起交回 theme.css 那条 `[hidden]{display:none!important}`，不写第二条。 */
+.msg-skel{flex:none;padding:var(--chat-top-pad) 14px 0;pointer-events:none}
+.msg-skel .sk-row{display:flex;gap:8px;margin:0 0 9px;padding-top:11px;align-items:flex-end}
+.msg-skel .sk-row.mine{justify-content:flex-end}
+.msg-skel i{display:block;background:rgba(var(--ink-rgb),.06);border-radius:12px;animation:skelBreathe 1.15s ease-in-out infinite}
+.msg-skel .sk-av{width:40px;height:40px;border-radius:50%;flex:none}
+.msg-skel .sk-s{width:34%;height:34px}
+.msg-skel .sk-m{width:52%;height:38px}
+.msg-skel .sk-l{width:66%;height:58px}
+@keyframes skelBreathe{0%,100%{opacity:1}50%{opacity:.42}}
+@media (prefers-reduced-motion:reduce){.msg-skel i{animation:none}}
+/* 日期分隔=浅底小胶囊 */
+.day-label{width:fit-content;margin:0 auto 18px;padding:4px 14px;background:var(--surface);border-radius:99px;text-align:center;color:var(--muted);font-size:11px;font-weight:500;contain:layout;letter-spacing:.5px;box-shadow:none}
+/* 带纪念日的「今天」分隔条可点，跳纪念日页 */
+.day-label.has-ann{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+/* 系统消息＝居中浅底胶囊（铺了背景图时也能看见，BUGS #196）。width:fit-content + margin auto 居中；
+   内可能含 .sys-msg-who（群署名带头像）／.sys-msg-letter（可点信件提示）／.sys-msg-img（换头像 44px 图），
+   padding 4px 12px 保证这些子元素包在胶囊内不顶破 */
+.sys-msg{width:fit-content;max-width:88%;margin:10px auto;padding:4px 12px;background:var(--surface);border-radius:99px;text-align:center;color:var(--muted);font-size:11px;line-height:1.4;contain:layout}
+/* 会话里只留一行指针的四种：信箱到站那行（#165·信不进聊天）／播放器待答那行（#284·歌不进气泡）／
+   换形象那行（#303·整本印象账不打印在聊天里，点它是翻开那本账）／TA 发圈那行（#347·动态不进聊天，
+   点它是跳朋友圈闪那一条）。四者共用同一种「看得出来能点」：
+   与「今天」分隔条同一族手法（虚线下划线·--muted 同色），不另起一套颜色。
+   原先信箱与播放器各写一条一模一样的规则（注释里还写着「不留第二套写法」＝两份实现叠在那儿），
+   第三族进来之前先并成一条列表——以后再少一族也不会有人再抄一遍。 */
+.sys-msg-moment,.sys-msg-letter,.sys-msg-player,.sys-msg-av{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.sys-msg-moment:active,.sys-msg-letter:active,.sys-msg-player:active,.sys-msg-av:active{opacity:.55}
+/* padding-top 是给 .msg-badges（骑角签槽）留的出墨空间（BUGS #022）：content-visibility:auto 自带 paint
+   containment，超出本盒的部分不渲染；小签探出气泡上沿 10px，没有这层内距就被削掉上半截。
+   垂直节奏不变：原 margin:10px 0 → 现在 11 内距 + 9 外距，条间仍是 20px */
+.message{display:flex;gap:8px;margin:0 0 9px;padding-top:11px;align-items:flex-end;content-visibility:auto;contain-intrinsic-size:auto 68px;position:relative}
+/* FIX 2026-10-12 #316 手机端上翻聊天「飞出屏幕」：消息盒退出 content-visibility。
+   与 css/settings.css 的 #settingsView 同一条根因（BUGS #004：移动端 WebKit 用这个优化会算错
+   滚动高度）。视口外消息按 contain-intrinsic-size:auto 68px 估算参与布局，进视口才换真实高度——
+   纯文本 ~60px ∶ 图片大档 220px＋配文 ~260px，单条差最多 190px；上翻时逐条重算＝其下内容整体
+   位移，叠加 js/render.js loadEarlierMessages 的 scrollHeight 差值补偿被冲破，屏上就是用户报的
+   「莫名其妙滑动到飞出屏幕的位置」。聊天页单条高度方差太大，这个优化在消息盒上不成立。
+   贴底稳定循环（js/render.js 的 _stickLoop/_stickWatch）保留——懒加载图仍会异步撑高。 */
+#messageList .message{content-visibility:visible}
+.message.mine{justify-content:flex-end}
+/* 长按消息：气泡上方的操作工具条（替代底部弹窗），引用/撤回/删除
+   top 含 .message 的 11px 上内距，相对气泡仍是 -36px（BUGS #022） */
+.msg-actions{position:absolute;top:-25px;z-index:3;display:flex;gap:2px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:none;animation:actionPop .14s ease forwards}
+.message.show-actions{content-visibility:visible}
+.message:not(.mine) .msg-actions{left:0}
+.message.mine .msg-actions{right:0}
+.msg-actions[hidden]{display:none}
+.msg-actions button{font-size:11px;line-height:1;padding:6px 11px;border-radius:999px;background:transparent;color:var(--accent);white-space:nowrap}
+.msg-actions button:active{background:var(--press)}
+/* 动作条的横向密度档。加进「复制」之后最宽那一发是七枚钮（复制／撤回／引用／收藏／心愿／这句说谁／这句本意／删除
+   里真同屏最多七枚），实测在 ≤430px（＝几乎所有手机宽）都放不下原来那 11px 横向内距：390 屏只剩 2.7px 余量，
+   「字号放大」档直接溢出 43.6px（BUGS #202）。故把原先只给 ≤380 的收紧档扩到 ≤430，另给 ≤340 再收一档——
+   320 屏＋放大字号那一发实测由 326.1 收到 298.1，右沿 312 ≤ 320。
+   只收横向内距与间隙：字号仍 11px（全站地板）、高度与 css/base.css 那枚 28px 命中垫层一字不动、不换行
+   （换行会往气泡上方长，而那里到上一条气泡只有 20px——与 #022 那层出墨空间同一个天花板）。≥431px 一律照旧。
+   ⚠ 两档的边界随「八枚那一发」重排过（BUGS #213）：已回答的问问TA 卡整条记在我方名下，长按会同时长出
+   撤回 与 这句本意＝八枚（比 #202 量过的最宽那一发多一枚、标签多两个字），实测放大档在旧两档下
+   360 屏探出屏左 19.9px（left=−19.9）∶320 屏探出 24.1px（left=−24.1）——左锚那一侧被裁＝最左那枚「复制」点不到。
+   收紧**只挂在八枚那一发上**（`:has(button:nth-child(8))` 数得出来——那一条动作条里的钮都是亲兄弟）：不为最长的一条把 360∶320 屏常见的七枚动作条一起压扁，那两档对它们仍是 #202 的原值（≤340 收 4px、≥341 一律 6px）。≤340 那道 4px 是 #202 为七枚定的，原样留着。 */
+/* 同一把尺改后读数（放大档·八枚那发·left∶right 两边都不许出屏）：360 屏 15.9∶344.3∶320 屏 11.8∶304.3。 */
+@media (max-width: 430px){.msg-actions{gap:0}.msg-actions button{padding:6px 6px}}
+@media (max-width: 380px){.msg-actions:has(button:nth-child(8)) button{padding:6px 4px}}
+@media (max-width: 340px){.msg-actions button{padding:6px 4px}}
+@media (max-width: 340px){.msg-actions:has(button:nth-child(8)) button{padding:6px 2px}}
+@keyframes actionPop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+/* 消息入场动画（方向感）：我方气泡从输入栏弹簧式升起，对方气泡自顶部落下；transform 触发 GPU 加速 */
+@keyframes cardBounce{0%{transform:translateY(-22px) scale(.97);opacity:0}62%{transform:translateY(2px) scale(1.005);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes cardBounceMine{0%{transform:translateY(30px) scale(.94);opacity:0}62%{transform:translateY(-3px) scale(1.015);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+.message.animate{animation:cardBounce .46s cubic-bezier(.22,1,.36,1) both;transform-origin:top left}
+.message.mine.animate{animation:cardBounceMine .40s cubic-bezier(.22,1,.36,1) both;transform-origin:bottom right}
+@media (prefers-reduced-motion:reduce){.message.animate,.message.mine.animate{animation:none}}
+/* 气泡自身的按压缩放留着（.96 那档是这一族自己定的幅度），但**时间不再在这里写**：
+   `.1s ease` 进与出同速＝按下去没有「弹回来」这件事，全站那套回弹曲线归 css/mono.css 那一段统一给
+   （BUGS #348）。留这一条 transition 就是留第二份实现，两处各写一个时长必漂。 */
+.bubble{contain:layout style}
+.bubble:active{transform:scale(.96)}
+.message.mine .bubble:active{transform:scale(.96)}
+.mini-avatar{position:relative;width:40px;height:40px;border-radius:50%;background:var(--bubble);flex:none;overflow:clip;display:flex;align-items:center;justify-content:center}
+body[data-avatar-shape="rounded"] .mini-avatar{border-radius:10px;overflow:hidden}
+body[data-avatar-shape="square"] .mini-avatar{border-radius:4px;overflow:hidden}
+.mini-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+/* 无头像占位与 .avatar .initial 同一口径：铺满整个盘位再居中。不铺满＝.initial-person 自带的
+   --well 浅盘收缩成 svg 那一小块＝盘心长出一枚灰方块（BUGS #406，2026-10-14 用户贴图）。
+   svg 的 margin-top:.22em（theme.css .initial svg 那条）两边同吃＝与列表头像完全同款。 */
+.mini-avatar .initial{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;color:var(--muted);font-weight:600}
+.bubble-wrap{max-width:78%}
+/* 气泡几何的唯一写点（值由 css/theme.css 的 body[data-ap-bubble=*] 四档发令牌，var() 里那份是兜底）：
+   几何不住特异度低的条目上，「TA 的设置 → 气泡 CSS」那格 placeholder 教的写法就永远盖不动它（BUGS #280） */
+.bubble{padding:10px 14px;border-radius:var(--bub-r,6px 20px 20px 20px);background:var(--surface);box-shadow:none;font-size:14.5px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
+.mine .bubble{background:var(--mine);color:var(--mine-text);border-radius:var(--bub-r-mine,20px 6px 20px 20px);box-shadow:none}
+.message-meta{display:flex;align-items:center;gap:6px;margin-top:4px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.mine .message-meta{justify-content:flex-end}
+
+.reply-quote{font-size:11px;border-left:2px solid var(--bar-ink);padding:3px 7px;margin-bottom:6px;color:var(--muted);background:var(--surface);border-radius:12px}
+/* 我方气泡内引用块：.reply-quote 与 .bubble 同级（气泡容器外），底叠聊天区页面背景；
+   用半透明白/var(--surface) 加白字会白字白底不可见，故改为「浅底 + 深字」保证任何皮肤可读，
+   再用气泡本色 var(--mine) 作左侧彩色竖条做颜色区分（与联系人侧引用块的彩色竖条同一种区分 UI）；
+   贴紧气泡顶部（margin-bottom:0 + 顶圆角去底圆角）形成一体气泡 */
+.mine .reply-quote{background:var(--surface);border:1px solid var(--line);border-left-style:solid;border-left-width:3px;border-left-color:var(--bar-ink);color:var(--ink);margin-bottom:0;border-radius:12px 12px 0 0;padding:5px 9px}
+/* 纯图片(表情包)消息：下方 .bubble.sticker-message 无文字时是浮空贴图（无文字气泡承接）。
+   此时引用块若沿用「贴紧+去底圆角」的一体化样式，会压在窄贴图顶上、平底角悬空、比图还宽，
+   显得结构错乱/气泡显示不全。故用 :has() 命中该场景：引用块恢复「独立圆角块+底部间距」
+   （与联系人侧引用块观感一致）；我方消息右对齐，帖子图与引用块同右缘不再左挂错位 */
+.bubble-wrap:has(> .reply-quote + .bubble.sticker-message:not(.has-text)) > .reply-quote{border-radius:12px;margin-bottom:6px}
+.message.mine .bubble-wrap:has(> .reply-quote + .bubble.sticker-message:not(.has-text)){display:flex;flex-direction:column;align-items:flex-end}
+/* 引用图片：引用块内显示缩略图（否则引用图片消息只显示「[表情包]」文字） */
+.reply-quote.quote-img{display:flex;align-items:center;gap:6px}
+.quote-thumb{display:block;max-width:90px;max-height:44px;width:auto;border-radius:5px;background:var(--page)}
+/* 撤回消息：圆角幽灵胶囊（虚线描边），去斜体；可查看时胶囊内嵌「查看/收起」钮 */
+.bubble.recalled{font-size:12px;line-height:1.6;color:var(--muted);font-style:normal;background:var(--bubble);border:1px dashed var(--line);border-radius:18px;padding:6px 12px;display:inline-block}
+.bubble.recalled[data-recalled]{cursor:pointer}
+.recall-peek-toggle{font-size:11px;font-style:normal;margin-left:7px;padding:1px 7px;border:1px solid var(--line);border-radius:9px;opacity:.85;vertical-align:1px;color:var(--accent);background:transparent;cursor:pointer}
+.recall-peek-toggle:active{background:var(--press)}
+/* 半句撤回：撤回瞬间瞥到的几个字（开头/结尾随机） */
+.recall-glimpse{display:block;margin-top:3px;font-size:11px;opacity:.75;font-style:normal}
+/* 表情包只瞥到一角：裁出左上角一小块贴在气泡里 */
+.recall-sticker-corner{width:38px;height:38px;max-width:38px;object-fit:cover;object-position:top left;border-radius:8px;display:inline-block;vertical-align:middle;margin-left:6px;opacity:.9}
+/* FIX 2026-09-01 #002 撤回内容内联查看（不弹独立窗口）：在气泡下方展开显示被撤回的原文/表情包 */
+.recall-peek-inline{margin-top:6px;padding:7px 10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:13px;line-height:1.6;color:var(--ink);word-break:break-word;white-space:pre-wrap}
+.recall-peek-inline img{max-width:140px;max-height:140px;border-radius:8px;display:block}
+/* 主动发送标记＝白浮岛文字小签「主动」，骑在气泡左上角外沿（仅对方消息渲染）。
+   原为 11px 粉色字符 ♥ 塞在气泡内边距里：全站唯一彩色（--accent 本身即墨黑），
+   且主动消息 40%+ 是纯图片气泡，小签/心会直接压在表情包图上（BUGS #019）。
+   字号 11px＝全站地板（BUGS #008 手机端体检 A 批）；底色/描边/柔影全走既有白岛令牌，不新增颜色 */
+.bubble{position:relative}
+/* 签槽：骑角那一条最多并排两枚＝「主动」或「世界感知」来源那一枚 ＋「这句说谁」指向那一枚。
+   绝对定位与探出气泡上沿 10px 都搬到槽上，槽内小签转静态流——#022 那条 .message 的 11px 出墨内距照旧够。 */
+.msg-badges{position:absolute;top:-10px;left:9px;display:flex;align-items:flex-start;gap:4px}
+.as-badge{padding:2px 6px;border-radius:6px;
+  background:var(--island-grad);border:1px solid color-mix(in srgb,var(--ink) 9%,transparent);box-shadow:var(--island-shadow);
+  display:inline-flex;align-items:center;color:var(--muted);font-size:11px;line-height:1.2;
+  letter-spacing:.5px;white-space:nowrap;pointer-events:none}
+/* 纯图片气泡只有 110px 宽、4px 内距，骑角小签会压在贴图上 → 挪到右上角（贴图角，像盖了个章） */
+.bubble.sticker-message:not(.has-text) .msg-badges{left:auto;right:9px}
+/* 群聊署名行在气泡正上方，骑角小签会咬到 TA 昵称 → 署名行下边距让出骑角高度 */
+.bubble-wrap:has(.as-badge) > .msg-sender{margin-bottom:12px}
+/* 指向签那三个字与「世界感知」同档零字距——沿用 .5px 会让它在窄气泡上多探出一截 */
+.as-badge-refer{letter-spacing:0}
+/* 一颗签上的两段之间那个点：只做「这是两件事」的分隔，不带底色不带边（一枚记号一个语义，它不是第三枚签） */
+.as-badge-refer .rb-sep{font-style:normal;opacity:.4;margin:0 3px}
+/* 我方气泡靠右：槽继续往右长会探出滚动区右界（一段「不止这句」比「说我」宽一倍），与纯图片那一族同法改右锚 */
+.message.mine .msg-badges{left:auto;right:9px}
+/* 世界感知来源签（m.src==='cjian'，render.js 出）：与「主动」同一枚白浮岛范式，零新样式。
+   两处不同：① 可点（父级 .as-badge 是 pointer-events:none，这里放开并给手型）→ 跳世界感知页，
+   签本身只占两个字宽却把「为什么 TA 说了这句」的出口接上了；② 字距归零——「世界感知」四个字
+   沿用 .5px 字距会比「主动」宽出一截，窄气泡（短句）里探出太多。 */
+.as-badge-src{pointer-events:auto;cursor:pointer;letter-spacing:0;font-family:inherit}
+.as-badge-src:active{transform:scale(.96)}
+/* 长按消息：屏蔽系统预览/文本选择 */
+.message{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.message img{-webkit-user-drag:none}
+
+/* 正在输入＝头部第二行那枚读数（BUGS #158）。它原先是昵称那一格（.chat-head-name）的行内子元素，与名字抢同一行宽度：
+   那一格受 max-width:min(260px,100vw − 214px) 管着，手机上只有 106(320)/146(360)/176(390)/198(412) px，
+   而这行字自己就要 116.5px → 名字一过 3~4 字就被 overflow:hidden 裁掉尾巴，text-overflow:ellipsis 又把「…」
+   画在切断处压在残字上，看着就像被名字盖住（320 屏哪怕名字只有一个字也裁 33px）。搬下来后名字那格归还省略号。
+   ⚠ min-height 与 .cj-chip 同源：两枚同格、按优先级只出一枚，行高不同会让上面那行名字上下抖几 px
+   （17 是量出来的：状态行 11px 字＋上下 1px 内距自然高 16.67，取到 17 才两家等高） */
+.typing-indicator,.cj-chip{min-height:17px;box-sizing:border-box}
+.typing-indicator{position:relative;z-index:2;grid-column:2;grid-row:2;justify-self:center;align-self:center;display:flex;align-items:center;color:var(--muted);font-size:11px;line-height:1;contain:layout style}
+.typing-indicator span{display:inline-block;width:4px;height:4px;background:var(--muted);border-radius:50%;margin-right:2.5px;animation:pulse 1s infinite;-webkit-transform:translateZ(0);transform:translateZ(0)}
+.typing-indicator span:nth-child(2){animation-delay:.15s}
+.typing-indicator span:nth-child(3){animation-delay:.3s}
+.typing-indicator em{font-style:normal;margin-left:3px;white-space:nowrap}
+body:not([data-view=chat]) .typing-indicator{display:none}
+/* 同一格两枚读数不同时开口：TA 正在想怎么回你时，下面那行还写着「空闲」＝自相矛盾（让位走 CSS，
+   不去改写 #cjChip 的 hidden——那个属性由 js/cjian.js 独家维护，两处写必打架） */
+.chat-head:has(.typing-indicator:not([hidden])) .cj-chip{display:none}
+@keyframes pulse{50%{opacity:.3;transform:translateY(-2px)}}
+#chatView{position:relative}
+.scroll-bottom-btn{position:absolute;right:16px;bottom:88px;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:none;font-size:20px;line-height:1;color:var(--accent);z-index:5;display:flex;align-items:center;justify-content:center}
+.scroll-bottom-btn[hidden]{display:none}
+.scroll-bottom-btn:active{opacity:.6}
+
+/* 输入栏＝悬浮托盘：透明底上浮一张白卡托盘（按钮+输入一体的「字卡托盘」） */
+.composer{background:transparent;border-top:0;padding:6px 12px calc(10px + env(safe-area-inset-bottom));flex:none;contain:layout style}
+.composer-row{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:6px 7px;box-shadow:none}
+/* FIX 2026-10-04 #023 settings.css 全局 input{text-align:right;max-width:58%} 漏进聊天输入框，打字被甩到右边（与 #006 同源） */
+.composer input{margin:0;flex:1;min-width:0;background:transparent;border:0;padding:8px 6px;border-radius:20px;outline:none;-webkit-appearance:none;appearance:none;font-size:15px;text-align:left;max-width:none}
+.composer input::placeholder{color:var(--muted)}
+.composer input:focus{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.reply-target{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:var(--muted);box-shadow:none}
+.reply-target span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-target-thumb{width:30px;height:30px;border-radius:7px;object-fit:cover;background:var(--page);display:block;flex:none}
+.reply-target button{color:var(--accent);font-size:15px;flex:none}
+/* 插入区：选中图片/表情包后在此预览，可与文字一起发送 */
+.composer-attach{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:8px 10px;margin-bottom:8px;box-shadow:none}
+.composer-attach[hidden]{display:none}
+.attach-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--page);display:block;flex:none}
+.attach-info{flex:1;font-size:11px;color:var(--muted);line-height:1.4}
+.attach-remove{width:26px;height:26px;border-radius:7px;color:var(--muted);font-size:15px;display:grid;place-items:center;flex:none}
+.attach-remove:active{background:var(--page)}
+/* 输入栏里的两族控件＝一处只有一个口径（BUGS #262；数字由 tools/_probe_send_step.js 扫阶梯、
+   门 tools/_smoke_send_btn_262.js 的 B7 钉现值、交付图 tools/_sendfinal_cmp.py 自己量自己印，三处同一把尺）
+   次级三枚＝裸线稿（旧写法给它们一圈 --ctl-hair 墨环＝条里四枚同权重圆环、发送读不出主次）。
+   发送＝条内唯一有面的一枚。2026-10-14（BUGS #403）按 mono 族 ③「主操作＝实心墨底白字」定档改墨底白箭头：
+   旧档 rgba(ink,.12) 的灰面垫在胶囊上实测 Δ12/255≈1.04:1，低于本仓 1.2:1 近白面可辨阈（那枚面等于没画）；
+   且胶囊同批改回白面（mono.css 输入框那条）后灰面更没法读。墨底白箭头与「首页＋／FAB／我的气泡」同族，
+   白字用绝对值字面量（与 mono 族「我的气泡白字」同一先例），换墨色深浅时字不需跟。 */
+.compose-icon{width:34px;height:34px;border-radius:50%;flex:none;background:transparent;border:0;color:var(--icon-ink);font-size:19px}
+.send-btn{width:40px;height:40px;align-self:center;flex:none;display:grid;place-items:center;margin:0;border-radius:50%;background:var(--ink);border:0;box-shadow:none;color:#FFFFFF}
+.send-btn svg{width:20px;height:20px;stroke-width:2.3;color:#FFFFFF}
+.send-btn:active{transform:scale(.94)}
+/* 空输入时这枚键点了什么都不做（同 js/chat.js 那道早退），淡一档＝把"没有可发的东西"照实画出来；已插图时不淡。
+   ⚠ 宿主必须是 .composer：#composerAttach 是 .composer-row 的兄弟，锚在行上那条 :not(:has( 恒成立＝插图也照淡（门 C3 抓的）
+   ⚠ 靠 #messageInput 那枚 placeholder=" " 才成立（:placeholder-shown 在无此属性的输入框上根本不匹配，实测恒 1）
+   ⚠ :has() 不支持的老浏览器整条作废＝恒满强度，属可接受降级（与 glass.css 乙b 同口径） */
+.composer:has(#messageInput:placeholder-shown):not(:has(#composerAttach:not([hidden]))) .send-btn{opacity:.4}
+
+/* 表情消息＝两档尺寸（参考自家 mochi 的 .msg-img ∶ .msg-img-big）
+   表情包＝恒 110×110 一方格，object-fit:contain 整张可见不裁。旧写法是 max-width:110px ＋ img{width:100%}、高度一根没夹，
+   实测同一档里 源图 96×96 出 96、300×300 出 100.7、300×600 出 100.7×201.3、1000×700 出 100.7×70.5
+   ＝宽度随源图固有尺寸漂、竖图比方图高一倍，正是用户报的「大小不一样，不固定」；顺带图有占位尺寸后，
+   懒加载图 load 完撑高消息盒那一族（见 js/render.js 的贴底注释）也一并没有
+   图片档旧写法也是「长边封顶 260、保持原比例」，2026-10-09 用户复报「联系人发的【图片】大小没和我统一」——
+   实测两侧吃的是同一条 CSS（同一张图 258.7 ∶ 258.7 完全相等），不统一的因是这一档**压根没有框**：
+   我从相册发的图长边上千画满 258.7，TA 抽到库里那张 96×96 就只画 96，同屏面积差 5.08 倍。
+   定档改成方框裁满＝两侧恒等大；如实的代价是竖图被裁掉上下、库里的图放大到 200 会略糊 */
+.sticker-message{padding:4px;background:transparent;contain:layout style}
+.sticker-message img{-webkit-user-drag:none;user-select:none;display:block;width:110px;height:110px;object-fit:contain;border-radius:8px}
+/* tsEnabled：表情包附带文字，恢复常规气泡底并纵向排文字+图。
+   宽度不再钉死 160px（那只剩 138.7px 内容宽，10 个字在 15px 下要 150px → 被折行），改吃 .bubble-wrap 那 78% 的同一份预算。
+   图不再另设一档：2026-10-09 用户复报「联系人与我的表情包大小不一样」，同一张源图四发量下来两侧同档差 0.0
+   （#195 那一刀已把「谁发的」治好），差的是「带不带配文」这一维——旧写法给带字的另设 140，于是 110∶140 面积比 2.10。
+   定档一律 110＝交回上面那条基础规则，这条覆盖删净不留第二份实现；带配文的图片仍走下面那条大档（同特异度靠后胜出） */
+.sticker-message.has-text{width:auto;background:var(--bubble);padding:8px 10px;max-width:none}
+.message.mine .sticker-message.has-text{background:var(--mine)}
+.sticker-message.has-text .sticker-text{font-size:15px;line-height:1.45;word-break:break-word;margin-bottom:6px;white-space:pre-wrap}
+.message.mine .sticker-message.has-text .sticker-text{color:var(--mine-text)}
+/* 大档＝字卡库「图片」分类／相册上传／信里夹图（写在 has-text 之后，两条同特异度由后者胜出；
+   带文字那一档同走这个大框）
+   220 见方·恒等大框·object-fit:cover 裁满（BUGS #195）：源图是 96×96 还是 1000×700，屏上两侧同一个盒。
+   为什么是 220 而不是 200——#157 立过一条验收红线「两档要一眼分得开＝面积 ≥4 倍」，
+   200²÷110² 只有 3.31 会让那条断言失效（也真的会让两档看着差不多大），220＝110 的整数倍正好落回 4.0。
+   img 的 width 必须给**定值**而不是 min(220px,100%)：这一档的容器是被图撑住的（hug），写成 100% 时那 100%
+   解析回容器自己，库里 96×96 那张就锁死在 96（实测同屏读出 96x96 ∶ 219.7x219.7 两种尺寸）＝本次要修的病；
+   窄屏由 max-width:100% 兜住（它解析的是外层 .bubble-wrap 那 78% 的可用宽，320/360 实读 218.4 仍全等）。
+   容器上限 229 ＝图 220 ＋ 2×4 内距 ＋ 1.33 描边（.bubble 那条 1px 在本机 125% 缩放下 computed 0.667），
+   与图同源、不留一圈空边（签槽 right:9px 才贴着图） */
+.sticker-message.sticker-photo{width:auto;max-width:min(229px,100%)}
+.sticker-message.sticker-photo img{width:220px;max-width:100%;height:auto;aspect-ratio:1/1;object-fit:cover}
+/* 语音消息（BUGS #209 二批）：一枚播放钮＋一条自绘波形，气泡底仍走常规 .bubble（不另铺第二层白面）。
+   条宽恒 132px 而不是「按时长伸缩」——渲染这一刻读不到那段录音的 duration（要等元数据加载完），
+   拿它算宽度或印在条上都是编一个量不到的数；所以这一条上**没有时长读数**。
+   图标两枚 svg 由 CSS 切显隐、JS 不写 innerHTML：mmStop 收尾会往「正在播的那枚按钮」里塞喇叭图标，
+   语音条那两枚 svg 会被它一次盖掉——同一个播放单例、两种按钮，状态各用各的画法（见 js/minimax.js 的 mmStop）。
+   播放态只换图标＋让波形跳，不缩放整条（.bubble 那条 :active 反馈已在，不叠第二份）。 */
+.bubble.voice-message{display:inline-flex;align-items:center;gap:10px;min-width:132px;padding:9px 12px}
+.voice-play{position:relative;flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--ctl-hair);background:transparent;color:var(--icon-ink);display:grid;place-items:center;padding:0;margin:0;cursor:pointer}
+.voice-play svg{width:14px;height:14px;fill:currentColor;display:block}
+.voice-play .vp-stop{display:none}
+.voice-play.playing .vp-play{display:none}
+.voice-play.playing .vp-stop{display:block}
+.voice-wave{display:inline-flex;align-items:center;gap:3px;height:20px}
+.voice-wave i{display:block;width:2px;border-radius:2px;background:var(--bar-ink);transform-origin:center}
+.voice-wave i:nth-child(1){height:8px}
+.voice-wave i:nth-child(2){height:15px}
+.voice-wave i:nth-child(3){height:20px}
+.voice-wave i:nth-child(4){height:12px}
+.voice-wave i:nth-child(5){height:17px}
+.voice-play.playing + .voice-wave i{animation:voiceWave .9s ease-in-out infinite}
+.voice-play.playing + .voice-wave i:nth-child(2){animation-delay:.1s}
+.voice-play.playing + .voice-wave i:nth-child(3){animation-delay:.2s}
+.voice-play.playing + .voice-wave i:nth-child(4){animation-delay:.3s}
+.voice-play.playing + .voice-wave i:nth-child(5){animation-delay:.4s}
+@keyframes voiceWave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1.2)}}
+/* 字幕＝那张语音卡自带的完整文字（卡上没有就整行不画，见 js/render.js 的 m.voice 分支）。
+   它是这一条消息的正文，所以复制∶搜索∶收藏都拿得到，只是屏上不由气泡念出来 */
+.voice-cap{font-size:11px;line-height:1.5;color:var(--muted);margin-top:5px;word-break:break-word;white-space:pre-wrap}
+@media (prefers-reduced-motion:reduce){.voice-play.playing + .voice-wave i{animation:none}}
+/* 涂鸦消息：画布约450px宽，按表情包110px显示会缩到看不清，放宽到240px */
+
+/* 表情抽屉 = 浮在聊天区**之上**的半屏卡（形制抄自家 mochi 的 .emoji-card，见 chat.css 末段「面板浮层化」）
+   它曾经是 #chatView 的 flex 子元素（.sticker-drawer.open{display:block}），打开＝把 .chat-area 顶走，
+   面板多高对话就少多高：390×844 实测抽屉 451px ＝ 占屏 64.6%，聊天区只剩 177px（对话基本看不见）。
+   改成 absolute 后聊天区尺寸恒定，面板只盖住下半屏，上半屏的对话仍能翻着看。
+   高只由 --panel-maxh 一处封顶；内部 .sticker-body 吃剩余高度（flex:1），**不再自己顶 max-height**——
+   「外层封一次＋内层再封一次」正是当初 64.6% 的第二因（44dvh 又叠在 451px 上）。 */
+.sticker-drawer{position:absolute;left:12px;right:12px;bottom:var(--composer-h,70px);z-index:7;
+  display:none;flex-direction:column;box-sizing:border-box;max-height:var(--panel-maxh,44dvh);
+  background:var(--panel);border:1px solid var(--hair);border-radius:20px 20px 14px 14px;
+  box-shadow:0 -8px 28px rgba(var(--shadow-rgb),.13),0 2px 8px rgba(var(--shadow-rgb),.06);padding:12px 0 10px;overflow:hidden}
+.sticker-drawer.open{display:flex}
+/* 面板在位时藏掉「回到底部」那枚浮钮：它的 bottom:88px 是按「输入栏之上」算的，
+   浮层化之后输入栏之上就是面板，按钮会骑在面板上沿（实测正好压住 tabs 行左端）。 */
+#chatView[data-panel] .scroll-bottom-btn{display:none}
+.sticker-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sticker-tabs{flex:1;min-width:0;display:flex;gap:3px;background:var(--well);border:0;border-radius:12px;padding:3px}
+.sticker-tab{flex:1;min-width:0;height:30px;border:0;border-radius:9px;background:transparent;font-size:13px;letter-spacing:.3px;color:var(--muted);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sticker-tab:active{opacity:.8}
+.sticker-tab.active{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:none}
+/* 吃剩余高度的那一格：min-height:0 是 flex 子项能真缩到内容以下的关键（少了它 grid 撑多少就多高） */
+.sticker-body{flex:1;min-height:0;overflow:auto;padding:10px 18px 4px;scrollbar-width:none;-ms-overflow-style:none}
+.sticker-body::-webkit-scrollbar{width:0;height:0;display:none}
+.sticker-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;min-height:55px;margin-bottom:12px}
+.sticker-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--page)}
+.sticker-grid img:active{opacity:.6}
+
+/* ===== 拍一拍：点联系人头像弹出的底部字卡选择面板（双 tab） ===== */
+.poke-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:16;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:521px){.poke-mask{align-items:center}.poke-sheet{max-width:400px}}
+.poke-sheet{position:relative;width:100%;max-width:480px;max-height:74vh;min-height:0;background:var(--surface);border-top:1px solid var(--line);border-radius:var(--r-panel) var(--r-panel) 0 0;box-shadow:none;padding:12px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
+.poke-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.poke-peek{display:flex;align-items:center;gap:10px;min-width:0}
+.poke-avatar{position:relative;width:40px;height:40px;flex:none;border-radius:50%;background:var(--bubble);border:1px solid var(--line);overflow:clip;display:grid;place-items:center}
+body[data-avatar-shape="rounded"] .poke-avatar{border-radius:12px;overflow:hidden}
+body[data-avatar-shape="square"] .poke-avatar{border-radius:8px;overflow:hidden}
+.poke-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.poke-avatar .initial{position:absolute;inset:0;display:grid;place-items:center;font-size:16px;color:var(--muted);font-weight:600}
+.poke-name{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.5px;word-break:break-all}
+.poke-close{flex:none;width:30px;height:30px;border-radius:50%;font-size:17px;line-height:1;color:var(--muted);display:grid;place-items:center}
+.poke-close:active{background:var(--press)}
+.poke-tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:10px;padding:0 2px}
+.poke-tab{flex:1;padding:9px 0;font-size:13px;color:var(--muted);text-align:center;letter-spacing:.5px;border-bottom:2px solid transparent;transition:color .15s}
+.poke-tab.on{color:var(--accent);font-weight:600;border-bottom-color:var(--accent)}
+.poke-list{flex:1;min-height:0;max-height:38dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+.poke-list::-webkit-scrollbar{width:0;height:0;display:none}
+
+.poke-card{border:1px solid var(--line);background:var(--page);color:var(--ink);border-radius:12px;padding:8px 12px;font-size:13px;line-height:1.4;max-width:100%;word-break:break-all;transition:transform .1s ease,opacity .15s}
+.poke-card:active{transform:scale(.96);opacity:.85}
+.poke-empty{font-size:12px;color:var(--muted);text-align:center;padding:26px 10px}
+@keyframes pokeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== 雾灰绒感覆盖 ===== */
+.composer-row{--cp-py:6px;--cp-px:8px;border:0;border-radius:99px;box-shadow:none;padding:var(--cp-py) var(--cp-px);gap:7px}
+/* 次级图标那一条覆盖（background:transparent＋opacity:.75）已上并进上面「输入栏里的两族控件」那一段＝一处一份，
+   留两条同义规则在这儿，改一条另一条会把它顶回来（本仓「两层实现打架」那一族） */
+.composer .composer-row input{background:transparent;box-shadow:none}
+.composer .composer-row input:focus{box-shadow:none}
+.msg-actions{border:0;border-radius:18px;box-shadow:none}
+
+/* 聊天页头部＝功能页 .topbar 同族：悬浮玻璃、名字＋状态两行居中（玻璃纱见 theme.css 的 .topbar::before,.chat-head::before）
+   下沿补一条 --hair 发丝线，与输入栏 .composer 的上边线（theme.css 末位那条）成对，BUGS #068：只下面有线＝看着缺一格。
+   功能页 .topbar 同一条线在 css/theme.css（两栏同口径，各文件只管自己那一族）；首页与聊天页 .topbar 本就 display:none，不涉及。
+   box-sizing:border-box 必需：本仓没有全局 border-box，不加会让 56px 栏高变成 57（_smoke_chat_head A2 与 .chat-area 的 padding-top 都对齐在 56） */
+#chatView{position:relative}
+.chat-head{position:absolute;top:0;left:0;right:0;z-index:6;box-sizing:border-box;height:calc(var(--topbar-h,56px) + env(safe-area-inset-top,0px));border-bottom:1px solid var(--hair);
+  padding:env(safe-area-inset-top,0px) 14px 0;display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;align-content:center;column-gap:6px}
+/* flex:none 是 BUGS #436 的护栏：.icon-btn 自己坐在一枚可收缩的轨道／弹性行里（返回键在 1fr 轨、
+   右排两键在 .chat-head-tools 那条 flex 行），而 theme.css 只给它 width:36px 不给 flex-shrink:0
+   ＝弹性项的默认收缩是 1，轨道一旦被挤，36px 与里面那枚 20px 的 svg 会跟着缩＝「图标显示超小一个」。
+   先例＝css/letter.css 的 .letter-bar .icon-btn{flex:none}（同一族写法、同一族病）。
+   ⚠ 挤压怎么才造得出来（tools/_probe_chat_icon_geom 量死）：把视口从 390 一路压到 240、连名格那道
+   max-width 一起摘掉都挤不动（三枚恒 20px），要真挤出来得把 .chat-head-tools 自己钉成 26px 宽——
+   那一发下摘掉这两条护栏三枚就塌、留着就免疫＝护栏挡的是「容器被钉窄／轨道被撑爆」这一族，不是装饰。
+   iOS 那一侧本机没有 Safari 只能标「推断」＝病因未证，这条是便宜的隐患护栏。 */
+.chat-head>.icon-btn,.chat-head-tools .icon-btn{flex:none}
+.chat-head .icon-btn svg{flex:none}
+.chat-head>.icon-btn{color:var(--icon-ink);grid-column:1;grid-row:1/3;justify-self:start;align-self:center}
+/* 右排两键（通话＋会话设置）包一层：中间那轨用 1fr auto 1fr 配平，名字恒居视口中线，不被右侧多出的那枚挤偏 */
+.chat-head-tools{position:relative;z-index:2;grid-column:3;grid-row:1/3;justify-self:end;align-self:center;display:flex;align-items:center;gap:8px}
+/* 这里曾经写着 #chatApBtn{color:var(--muted)}：那枚键比同排听筒键重一档墨（实测 --muted .72 对
+   .icon-btn 的 --icon-ink .58）＝一枚小记号单独配一份重墨，墨度沉而面积小，读成「不是控件」；
+   修法是把这行覆盖整条删掉，头部三枚一律只取 theme.css 的 .icon-btn{color:var(--icon-ink)}，不再单写一份 */
+/* 「点昵称让对方继续说」是本行的唯一入口。cursor 不在这里写死：可用态跟随设置项 csTriggerName，
+   由 settings.js 的 updateTopbarTitle 逐页写内联 style（关掉时撤成 default），免得关掉开关后
+   昵称仍显示可点却按下去没反应 */
+.chat-head-name{position:relative;z-index:2;justify-self:center;grid-column:2;grid-row:1;min-width:0;max-width:min(260px,calc(100vw - 214px));text-align:center;font-size:16.5px;font-weight:700;color:var(--ink);letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-head-name:active{opacity:.55}
+.composer{padding-left:12px;padding-right:12px}
+
+/* 群成员发的拍一拍＝居中系统小字，但那一行前面带一枚署名（头像+昵称），BUGS #185。
+   之前它只印 m.text，于是「谁拍的」与「拍的是谁」在屏上都没了。
+   层级只降一档字色（不写整行 opacity，与本仓纯白主题那条铁律同口径）。 */
+.sys-msg-who{display:inline-flex;align-items:center;gap:5px;vertical-align:middle;margin-right:7px;letter-spacing:.3px}
+.sys-msg-who-avatar{position:relative;width:20px;height:20px;flex:none;border-radius:50%;overflow:clip;display:grid;place-items:center;background:var(--bubble);contain:layout style}
+body[data-avatar-shape="rounded"] .sys-msg-who-avatar{border-radius:6px}
+body[data-avatar-shape="square"] .sys-msg-who-avatar{border-radius:4px}
+.sys-msg-who-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.sys-msg-who-avatar .initial{position:absolute;inset:0;display:grid;place-items:center;font-size:10px;color:var(--muted);font-weight:600}
+.sys-msg-who-name{font-weight:600;color:color-mix(in srgb,var(--ink) 82%,transparent)}
+
+/* ===== 表情包/拍一拍面板 · 半屏浮层卡（形制对齐自家 mochi 的 .emoji-card / .poke-card）=====
+   两处共用同一副壳：absolute 浮在聊天区**之上**、左右各留 12px、贴输入栏上沿、圆角＋投影、
+   高只由 --panel-maxh 封一次顶。聊天区尺寸恒定（不再被顶走），面板只盖住下半屏。
+   --composer-h 由 js/stickers.js 在开面板那一刻量 #composer 写上来（输入栏会因引用条/待发图长高）。 */
+#chatView{--panel-maxh:46dvh}
+/* 拍一面板与表情包抽屉同壳：#pokeMask 自身就是那张卡，内部 .poke-sheet 只管内容排布，不再是卡 */
+.sticker-drawer#pokeMask[hidden]{display:none}
+.sticker-drawer#pokeMask:not([hidden]){display:flex;flex-direction:column}
+.sticker-drawer#pokeMask .poke-sheet{position:static;width:100%;max-width:none;max-height:none;flex:1;min-height:0;display:flex;flex-direction:column;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
+@media(min-width:521px){.sticker-drawer#pokeMask .poke-sheet{max-width:none}}
+/* 工具行 chips 素笺化：胶囊白浮岛 → 细线文字按钮（hover/按下时才浮起白岛） */
+.sticker-tool{background:transparent;box-shadow:none;border:1px solid var(--line);border-radius:10px;padding:6px 11px}
+.sticker-tool:active{background:var(--island-grad);box-shadow:var(--island-shadow);border-color:transparent}
+/* 「拍谁」那一行（BUGS #184）：群里＝一枚「整个群」＋每位成员，单聊整行 hidden（不占面板高度）。
+   与 .poke-groups 同族的横向单行横滚——群成员常有十来个，竖着排会把卡区挤没。 */
+.poke-whos{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:8px 16px 0;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
+.poke-whos::-webkit-scrollbar{width:0;height:0;display:none}
+.poke-who{display:flex;align-items:center;gap:6px;flex:none;max-width:46vw;padding:4px 11px 4px 5px;border-radius:999px;background:var(--ctl-glass);box-shadow:inset 0 0 0 1px var(--ctl-hair);color:var(--muted);font-size:11.5px;line-height:1.5;border:0;letter-spacing:.3px;white-space:nowrap}
+.poke-who.sel{background:var(--island-grad);color:var(--ink);font-weight:600;box-shadow:var(--island-shadow)}
+.poke-who:active{opacity:.75}
+.poke-who-avatar{position:relative;width:24px;height:24px;flex:none;border-radius:50%;overflow:clip;display:grid;place-items:center;background:var(--bubble)}
+body[data-avatar-shape="rounded"] .poke-who-avatar{border-radius:8px}
+body[data-avatar-shape="square"] .poke-who-avatar{border-radius:5px}
+.poke-who-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.poke-who-avatar .initial{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;color:var(--muted);font-weight:600}
+.poke-who-name{overflow:hidden;text-overflow:ellipsis}
+/* 群那一枚加一枚「群」角标：它是「拍整群」不是「拍某个人」，与成员枚一眼能分开 */
+.poke-who-tag{flex:none;padding:1px 5px;border-radius:999px;background:color-mix(in srgb,var(--ink) 8%,transparent);font-size:10px;color:var(--muted);letter-spacing:0}
+.poke-who.sel .poke-who-tag{color:var(--ink)}
+/* 面板横向节奏：卡内去左右 padding，各行自持 16px；壳与圆角/投影在上面 .sticker-drawer 一处定，重复 */
+.sticker-drawer .sticker-top{padding:0 16px;margin:0 0 2px;flex:none}
+.poke-sheet{padding:0}
+.poke-sheet-head{padding:0 16px;flex:none}
+/* tab 行：单行横滚胶囊（旧版三等分挤压，TA 名字一长必截断，2026-10-10 打回） */
+.sticker-drawer .sticker-tabs{background:transparent;padding:2px 16px 0;gap:6px;flex:0 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.sticker-drawer .sticker-tabs::-webkit-scrollbar{width:0;height:0;display:none}
+/* tab 本体：自然宽度的胶囊（不再三等分＋省略号——TA 名一长就被截成「某某的…」），
+   与下面分类/分组 chips 同一族；玻璃底＋细描边，选中才浮白岛 */
+.sticker-drawer .sticker-tab{height:auto;flex:none;padding:7px 14px;border-radius:999px;background:var(--ctl-glass);box-shadow:inset 0 0 0 1px var(--ctl-hair);font-size:12.5px;color:var(--muted);letter-spacing:.3px;white-space:nowrap;overflow:visible;text-overflow:clip}
+.sticker-drawer .sticker-tab.active{background:var(--island-grad);color:var(--ink);font-weight:600;box-shadow:var(--island-shadow)}
+.poke-tabs{display:flex;gap:5px;border-bottom:0;margin:8px 0 0;padding:0 16px;flex:none}
+.poke-tab{flex:1;padding:7px 0;border-radius:12px;font-size:12.5px;color:var(--muted);text-align:center;letter-spacing:.3px;border-bottom:0;transition:color .15s}
+.poke-tab.on{background:var(--island-grad);color:var(--ink);font-weight:600;box-shadow:var(--island-shadow);border-bottom:0}
+/* 分类行 + 分组 chips（选中=实白浮岛）。
+   三行一律 nowrap＋横向滚动：wrap 那阵子分组一多就竖着长两三行，把 44dvh 里的图区挤到只剩一两行，
+   而「切分组」本来就是横向动作（mochi 的 .emoji-groups 同为 overflow-x:auto） */
+.sticker-cats{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:8px 16px 2px;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
+.sticker-groups{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:6px 16px 0;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
+.sticker-cat-chip,.sticker-g-chip,.poke-g-chip{flex:none;padding:5.5px 12px;border-radius:999px;background:var(--ctl-glass);box-shadow:inset 0 0 0 1px var(--ctl-hair);color:var(--muted);font-size:11.5px;line-height:1.5;border:0;letter-spacing:.3px;white-space:nowrap}
+.sticker-cat-chip.on,.sticker-g-chip.sel,.poke-g-chip.sel{background:var(--island-grad);color:var(--ink);font-weight:600;box-shadow:var(--island-shadow)}
+.sticker-cats::-webkit-scrollbar,.sticker-groups::-webkit-scrollbar,.poke-groups::-webkit-scrollbar{width:0;height:0;display:none}
+.sticker-g-chip i,.poke-g-chip i{font-style:normal;font-size:11px;opacity:.6;margin-left:3px}
+.sticker-g-add,.poke-g-add{box-shadow:none;background:transparent;box-shadow:inset 0 0 0 1px rgba(var(--shadow-rgb),.14);border:1px dashed rgba(var(--shadow-rgb),.16)}
+.poke-groups{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:8px 16px 0;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
+/* 我的工具行：图标+文字的白岛小按钮（同样单行横滚，四枚挤两行也是高度） */
+.sticker-tools{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:8px 16px 2px;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
+.sticker-tools::-webkit-scrollbar{width:0;height:0;display:none}
+.sticker-tool{display:flex;align-items:center;gap:5px;flex:none;padding:6px 11px;border-radius:12px;background:var(--island-grad);box-shadow:var(--island-shadow);color:var(--ink);font-size:11.5px;border:0;letter-spacing:.3px}
+.sticker-tool svg{width:13px;height:13px;flex:none}
+.sticker-tool:active{opacity:.7}
+/* 分区小标题（名称+计数+渐隐细线） */
+.st-sec{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);letter-spacing:1px;margin:2px 0 8px}
+.st-sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--ink-rgb),.10),transparent)}
+/* 表情图=白砖卡（内嵌画面）；文字卡=白砖卡 */
+.sticker-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;min-height:0;margin:0}
+.sticker-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:15px;padding:5px;background:var(--island-grad);box-shadow:var(--island-shadow);background-clip:padding-box}
+.sticker-grid img:active{opacity:.85}
+.sticker-grid.batch img{cursor:pointer}
+.sticker-grid.batch img.sel{box-shadow:var(--island-shadow),inset 0 0 0 2px var(--ctl-on-ring)}
+.sticker-txt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 4px}
+.sticker-txt{border:0;background:var(--island-grad);box-shadow:var(--island-shadow);color:var(--ink);font-size:13px;line-height:1.45;padding:10px 12px;border-radius:13px;text-align:left;word-break:break-word;min-height:40px}
+/* 文字卡点击行为切换（颜文字/emoji 专用，mochi #691i 同款）：主行说当前行为、副行说点了会变成什么；表情包图片分类不显示 */
+.sticker-text-mode{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px dashed rgba(var(--shadow-rgb),.18);background:transparent;border-radius:12px;padding:8px 12px;margin:2px 0 9px;text-align:left;letter-spacing:.3px}
+.sticker-text-mode .etm-main{font-size:12.5px;color:var(--ink);font-weight:600;line-height:1.4}
+.sticker-text-mode .etm-sub{font-size:11px;color:var(--muted);line-height:1.45}
+.sticker-text-mode:active{background:var(--island-grad);box-shadow:var(--island-shadow);border-color:transparent}
+.sticker-txt:active{opacity:.8}
+.sticker-tip{font-size:11px;color:var(--muted);margin:9px 0 0;letter-spacing:.3px}
+/* 专属未绑那一行：库里存在、这一格取不到的组，写明数量＋去处（BUGS #078） */
+.sticker-unbound{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box;min-height:38px;margin:0 0 10px;padding:9px 12px;border:0;border-radius:12px;background:var(--ctl-glass);box-shadow:inset 0 0 0 1px var(--ctl-hair);color:var(--muted);font-size:11.5px;line-height:1.45;text-align:left;letter-spacing:.2px}
+.sticker-unbound:active{background:var(--press)}
+.sticker-unbound-go{flex:none;color:var(--ink);font-weight:600;border-bottom:1px solid var(--ctl-on-ring)}
+/* 批量条 */
+.sticker-batch{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;margin:8px 16px 0;padding:6px 6px 6px 14px;background:var(--island-grad);box-shadow:var(--island-shadow);border-radius:19px;font-size:12px;color:var(--muted)}
+.sticker-batch-btns{display:flex;gap:6px}
+.sticker-batch-btn{border:0;background:rgba(var(--ink-rgb),.05);color:var(--ink);font-size:11.5px;padding:6px 13px;border-radius:14px;letter-spacing:.3px}
+.sticker-batch-btn.del{color:var(--danger-ink);background:color-mix(in srgb,var(--danger-ink) 8%,transparent)}
+/* 拍一拍：预设/自定义卡=三列白砖；角标=白岛小圆钮。
+   max-height 那道 38dvh 撤掉改纯 flex:1 —— 与 .sticker-body 同一个坑（外层已封顶，内层再封一次） */
+.poke-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;padding:10px 16px 4px}
+.poke-card{position:relative;border:0;background:var(--island-grad);box-shadow:var(--island-shadow);color:var(--ink);font-size:12px;line-height:1.35;padding:10px 6px;border-radius:13px;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center}
+.poke-card:active{opacity:.82}
+.poke-card-ops{position:absolute;top:-7px;right:-7px;display:flex;gap:3px}
+.poke-op-edit,.poke-op-del{font-style:normal;font-size:11px;line-height:1;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--island-grad);box-shadow:var(--island-shadow);color:var(--muted)}
+.poke-op-del{color:var(--danger-ink)}
+.poke-empty{grid-column:1/-1;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.7;padding:22px 8px}
+/* 拍一拍输入行：整条白岛胶囊（字段透明 + 存入幽灵 + 发送白岛） */
+.poke-input-row{flex:none;display:flex;align-items:center;gap:8px;margin:8px 16px 0;padding:6px;background:var(--island-grad);box-shadow:var(--island-shadow);border-radius:19px}
+.poke-input{flex:1;min-width:0;height:29px;border:0;background:transparent;color:var(--ink);font-size:max(1em,16px);padding:0 10px;outline:none}
+.poke-input-save,.poke-input-go{flex:none;height:31px;padding:0 14px;border-radius:14px;font-size:12px;border:0;letter-spacing:.5px}
+.poke-input-save{background:rgba(var(--ink-rgb),.05);color:var(--muted)}
+.poke-input-go{background:var(--island-grad);color:var(--ink);font-weight:600;box-shadow:var(--island-shadow)}
+
+/* ===== @ 点名名单：浮在输入栏上方，行样式复用建群那套 .member-pick（零新组件） ===== */
+.at-pick{position:absolute;left:12px;right:12px;bottom:calc(100% - 2px);z-index:24}
+.at-pick .member-pick-list{margin-top:0;max-height:38vh;background:var(--surface)}
+.at-pick .member-pick{min-height:44px}
+
+/* ===== 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x）：壳用全站 .fs-sheet-*，这里只有清单与工具钮 ===== */
+.batch-count{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
+.batch-btns{display:flex;gap:6px;padding:0 2px 10px}
+.batch-btns .batch-tool{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 6px;border-radius:11px;border:1px solid var(--ctl-hair);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.batch-btns .batch-tool:active{background:var(--well)}
+.batch-btns .batch-tool svg{width:15px;height:15px;flex-shrink:0}
+.batch-list{min-height:0;max-height:32vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.batch-empty{text-align:center;color:var(--muted);font-size:12px;padding:24px 0}
+.batch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:8px;border-radius:12px;background:var(--well);border:1px solid var(--hair)}
+.batch-item:last-child{margin-bottom:0}
+.batch-item-idx{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--ink);color:var(--surface);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.batch-item-media{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--hair)}
+.batch-item-text{flex:1;min-width:0;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.batch-item-type{flex-shrink:0;font-size:11px;color:var(--muted)}
+.batch-item-x{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;background:var(--hair);color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
+.batch-item-x:active{filter:brightness(.92)}
+.batch-foot{display:flex;align-items:center;gap:8px;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 12px);flex-shrink:0}
+.batch-foot .soft-btn{flex:1;min-height:44px}
+
+/* ===== 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x）：壳用全站 .fs-sheet-*，这里只有清单与工具钮 ===== */
+.batch-count{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
+.batch-btns{display:flex;gap:6px;padding:0 2px 10px}
+.batch-btns .batch-tool{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 6px;border-radius:11px;border:1px solid var(--ctl-hair);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.batch-btns .batch-tool:active{background:var(--well)}
+.batch-btns .batch-tool svg{width:15px;height:15px;flex-shrink:0}
+.batch-list{min-height:0;max-height:32vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.batch-empty{text-align:center;color:var(--muted);font-size:12px;padding:24px 0}
+.batch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:8px;border-radius:12px;background:var(--well);border:1px solid var(--hair)}
+.batch-item:last-child{margin-bottom:0}
+.batch-item-idx{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--ink);color:var(--surface);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.batch-item-media{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--hair)}
+.batch-item-text{flex:1;min-width:0;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.batch-item-type{flex-shrink:0;font-size:11px;color:var(--muted)}
+.batch-item-x{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;background:var(--hair);color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
+.batch-item-x:active{filter:brightness(.92)}
+.batch-foot{display:flex;align-items:center;gap:8px;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 12px);flex-shrink:0}
+.batch-foot .soft-btn{flex:1;min-height:44px}
+/* 长截图起点标记（选段手势的屏上凭证，出图或取消即撤）：线圈住气泡＋一枚小签。
+   用墨色不用危险红——这不是错误/危险态，是「你正在选的一段」的记号 */
+.message.chatshot-from .bubble{box-shadow:0 0 0 1.5px var(--ink)}
+.message.chatshot-from::after{content:'截图起点';position:absolute;top:0;right:8px;z-index:5;font-size:10px;line-height:1;padding:3px 8px;border-radius:99px;background:var(--ink);color:var(--page);letter-spacing:1px;pointer-events:none}
+
+/* ===== 美化设置·聊天栏与输入栏的透明度（BUGS #314 二批：三档换成连续一根，且只在传了背景图时给）=====
+   入口在 聊天页右上角 → TA 的设置 →「美化设置」那一节里的两枚滑杆，按每位 TA 各存一份（与背景图同册）。
+   用户这一轮的原话是「我只需要在上传背景图片时，可以自由调整顶部栏和底部栏的透明度」⇒ 两件事一起变：
+   ① 档位改连续（0~100），② 不传图时这两枚控件压根不出现、值也不生效（见 js/settings.js 那句 `hasBg ? … : 0`）。
+
+   为什么默认档自此不再是「今天的样子」：今天这两栏的底是 `--topbar-veil = rgba(255,255,255,.94)`
+   而 css/mono.css 又把它的 blur 取消掉（本族唯一还留着 blur 的写法在 theme.css:527 那个 @supports 里），
+   ⇒ 6% 的聊天记录原样透上来。常驻门 tools/_smoke_head_veil.js 读到栏带内残影幅度 **14/255**，
+   而本仓量过的近白面可辨阈是 8/255（关纱＝229.7）——这就是用户报的「顶部栏是半透明的、能看到聊天消息」。
+   #314 那三档里最实的一档**刻意不写规则**＝没有真正不透的选项，所以那一档仍然漏 14。本批把 0 档写成完全不透。
+
+   ⚠ 底纱色引 --surface（不透明实白）而不引 --topbar-veil：一枚 alpha .94 的半透色与 transparent 相mix
+     最高只能到 .94，永远够不到「不透」（color-mix 只会把 alpha 往下乘）。要能落到 0 也必须能落到 1，
+     起点就得是一枚不透明色。T=6 时这一式与今天逐字节相同（都是 255,255,255 上 .94）＝滑杆最低端不是新观感。
+     theme.css:522 那条「顶栏不许引 --surface」是半透族时代的历史约束（两层半透白叠出亮痕），
+     现在两枚都是实白、且这里只写**一层**（不带第二份 --topbar-veil 的叠加），功能页顶栏与导航条那条仍引旧令牌。
+   ⚠ 选择器一律带 #chatView 的 id：css/mono.css 排在 css_order 末位、它那两条都是**类权重**，
+     不带 id 会被它按书写顺序压掉（＝屏上「点了没反应」）。带 id 之后与顺序无关。
+   ⚠ 聊天栏那一档薄下去时顺手给一点 blur，且**只在真薄了的时候付**：0 档完全不透，糊与不糊同色，
+     常驻一层 backdrop-filter 等于白付一趟合成（#071·#096 那条滚动发热）。输入栏那两行不给 blur——
+     它底下没有滚过的内容，透的是背景图，糊上去只会把照片抹脏。 */
+#chatView .chat-head::before{background-color:color-mix(in srgb,var(--surface) calc(100% - var(--head-trans,0) * 1%),transparent)}
+body[data-ap-headveil=on] #chatView .chat-head::before{-webkit-backdrop-filter:blur(calc(var(--head-trans,0) * .5px));backdrop-filter:blur(calc(var(--head-trans,0) * .5px))}
+#chatView .composer{--comp-wash:color-mix(in srgb,var(--surface) calc(100% - var(--comp-trans,0) * 1%),transparent);background-color:var(--comp-wash)}
+body[data-ap-bg=on] #chatView .composer{background-image:linear-gradient(var(--comp-wash),var(--comp-wash)),linear-gradient(color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent),color-mix(in srgb,var(--ink) calc(var(--chat-veil,0) * 1%),transparent)),var(--chat-bg);background-size:auto,auto,cover;background-position:center bottom}
+/* 胶囊本体跟着薄一档，但**只到 today 那排 chips 里最透的一档为止**（`--comp-row-trans` 由 JS 夹在 28＝≥72% 白）：
+   再薄下去输入框里的字就要压在照片上读不出（theme.css:520 那条「输入栏不能透」的地板，门 B10 一直钉着这个数）。
+   外圈那条带子吃滑杆全行程——照片就是从那一圈透出来的。 */
+#chatView .composer-row{background-color:color-mix(in srgb,var(--surface) calc(100% - var(--comp-row-trans,0) * 1%),transparent)}
