@@ -1,12 +1,12 @@
-// ===== 桌面美化台 =====
-// 入口：设置 → 外观「桌面美化」行（#deskStationEntry）· 功能中心「桌面美化」行（js/hub.js nav='#desk'）
-// 面板挂在 app-shell 上且不切视图：首页本身就是预览，拖哪根杆当场看见效果；一律即点即存
+// ===== 桌面背景（2026-10-15 由「浮层美化台」改成内联进 设置 → 外观 一张折叠卡）=====
+// 入口：设置 → 外观「桌面背景」卡 ∶ 功能中心那行（js/hub.js nav='#desk' → _hubGoFold('desk','deskbg')）
+// 控件宿主搬到外观这一页后不再需要开/收面板：拖哪根杆时「所有页面」开着就能看到这页卡片背后当场变；一律即点即存
 // 三根杆（压暗/缩放/取景）＋导航条薄纱写进 body 内联变量，壁纸画在 css/theme.css 的 .app-shell::before（只糊图不糊字）
 // 取景只有 cover/contain 两档：纵向位置档已被逐像素量具判死（见 theme.css 桌面背景图那段注释）
 // 虚化那根杆 2026-10-05 删了：糊 0 与糊 30 逐像素只差 4.5/255（tools/_probe_desk_travel.js），壁纸只从实白卡片缝里露出来＝一根死杆
 // 「功能放第二页」那一枚开关 2026-10-09 整族删净（用户定档「只有一页＋底部导航常驻」）：容器／字段／搬移动画一起走，见 css/chats.css 那段
 
-const DESK_DEF = { deskBgVeil: 44, deskBgZoom: 100, deskBgSize: 'cover', deskTabVeil: 45 };
+const DESK_DEF = { deskBgVeil: 44, deskBgZoom: 100, deskBgBlur: 0, deskBgSize: 'cover', deskTabVeil: 45 };
 const DESK_SIZES = ['cover', 'contain'];
 
 // ===== 内置预设壁纸 =====
@@ -45,6 +45,7 @@ function deskBgView() {
     bg: typeof a.deskBg === 'string' ? a.deskBg : '',
     veil: _deskClamp(a.deskBgVeil, 0, 90, DESK_DEF.deskBgVeil),
     zoom: _deskClamp(a.deskBgZoom, 100, 200, DESK_DEF.deskBgZoom),
+    blur: _deskClamp(a.deskBgBlur, 0, 40, DESK_DEF.deskBgBlur),
     size: DESK_SIZES.indexOf(a.deskBgSize) >= 0 ? a.deskBgSize : DESK_DEF.deskBgSize,
     tabVeil: _deskClamp(a.deskTabVeil, 0, 100, DESK_DEF.deskTabVeil)
   };
@@ -62,6 +63,9 @@ function applyDeskVars() {
   rs.setProperty('--desk-veil', String(g.veil));
   rs.setProperty('--desk-veil-a', (g.veil / 100).toFixed(3));
   rs.setProperty('--desk-zoom', (g.zoom / 100).toFixed(2));
+  // 背景模糊（壁纸本体）：写带 px 的长度，CSS 侧 filter/inset 直接用。0 不挂 data-ap-deskblur＝这一层逐字节同旧。
+  rs.setProperty('--desk-blur', g.blur + 'px');
+  if (g.blur > 0) document.body.dataset.apDeskBlur = 'on'; else delete document.body.dataset.apDeskBlur;
   rs.setProperty('--desk-size', g.size);
   rs.setProperty('--tabbar-veil', String(g.tabVeil));
   rs.setProperty('--tabbar-veil-a', (g.tabVeil / 100).toFixed(3));
@@ -77,10 +81,11 @@ function applyDeskVars() {
 
 function _deskEcho() {
   const g = deskBgView();
-  const o2 = $('#deskBgVeilOut'), o3 = $('#deskBgZoomOut'), o4 = $('#deskTabVeilOut'), st = $('#deskBgState');
+  const o2 = $('#deskBgVeilOut'), o3 = $('#deskBgZoomOut'), o4 = $('#deskTabVeilOut'), st = $('#deskBgState'), o5 = $('#deskBgBlurOut');
   if (o2) o2.textContent = g.veil + '%';
   if (o3) o3.textContent = g.zoom + '%';
   if (o4) o4.textContent = g.tabVeil + '%';
+  if (o5) o5.textContent = g.blur + 'px';
   const preset = deskPresetOf(g.bg);
   if (st) st.textContent = g.bg ? (preset ? '预设 · ' + preset.name : '已设置') : '未设置';
   $$('#deskBgSizeRow .contact-chip').forEach(c => c.classList.toggle('active', c.dataset.size === g.size));
@@ -88,43 +93,15 @@ function _deskEcho() {
 
 function renderDeskStation() {
   const g = deskBgView();
-  const v = $('#deskBgVeil'), z = $('#deskBgZoom'), t = $('#deskTabVeil');
+  const v = $('#deskBgVeil'), z = $('#deskBgZoom'), t = $('#deskTabVeil'), b = $('#deskBgBlur');
   if (v) v.value = g.veil;
   if (z) z.value = g.zoom;
   if (t) t.value = g.tabVeil;
+  if (b) b.value = g.blur;
   renderDeskPresets();
   _deskEcho();
   echoApSets();   // 「壁纸铺到全站」那一行是外观格同一族 chips，回显走 js/settings.js 那一份口径，不做第二套
 }
-
-// ===== 面板高度两档（高／矮）=====
-// 面板默认吃 72% 屏高，拖杆时首页只剩上面那一条；点标题栏那枚箭头收成 40% 把桌面露出来看一眼。
-// 档位只记本机 localStorage（不进 data）：它是面板的手感，不是外观设置，也不该跟着备份导出跑。
-const DESK_H_KEY = 'ordinal-desk-panel-h';
-function deskPanelLow() { return localStorage.getItem(DESK_H_KEY) === 'low'; }
-function applyDeskPanelH() {
-  const w = $('#deskStation'); if (!w) return;
-  const low = deskPanelLow();
-  w.dataset.h = low ? 'low' : 'tall';
-  const b = $('#deskPanelH');
-  if (b) { b.setAttribute('aria-pressed', low ? 'true' : 'false'); b.title = low ? '展开面板' : '收起面板'; }
-}
-const _deskHBtn = $('#deskPanelH');
-if (_deskHBtn) _deskHBtn.addEventListener('click', () => {
-  lsWrite(DESK_H_KEY, deskPanelLow() ? 'tall' : 'low');
-  applyDeskPanelH();
-});
-
-function deskStationOpen() { const w = $('#deskStation'); return !!w && !w.hidden; }
-function openDeskStation() {
-  showView('chats');
-  const w = $('#deskStation');
-  if (!w) return;
-  w.hidden = false;
-  applyDeskPanelH();
-  renderDeskStation();
-}
-function closeDeskStation() { const w = $('#deskStation'); if (w) w.hidden = true; }
 
 function _deskBindRange(sel, key, lo, hi) {
   const el = $(sel);
@@ -135,6 +112,7 @@ function _deskBindRange(sel, key, lo, hi) {
 }
 _deskBindRange('#deskBgVeil', 'deskBgVeil', 0, 90);
 _deskBindRange('#deskBgZoom', 'deskBgZoom', 100, 200);
+_deskBindRange('#deskBgBlur', 'deskBgBlur', 0, 40);
 _deskBindRange('#deskTabVeil', 'deskTabVeil', 0, 100);
 
 $('#deskBgSizeRow').addEventListener('click', async e => {
@@ -188,9 +166,3 @@ $('#deskBgReset').onclick = async () => {
   renderDeskStation();
   await save();
 };
-$('#deskStationClose').onclick = closeDeskStation;
-$('#deskStationScrim').onclick = closeDeskStation;
-
-// 设置页入口行（该行随设置页改版可能不在，故做存在性判断）
-const _deskEntry = $('#deskStationEntry');
-if (_deskEntry) _deskEntry.addEventListener('click', openDeskStation);

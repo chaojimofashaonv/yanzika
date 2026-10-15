@@ -11,10 +11,16 @@
 //   重抄一份实现就等于造第二口径，真口径一改这里静默漂掉（#051·#066·#074 那一族）。
 // ②只读不改：这一页一张字卡都不动，唯一可写的东西是「检查项」那张表本身（data.cardFit.slots）。
 // ③缺口只报「按这些词没筛到」，不报「TA 一定说不出口」——词是我的筛法，不是它的库存事实（#191「读不到≠干净」同族）。
-// 加一条：记录太少时落「还没聊过 · 记录太少」，不拿三两句猜出一个人的状态（同一族）。
+// 加一条：记录太少时真实那一面落「样本还少 · 先当参考」，不拿三两句猜出一个人的状态（同一族）。
+// 五轮定档（2026-10-15，用户「我要全面检测，既要有纯随机的检测，也要真实数据」）：在真实面之外补一面
+//   「随机重放」——把 js/chat.js 抽主字卡那一步（均匀抽·multi 一轮抽 pyMin~pyMax）照口径在本地用写死种子
+//   重放固定 120 轮，读它摇出来的分布（轮到几种·哪些被稀释·分组占比·想每种都轮到大致要说几句）。
+//   两面互补：重放测「池子本身的形状」（与聊没聊过无关，刚加的联系人也能测，且每次检出一致＝检测非抽查波动）；
+//   真实测「这几天 TA 实际怎么说」（拿真数据校验）。聊得够就顺真实状态、不够就用重放结构给判定。
 
 let _cfWho = '';      // 这一页看的是哪一位（空＝渲染时落到当前会话那位）。本页寿命，不进 data——与 mate.js 的 _mateMemOpen 同一口径
 let _cfDetail = false; // 明细四表开没开（同上，纯阅读位置）
+let _cfLive = false;   // ①「重摇一次」：true 时重放走现场真随机（Math.random）看抖动；换人自动回到写死种子的稳态
 
 // 只查单聊：群聊的取池是全体成员并集，混在一列里读不出「这一位」的库存（世界感知 _cjSingles 同口径）
 function _cfSingles() { return (data.contacts || []).filter(x => x.kind !== 'group'); }
@@ -114,11 +120,15 @@ function _cfUse(cid, stat) {
   const ch = (data.chats || {})[cid];
   const msgs = (ch && Array.isArray(ch.msgs)) ? ch.msgs : [];
   const now = Date.now();
-  const pool = new Set(stat.texts);                       // 这一本取得到的正文卡（去重）
-  const own = new Set();
-  stat.main.forEach(g => { if (g.scope !== 'public') g.cs.forEach(t => own.add(t)); });
   const talk = msgs.filter(m => m && m.from === 'partner' && !m.recalled && !m.sticker && !m.voice
     && String(m.text || '').trim() && _cjTsOf(m) && now - _cjTsOf(m) <= CF_WIN_MS);
+  // ⑥采样窗口用：近 7 天 TA 实际发的总条数（含语音∶图∶表情包∶文字）——你手动找 TA 聊得多时，
+  //   TA 抽卡的真实次数远超【主动发送钟】估的那个数，重放轮数取两者里大的那把才贴实际会听到多少句
+  const saidAll = msgs.filter(m => m && m.from === 'partner' && !m.recalled
+    && _cjTsOf(m) && now - _cjTsOf(m) <= CF_WIN_MS).length;
+  const pool = new Set(stat.texts);
+  const own = new Set();
+  stat.main.forEach(g => { if (g.scope !== 'public') g.cs.forEach(t => own.add(t)); });
   const used = new Set(), cnt = {};
   let ownSaid = 0;
   talk.forEach(m => {
@@ -144,7 +154,118 @@ function _cfUse(cid, stat) {
   const why = `最近 7 天 TA 说了 ${talk.length} 句，手里 ${pool.size} 种 TA 用掉了 ${used.size} 种`
     + (topN >= 6 ? `，同一句说了 ${topN} 遍` : '')
     + (talk.length < 10 ? '——样本太少，读不出状态' : '。');
-  return { poolKinds: pool.size, said: talk.length, usedKinds: used.size, cover, top, topN, ownSaid, state, why };
+  return { poolKinds: pool.size, said: talk.length, saidAll, usedKinds: used.size, cover, top, topN, ownSaid, state, why };
+}
+
+// ===== 纯随机重放检测（不读聊天记录：拿线上同一条抽卡规则，本地摇够多轮读分布）=====
+// 为什么要它：真实记录只是随机摇出来的「一个样本」，聊得少就什么都读不出、过两天又变（用户四轮定档那句
+// 「检测本身也是随机的」）。随机过程要用大量重复采样才测得准——这里把 js/chat.js 主动发送那条形态链
+// （语音→图片→表情包→文字单张，掷序与 _activeSendOne 一字不差）抽成共用的 _asShapeKind，检测直接调它重放。
+// 五轮·二批（2026-10-15）：①轮数不再一刀切 120，改按【这位自己的主动发送节奏】估出一周真实开口量；
+// ②均匀抽卡的期望覆盖率用解析公式当主读数（绝对稳），写死种子那次重放当「一种典型的一周」；①另给一枚「重摇」
+//   钮，点一下换现场 Math.random 重摇看真随机抖动（期望不变＝稳的那把尺一直在）；
+// ③重放走共用的 _asShapeKind、按线上那条链逐条分语音∶图∶表情包∶文字（不再自己镜像一份，铁律①）；④轮不到的句子落到具体哪几句（只列数→可去找）。
+// 三道防卡顿的闸：轮数上限（3000）∶ 轮不到名单只渲前 50 行∶ 同一次进入页面、池子与档位没变就不重摇（切明细不重算）。
+// 铁律①：池子直接复用 _cfStat/_cfImgPool/_cfVoicePool 按 groupUsableFor 现取的池，不自己 filter。
+// 铁律②：只摇不算账、一张卡都不动、不 save。
+const CF_SIM_MIN_ROUNDS = 12;      // 主动发送关着或极少时也至少给一点样本，别报 0（读数会误判「没轮到」）
+const CF_SIM_MAX_ROUNDS = 3000;    // 极端勤的档（每分钟一条）一周能算出几十万轮——夹死上限护住性能
+const CF_DROWN_SHOW = 50;          // 轮不到的句子只先渲这么多行（其余靠「去找」直达，不在本页铺 DOM）
+const CF_SAMPLE_N = 14;            // 抽样预览采几条：拿真池子按线上那条链摇一小捧，给你直接读“TA 会怎么说”
+function _cfPushSample(out, k, t) { if (out.samples.length < CF_SAMPLE_N) out.samples.push({ k, t }); }
+let _cfSimCache = null;            // {sig, out}：本页寿命内的重放缓存，与 _cfWho/_cfDetail 同档（不进 data）
+// 一枚写死种子的确定性随机源（mulberry32）：不碰全局 Math.random，免得摇一次真的骰子去测真的骰子串味
+function _cfRng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// ①⑥「模拟说几条」：主动发送一周期望量 与 近 7 天实际总条数 取大的那把（后者盖住你手动拉高的聊天量），再夹进防卡顿区间
+function _cfSimRounds(bh, realSaid) {
+  let est = CF_SIM_MIN_ROUNDS;
+  if (bh.asEnabled) {
+    const lo = Math.max(1, Number(bh.asMin) || 1);
+    const hi = Math.max(lo, Number(bh.asMax) || lo || 5);
+    const avgMin = (lo + hi) / 2;
+    const prob = Math.max(0, Math.min(100, Number(bh.asProb) || 0)) / 100;
+    const clo = Math.max(1, Number(bh.asCountMin) || 1);
+    const chi = Math.max(clo, Number(bh.asCountMax) || clo || 1);
+    est = (1440 / avgMin) * prob * 7 * ((clo + chi) / 2);
+  }
+  const rs = Math.max(0, Number(realSaid) || 0);   // ⑥真实说话量：聊得比那条钟多时，按实际的来
+  return Math.max(CF_SIM_MIN_ROUNDS, Math.min(CF_SIM_MAX_ROUNDS, Math.round(Math.max(est, rs))));
+}
+function _cfSim(cid, stat, liveRnd, realSaid) {
+  const entries = [];
+  const firstScope = {};
+  let hash = 0;
+  stat.main.forEach((g, gi) => g.cs.forEach(t => {
+    entries.push({ t, gi, scope: g.scope });
+    if (!(t in firstScope)) firstScope[t] = g.scope;
+    hash = (hash + t.charCodeAt(0) * 31 + t.length) >>> 0;   // 廉价内容指纹：同数量换了字也判不同池（防缓存读到旧结果）
+  }));
+  const P = entries.length;
+  const kindsAll = new Set(entries.map(e => e.t));
+  const bh = stat.bh;
+  const imgPool = _cfImgPool(cid);
+  const images = imgPool.filter(p => p.kind === 'image');
+  const stickers = imgPool.filter(p => p.kind !== 'image');
+  const voices = _cfVoicePool(cid);
+  // 与线上主动发送同一份池∶同一形态链的入参（_asShapeKind 是两份共用的唯一实现，检测不再自己写一遍）
+  const shapes = { voices: voices.length, images: images.length, stickers: stickers.length, main: P };
+  const out = { rounds: _cfSimRounds(bh, realSaid), realSaid: Math.max(0, Number(realSaid) || 0), live: !!liveRnd, draws: 0, poolKinds: kindsAll.size, reached: 0, reachRate: 0,
+    expectKinds: 0, expectRate: 0, drowned: [], drownedKinds: 0, topText: '', topN: 0, ownDraws: 0, pubDraws: 0,
+    fullSpreadDraws: 0, groups: stat.main.map(g => ({ name: g.name, scope: g.scope, size: g.cs.length, hits: 0, share: 0 })),
+    topGroups: [], msgKinds: { text: 0, voice: 0, image: 0, sticker: 0 }, samples: [],
+    imgKinds: new Set(imgPool.map(p => p.src)).size, imgReached: 0, voiceKinds: voices.length, voiceReached: 0 };
+  if (!P && !shapes.voices && !shapes.images && !shapes.stickers) return out;
+  // ②缓存：只对写死种子那一路（默认稳态）缓存；live 现场真随机每次现摇不缓存
+  const sig = [cid, out.rounds, P, kindsAll.size, hash, shapes.voices, shapes.images, shapes.stickers,
+    Number(bh.voiceProb) || 0, Number(bh.imageProb) || 0, Number(bh.stickerProb) || 0].join('|');
+  if (!liveRnd && _cfSimCache && _cfSimCache.sig === sig) return _cfSimCache.out;
+  const rnd = liveRnd || _cfRng(20261015);
+  // 注入给 _asShapeKind 的 roll：镜像 _rand（undefined 概率＝0、绝不命中），但走可复现的 rnd
+  const roll = p => rnd() * 100 < (p === undefined ? 0 : (Number(p) || 0));
+  const hit = {}, imgHit = new Set(), voiceHit = new Set();
+  let draws = 0, ownD = 0, pubD = 0;
+  const mk = out.msgKinds;
+  for (let r = 0; r < out.rounds; r++) {
+    // 掷形态走那唯一一份 _asShapeKind（语音→图片→表情包→文字单张），与 _activeSendOne 一字不差
+    const kind = _asShapeKind(bh, shapes, roll);
+    if (kind === 'voice') { mk.voice++; const v = voices.length ? voices[Math.floor(rnd() * voices.length)] : null; if (v) voiceHit.add(v.data); _cfPushSample(out, '语音', v ? v.name : ''); continue; }
+    if (kind === 'image') { mk.image++; const im = images.length ? images[Math.floor(rnd() * images.length)] : null; if (im) imgHit.add(im.src); _cfPushSample(out, '图片', ''); continue; }
+    if (kind === 'sticker') { mk.sticker++; const st = stickers.length ? stickers[Math.floor(rnd() * stickers.length)] : null; if (st) imgHit.add(st.src); _cfPushSample(out, '表情包', ''); continue; }
+    if (kind !== 'text') continue;   // 一条也没掷中＝不发（与 _activeSendOne 那句 if (!msg) continue 同口径）
+    mk.text++;
+    if (!P) continue;
+    const e = entries[Math.floor(rnd() * P)];
+    hit[e.t] = (hit[e.t] || 0) + 1;
+    out.groups[e.gi].hits++;
+    if (e.scope !== 'public') ownD++; else pubD++;
+    draws++;
+    _cfPushSample(out, '文字', e.t);
+  }
+  out.draws = draws; out.ownDraws = ownD; out.pubDraws = pubD;
+  out.imgReached = imgHit.size; out.voiceReached = voiceHit.size;
+  Object.keys(hit).forEach(t => { out.reached++; if (hit[t] > out.topN) { out.topN = hit[t]; out.topText = t; } });
+  kindsAll.forEach(t => { if (!hit[t]) out.drowned.push({ t, scope: firstScope[t] || 'public' }); });
+  out.drownedKinds = out.drowned.length;
+  out.reachRate = out.poolKinds ? Math.round(out.reached * 100 / out.poolKinds) : 0;
+  // ②解析期望：一轮抽中某一种的概率≈1/P，draws 轮都没抽中的概率≈(1−1/P)^draws → 期望轮到 P·(1−(1−1/P)^draws)
+  if (out.poolKinds > 0 && draws > 0) {
+    const ek = out.poolKinds * (1 - Math.pow(1 - 1 / out.poolKinds, draws));
+    out.expectKinds = Math.max(out.reached, Math.round(ek));
+    out.expectRate = Math.round(out.expectKinds * 100 / out.poolKinds);
+  }
+  out.fullSpreadDraws = out.poolKinds ? Math.ceil(out.poolKinds * (Math.log(out.poolKinds) + 0.577)) : 0;
+  out.groups.forEach(g => { g.share = draws ? Math.round(g.hits * 100 / draws) : 0; });
+  out.topGroups = out.groups.slice().sort((a, b) => b.share - a.share).slice(0, 3);
+  if (!liveRnd) _cfSimCache = { sig, out };
+  return out;
 }
 
 // 出厂那张「该有的说法」表（在 utils.js 的 defaults.cardFit 里，改词请连哨兵一起看）
@@ -204,30 +325,36 @@ function cfRender() {
     const on = bar.querySelector('.cj-ow.on');
     if (on) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;   // 选中的那枚保持看得见（人多时横向滚）
   }
-  const cid = _cfWho, stat = _cfStat(cid), use = _cfUse(cid, stat);
-  box.innerHTML = _cfReportHTML(cid, stat, use);
+  const cid = _cfWho, stat = _cfStat(cid), use = _cfUse(cid, stat), sim = _cfSim(cid, stat, _cfLive ? Math.random : null, use.saidAll);
+  box.innerHTML = _cfReportHTML(cid, stat, use, sim);
 }
 
 // 报告态：一屏只讲这一位——状态 ∶ TA 怎么说 ∶ 要不要调（数量∶分组∶缺的说法）∶ 明细收起来
-function _cfReportHTML(cid, s, u) {
+// 全面检测＝两面并肩：「随机重放」（这池子本身的形状，不靠聊天记录）＋「真实记录」（这几天 TA 实际怎么说）
+function _cfReportHTML(cid, s, u, sim) {
   const missSlots = _cfSlots().filter(sl => {
     const src = _cfSlotSources(sl, s.main);
     return !src.pub.length && !src.own.length;
   });
   // 名字由顶部胶囊行说一次（顶栏恒挂页名），这里不再重复「阿澄 · 适应状态」
   let h = '<div class="fit-hero"><div class="fit-hero-k">适应状态</div>'
-    + `<div class="fit-hero-v">${escapeHTML(u.state)}</div>`
-    + `<div class="fit-hero-l">${escapeHTML(u.why)}</div>`;
+    + `<div class="fit-hero-v">${escapeHTML(_cfVerdict(s, sim, u))}</div>`
+    + `<div class="fit-hero-l">${escapeHTML(_cfHeroLine(sim, u))}</div>`;
   h += '</div>';
   h += `<div class="fit-voice">${_cfVoiceLines(s, u).map(x => '<p' + (x[1] ? ' class="fit-voice-gap"' : '') + '>' + escapeHTML(x[0]) + '</p>').join('')}</div>`;
+  h += _cfSampleHTML(sim);
+  h += _cfSimHTML(sim);
+  h += _cfRealHTML(u);
+  h += _cfDiverge(sim, u);
   h += '<div class="fit-sec"><div class="fit-sec-h">要调的三件事</div>'
-    + _cfAdvRow('数量', _cfAdvCount(s, u), _cfAdvGo('cards', '去字卡库'))
-    + _cfAdvRow('分组', _cfAdvGroup(s), _cfAdvGo('cards', '去字卡库挪几张'))
+    + _cfAdvRow('数量', _cfAdvCount(s, u, sim), _cfAdvGo('cards', '去字卡库'))
+    + _cfAdvRow('分组', _cfAdvGroup(s, sim), _cfAdvGo('cards', '去字卡库挪几张'))
     + _cfAdvRow('缺的说法', _cfAdvSlots(s, missSlots), _cfAdvGo('slots', '看那几类话'))
     + '</div>';
   h += `<div class="fit-detail-sw" data-cf-detail="${_cfDetail ? '0' : '1'}" role="button" tabindex="0">明细 · 意图槽位 ∶ 你调的概率格 ∶ 功能话术池${_cfDetail ? '（收起）' : '（点开）'}</div>`;
   if (_cfDetail) {
     h += _cfSecCountsHTML(s, u);
+    h += _cfDrownHTML(sim);
     h += _cfSlotHitsHTML(s);
     h += _cfKnobSecHTML(s);
     h += _cfLibHTML();
@@ -240,6 +367,90 @@ function _cfReportHTML(cid, s, u) {
 function _cfAdvRow(k, txt, go) {
   return `<div class="fit-adv"><div class="fit-adv-k">${k}</div><div class="fit-adv-v">${txt}</div>${go}</div>`;
 }
+// 页头那一句：两面各自报一句（重放那一句永远有、真实那句聊得不够就诚实说“先以重放为准”）
+function _cfHeroLine(sim, u) {
+  const simTxt = sim.poolKinds
+    ? `按 TA 的节奏模拟说 ${sim.rounds} 条，手里 ${sim.poolKinds} 种期望轮到约 ${sim.expectRate}%`
+    : '这一本还抽不出主字卡';
+  const realTxt = u.said >= 10
+    ? `；最近 7 天实际说了 ${u.said} 句·用掉 ${u.usedKinds} 种`
+    : '；这几天还没怎么聊，真实那面读不出稳定样子——重放那面不靠聊天，先以它为准';
+  return simTxt + realTxt;
+}
+// 总体判定：聊得够就顺真实状态，不够就用重放的【解析期望】给（绝对稳、不靠一次重放的运气）
+function _cfVerdict(s, sim, u) {
+  if (!s.texts.length) return '还没存下 TA 能说的话';
+  if (u.said >= 10 && u.state) return u.state;
+  if (sim.expectRate >= 75) return '这池子跟 TA 挺合';
+  if (sim.expectRate >= 45) return '还行 · 说得开一部分';
+  return '存得宽 · 平时轮不全';
+}
+// 抽样预览（最直给的一层）：拿 TA 这一本真池子按线上那条抽卡链摇一小捧，你直接读“TA 会怎么说”——不用懂任何数字
+function _cfSampleHTML(sim) {
+  if (!sim.samples || !sim.samples.length) return '';
+  const kinds = {};
+  sim.samples.forEach(x => { kinds[x.k] = (kinds[x.k] || 0) + 1; });
+  const sum = Object.keys(kinds).map(k => k + '×' + kinds[k]).join(' · ');
+  let h = `<div class="fit-sec"><div class="fit-sec-h">TA 拿这本卡会怎么说<span class="fit-sec-sub">抽 ${sim.samples.length} 条${sim.live ? '·这一次真随机' : ''}</span></div><div class="fit-samples">`;
+  h += sim.samples.map(x => x.k === '文字'
+    ? `<div class="fit-sample"><span class="fit-sample-t">${escapeHTML(x.t || '（空）')}</span></div>`
+    : `<div class="fit-sample fit-sample-media"><span class="fit-sample-tag">【${x.k}${x.t ? ' · ' + escapeHTML(x.t.slice(0, 12)) : ''}】</span></div>`).join('');
+  h += `</div><div class="fit-note">这几条是拿 TA 这一本真池子按线上那条链（语音→图片→表情包→文字）现摇的样本——读着像不像 TA、是不是老那几句、缺哪类话，一眼看得出来。（${sum}）</div>`;
+  h += `<div class="fit-adv-go"><button type="button" class="fit-adv-btn" data-cf-reroll="1">换一批 · 再摇几条（看真随机会换出什么）</button></div>`;
+  return h + '</div>';
+}
+// 随机重放那面（检测“池子本身的形状”，与聊没聊过无关）
+function _cfSimHTML(sim) {
+  if (!sim.poolKinds) return '';
+  const gTxt = sim.topGroups.filter(g => g.share > 0).map(g => escapeHTML(g.name) + ' ' + g.share + '%').join(' · ');
+  const ownShareDraws = sim.draws ? Math.round(sim.ownDraws * 100 / sim.draws) : 0;
+  const mk = sim.msgKinds;
+  const catTxt = [['文字', mk.text], ['语音', mk.voice], ['图', mk.image], ['表情包', mk.sticker]].filter(x => x[1]).map(x => x[0] + ' ' + x[1]).join(' · ') || '都没摇到';
+  const mediaLine = (sim.imgKinds || sim.voiceKinds)
+    ? `<div>图 <b>${sim.imgKinds ? sim.imgReached + '/' + sim.imgKinds + ' 种发得出' : '没存'}</b>∶语音 <b>${sim.voiceKinds ? sim.voiceReached + '/' + sim.voiceKinds + ' 段发得出' : '没存'}</b></div>`
+    : '';
+  return `<div class="fit-sec"><div class="fit-sec-h">随机重放 · 这池子会摇出什么${sim.live ? '<span class="fit-sec-sub">（这一次是真随机摇的）</span>' : ''}</div><div class="fit-facts">`
+    + `<div>按 TA 这一周会说的话量模拟说 <b>${sim.rounds}</b> 条（主动节奏∶近 7 天实际 <b>${sim.realSaid}</b> 条 取大的那把）∶ 抽了 <b>${sim.draws}</b> 张主字卡∶ 这一周摇到 ${catTxt}</div>`
+    + `<div>TA 手里 <b>${sim.poolKinds}</b> 种，按随机性<b>期望</b>轮到 <b>${sim.expectKinds}</b> 种（约 <b>${sim.expectRate}%</b>）∶ 这一次重放摇出 <b>${sim.reached}</b> 种（<b>${sim.reachRate}%</b>）</div>`
+    + `<div>${sim.drownedKinds ? '有 <b>' + sim.drownedKinds + '</b> 种这几轮一次没抽到（随机挑时它们少见，不等于 TA 说不出口）' : '每一种都轮到过 · 铺得开'}</div>`
+    + `<div>想每种都至少轮到一次，按随机性大致要说 <b>${sim.fullSpreadDraws}</b> 张卡</div>`
+    + (sim.topText ? `<div>最常被抽中的是那句「${escapeHTML(sim.topText.slice(0, 20))}」（<b>${sim.topN}</b> 遍）</div>` : '')
+    + (gTxt ? `<div>抽中次数落在分组上：${gTxt}</div>` : '')
+    + mediaLine
+    + `<div>为 TA 专属的那半占抽中 <b>${ownShareDraws}%</b></div>`
+    + '</div>'
+    + '<div class="fit-note">这一栏把上面那些句子背后的随机性量化：<b>期望</b>是均匀抽卡的解析值（永远稳），<b>这一次</b>是同一条链现摇的一手。想知道真随机会摆出什么，点上面「换一批」。</div></div>';
+}
+// 真实记录那面（拿真数据校验：聊得不够就如实标“先当参考”，不拿三两句猜一个人的状态）
+function _cfRealHTML(u) {
+  const low = u.said < 10;
+  return `<div class="fit-sec"><div class="fit-sec-h">真实记录 · 这几天 TA 实际怎么说</div><div class="fit-facts">`
+    + `<div>最近 7 天 TA 说了 <b>${u.said}</b> 句${low ? '（样本还少，这一栏先当参考）' : ''}</div>`
+    + `<div>用掉手里 <b>${u.usedKinds}</b> 种（<b>${u.cover}%</b>）· 同一句最多 <b>${u.topN}</b> 遍</div>`
+    + `<div>说到你专门写给 TA 的话 <b>${u.ownSaid}</b> 句</div>`
+    + '</div>' + (low ? '<div class="fit-note">聊得还不够，这一栏读不出稳定的样子——上面「随机重放」那栏不靠聊天记录，先以它为准。</div>' : '') + '</div>';
+}
+// ⑤两面背离：真实覆盖 vs 重放期望，差多少直接告诉你该信哪一面（聊得不够才比得出意义）
+function _cfDiverge(sim, u) {
+  if (!sim.poolKinds || u.said < 10) return '';
+  const d = u.cover - sim.expectRate;
+  let t;
+  if (d <= -20) t = '真实比预测低一大截——多半是你还没和 TA 聊够，不是这批卡的问题。';
+  else if (d >= 20) t = '真实比预测还说得开——这一本偏小、TA 在反复抽，可以考虑再存一些。';
+  else t = '真实和预测对得上，两面读哪面都算数。';
+  return `<div class="fit-note">${escapeHTML(t)}</div>`;
+}
+// ④轮不到的具体句子（收在明细里）：只先渲前 50 行防铺太多 DOM，每行一个「去找」直达字卡库
+function _cfDrownHTML(sim) {
+  if (!sim || !sim.drownedKinds) return '';
+  const list = sim.drowned.slice(0, CF_DROWN_SHOW);
+  let h = `<div class="fit-sec"><div class="fit-sec-h">明细 · 这几句重放里一次没轮到<span class="fit-sec-sub">${sim.drownedKinds} 句</span></div><div class="fit-slots">`;
+  h += list.map(d => `<div class="fit-slot fit-slot-miss"><span class="fit-slot-k">${escapeHTML(d.t.slice(0, 40))}</span><button type="button" class="fit-slot-go" data-cf-find="${escapeHTML(d.t)}" data-cf-scope="${d.scope === 'own' ? 'own' : 'public'}">去找</button></div>`).join('');
+  h += '</div>';
+  if (sim.drownedKinds > CF_DROWN_SHOW) h += `<div class="fit-note">只列了前 ${CF_DROWN_SHOW} 句，共 ${sim.drownedKinds} 句。“轮不到”≠说不出口，是随机挑时它们少见——嫌多可按这些去找、把它们归归堆。</div>`;
+  else h += '<div class="fit-note">“轮不到”不等于说不出口，是随机挑时它们少见。想让 TA 多说哪句，就把那句单拎一组或略精简。</div>';
+  return h + '</div>';
+}
 // 去处只给真存在的入口：字卡库那一面按作用域摊，跳过去得先落对那一面（落错会报「没有匹配的字卡」＝一句假话）
 // 钮自己不嵌进那句结论里（实测跟在句尾同一行会把「……被这三组定住了。」劈成两行，句子读着像没说完）——各占一行才互不牵连
 function _cfAdvGo(kind, lab) {
@@ -249,15 +460,19 @@ function _cfAdvGo(kind, lab) {
   if (kind === 'slots' && _cfDetail) return '';
   return `<div class="fit-adv-go">${b}</div>`;
 }
-function _cfAdvCount(s, u) {
+function _cfAdvCount(s, u, sim) {
   if (!s.texts.length) return '<b>库里这一位一句正文都没有</b>——TA 现在只能说代码兜底的那几句。';
-  if (u.said < 10) return '记录太少，这一条先不判。';
-  if (u.cover < 25) return '不用加。<b>先让 TA 用开</b>——比再存一百句有用。';
-  if (u.cover >= 60) return '该加了。TA 手里那些几乎都在用，<b>再存一些</b>才接得上。';
-  return '先不加也行：一半在动，一半还没轮到。';
+  if (!sim || !sim.poolKinds) return '记录太少，这一条先不判。';
+  // 这一位手里种类本来就少（不够一轮反复抽）——该加，与旧版同口径
+  if (sim.poolKinds < s.need * 3) return '该加了。这一本没几种，TA 反复就那几句，<b>再存一些</b>才接得上。';
+  // 重放里一半以上的种几轮都轮不到＝池子相对说话量偏宽（不说“删”，说“归堆/精简”，缺也轻轻说）
+  if (sim.drownedKinds >= Math.max(8, Math.round(sim.poolKinds * 0.5))) return 'TA 手里 <b>' + sim.poolKinds + '</b> 种里，重放下来有 <b>' + sim.drownedKinds + '</b> 种挺少轮到。不是不能说不准，是随机挑时它们少见——<b>要不要把想让 TA 常说的话单拎一组</b>（或略微精简），看你。';
+  if (sim.reachRate >= 75) return '数量挺合适。TA 手里这些，正常聊一段大都轮得到。';
+  return '先不加也行：大半在动，一小半还没轮到。';
 }
-function _cfAdvGroup(s) {
+function _cfAdvGroup(s, sim) {
   if (!s.ownN) return '你还没为 TA 单独存过一组——现在 TA 开口用的全是公用卡（<b>公用 ' + s.pubN + ' ∶ 为 TA 0</b>）。';
+  if (sim && sim.topGroups && sim.topGroups.length && sim.topGroups[0].share >= 50 && s.main.length >= 2) return `重放里最大那一组占抽中 <b>${sim.topGroups[0].share}%</b>（${escapeHTML(sim.topGroups[0].name)}）——TA 的语气被这一组定住了。`;
   if (s.ownShare < 10) return `公用 <b>${s.pubN}</b> ∶ 为 TA <b>${s.ownN}</b>——TA 每 100 句里只有 ${s.ownShare} 句是你专门写给 TA 的。`;
   if (s.topShare >= 50 && s.main.length >= 4) return `最大三组占 <b>${s.topShare}%</b>（${escapeHTML(s.topNames.join(' ∶ '))}）——TA 的语气被这三组定住了。`;
   return `公用 <b>${s.pubN}</b> ∶ 为 TA <b>${s.ownN}</b>，分在 ${s.main.length} 组里${s.ungrouped ? '，还挂着 <b>' + s.ungrouped + '</b> 句未分组' : ''}。`;
@@ -451,7 +666,9 @@ document.addEventListener('click', e => {
   if (goMate) { switchChat(goMate.dataset.cfMate); showView('mate'); return; }
   const dsw = t.closest('[data-cf-detail]');
   if (dsw) { _cfDetail = dsw.dataset.cfDetail === '1'; cfRender(); return; }
+  const rr = t.closest('[data-cf-reroll]');
+  if (rr) { _cfLive = true; cfRender(); return; }   // 重摇一次：重放走现场真随机，看这一池的抖动（期望不变）
   const who = t.closest('[data-cf-who]');
-  if (who) { if (_cfWho !== who.dataset.cfWho) _cfDetail = false; _cfWho = who.dataset.cfWho; cfRender(); return; }   // 点胶囊切人；换人把明细收回去（一屏只讲这一位）
+  if (who) { if (_cfWho !== who.dataset.cfWho) { _cfDetail = false; _cfLive = false; } _cfWho = who.dataset.cfWho; cfRender(); return; }   // 点胶囊切人；换人把明细与真随机都收回默认稳态
 });
 

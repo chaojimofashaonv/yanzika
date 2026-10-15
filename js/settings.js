@@ -71,7 +71,15 @@ function applyAppearance() {
   b.dataset.apBubble = a.bubbleShape;
   b.dataset.apMine = a.mineColor;
   b.dataset.apMineText = a.mineText;
-  b.dataset.apUifont = (data.appearance || {}).uiFontScale === 'large' ? 'large' : 'medium';
+  // 全站字号（一根 80~140 的连续滑杆）：把百分比折成无单位数字写进 --ui-zoom，theme.css `.app-shell>*{zoom:var(--ui-zoom,1)}` 消费。
+  // 夹一次区间在这里兼做——旧档残留的字符串已由 db.js 折成数字，这里只防「没跑过 ensureData 的临时 data」。
+  const _uiv = Math.min(140, Math.max(80, Math.round(Number((data.appearance || {}).uiFontScale)) || 100));
+  b.style.setProperty('--ui-zoom', (_uiv / 100).toFixed(4));
+  b.dataset.apFrost = a.frost ? 'on' : 'off';   // 卡片毛玻璃：观感写在 css/theme.css 的 body[data-ap-frost=on] 段
+  // 毛玻璃强度（--frost-blur）与「气泡也吃」（data-ap-frost-bubble）：只在 frost 开时被 theme.css 消费，值一直写不会错
+  const _fb = Math.min(24, Math.max(0, Math.round(Number(a.frostBlur)) || 14));
+  b.style.setProperty('--frost-blur', _fb + 'px');
+  b.dataset.apFrostBubble = a.frostBubble ? 'on' : 'off';
   b.dataset.apDensity = a.density;
   b.dataset.apTime = a.showTime ? 'on' : 'off';
   b.dataset.apSendbtn = a.sendBtn === false ? 'off' : 'on';
@@ -210,18 +218,51 @@ function updateDataStats() {
 // 名单之外的来源（会话列表 chats、功能中心 hub、通知冷启动直达）都算「打开会话」，一律停在最新。
 const CHAT_SUB_VIEWS = ['settings', 'mate', 'mailbox', 'cards', 'anniversary', 'stats', 'letterstats', 'avatarlib', 'collect', 'cjian', 'cardfit', 'player', 'moments'];
 
+// 页名只此一张表：顶栏标题与返回键那句「返回××」共用它，两处各写一份必漂（#215 那批手抄名单的同一课）。
+// 动态名（对方昵称）在调用时现算——旧写法每次 updateTopbarTitle 重建整张表，效果相同，搬出来不能顺手做成常量。
+function topbarName(name) {
+  const names = { collect: '收藏', chat: chatPartnerName(), chats: '聊天', mailbox: '信箱', cards: '字卡库', syscards: '系统预设字卡', settings: '设置', mate: chatPartnerName() + ' 的设置', anniversary: '纪念日', stats: '聊天统计', letterstats: '写信统计', silent: '主动消息', avatarlib: '头像昵称', cjian: '世界感知', wish: '心愿', games: '游戏', invite: '邀请', cardfit: '字卡适应度', player: '播放器', hub: '使用大全', more: '更多', moments: '朋友圈', emotion: '聊天情绪' };
+  return names[name] || '';
+}
+
+// 顶栏那两枚返回件的目标＝「你从哪来」。来路栈只活在本页寿命（同 _mateMemOpen∶_cfWho∶ordinal-cjian-tab 那一族），
+// 不进 data 不进备份：刷新后人已回到冷启动那一页，还记着一路钻进来的栈反而是句假话。
+const _navStack = [];
+const NAV_MAX = 24;                                                         // 只为不无界长，远够本站最深处
+const NAV_ROOT_VIEWS = ['chats', 'chat', 'cards', 'cjian', 'more'];         // 底部导航那四枚＋聊天页：站在根上不叫「钻进来」
+function _navLabel(view) { const nm = topbarName(view); return nm ? '返回' + nm : '返回上一页'; }
+// 两枚返回件一处口径（左上箭头与可点的居中标题）：只改 data-view 会留下 title/aria 那句旧指向＝看着能点、说法还是假的
+function _setBackTarget(name) {
+  const to = NAV_ROOT_VIEWS.indexOf(name) >= 0 ? 'chats' : (_navStack.length ? _navStack[_navStack.length - 1] : 'chats');
+  const label = _navLabel(to);
+  ['#backChatsBtn', '#topbarTitle'].forEach(sel => {
+    const el = $(sel);
+    if (!el) return;
+    el.dataset.view = to;
+    el.title = label;
+    el.setAttribute('aria-label', label);
+  });
+}
+
 function showView(name) {
   const map = { chat: 'chatView', chats: 'chatsView', collect: 'collectView', mailbox: 'mailboxView', cards: 'cardsView', syscards: 'sysCardsView', settings: 'settingsView', mate: 'mateView', anniversary: 'anniversaryView', stats: 'statsView', letterstats: 'letterStatsView', silent: 'silentView', avatarlib: 'avatarlibView', cjian: 'cjianView', hub: 'hubView', wish: 'wishView', games: 'gamesView', invite: 'inviteView', cardfit: 'cardFitView', player: 'playerView', moments: 'momentsView', more: 'moreView', emotion: 'emotionView' };
   const actual = map[name];
   if (!actual) return;
   const prevView = document.body.dataset.view || '';   // 记录来路：决定进聊天页时是停在最新还是保留位置
   $$('.view').forEach(v => v.classList.toggle('active', v.id === map[name]));
-  $$('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  // 这两枚排除在高亮之外：css/theme.css 的 `.icon-btn.active` 会把它画成一枚选中的白岛，
+  // 而返回件的 data-view 自本批起可以等于「当前这一页」（回来源页），再 toggle 就成了「自己高亮自己」。
+  $$('[data-view]').forEach(b => {
+    if (b.id === 'backChatsBtn' || b.id === 'topbarTitle') return;
+    b.classList.toggle('active', b.dataset.view === name);
+  });
   document.body.dataset.view = name;
-  if (name !== 'chats' && deskStationOpen()) closeDeskStation();   // 美化台只浮在首页那一面，切走即收（横幅直达等外部改视图时也成立）
-  // 左上返回键：从「TA 的设置」回聊天，其余功能页回首页
-  const _backBtn = $('#backChatsBtn');
-  if (_backBtn) _backBtn.dataset.view = (name === 'mate') ? 'chat' : 'chats';
+  // 顶栏那两枚返回件＝回「来源页」：点的就是返回＝弹掉来路（不反向压回刚离开的那页），真的钻进来一页＝压栈
+  if (prevView && prevView !== name) {
+    if (_navStack[_navStack.length - 1] === name) _navStack.pop();
+    else { _navStack.push(prevView); if (_navStack.length > NAV_MAX) _navStack.shift(); }
+  }
+  _setBackTarget(name);
   if (name === 'cjian' && typeof renderCjianPage === 'function') renderCjianPage();
   if (name === 'hub' && typeof renderHubPage === 'function') renderHubPage();
   updateTopbarTitle(name);
@@ -256,14 +297,13 @@ function showView(name) {
   if (name === 'moments' && typeof renderMoments === 'function') requestAnimationFrame(renderMoments);
 }
 
-// 顶栏居中标题：聊天页显示对方名字，其余页显示页名（点击标题区回到聊天）
+// 顶栏居中标题：聊天页显示对方名字，其余页显示页名（点击标题区＝回来源页，与左上箭头同一个目标同一句说法）
 // 聊天头部昵称只写内层 #chatHeadNameText（整体 textContent 会连点击目标一起抹掉）；
 // #typingIndicator 已搬出那一格、自成头部第二行的一枚读数，见 css/chat.css 与 BUGS #158
 function updateTopbarTitle(name) {
   const tt = $('#topbarTitleText');
   const cht = $('#chatHeadNameText');
-  const names = { collect: '收藏', chat: chatPartnerName(), chats: '聊天', mailbox: '信箱', cards: '字卡库', syscards: '系统预设字卡', settings: '设置', mate: chatPartnerName() + ' 的设置', anniversary: '纪念日', stats: '聊天统计', letterstats: '写信统计', silent: '主动消息', avatarlib: '头像昵称', cjian: '世界感知', wish: '心愿', games: '游戏', invite: '邀请', cardfit: '字卡适应度', player: '播放器', more: '更多', moments: '朋友圈', emotion: '聊天情绪' };
-  const finalName = names[name] || '';
+  const finalName = topbarName(name);
   if (tt) tt.textContent = finalName;
   // 头部昵称只认「聊天页」这一份名字：原先把 finalName 无条件写进去，于是翻到字卡库/设置等页时，
   // 聊天头那格会被写成「字卡库」「设置」——虽然那页聊天头不可见，但切回聊天前若某条路径不重写，
@@ -336,7 +376,7 @@ $('#avatarInput').onchange = async e => {
   }
   renderMessages();
   renderChatsList();
-  await save();
+  await flushSave();
   renderProfile();
   showToast('已上传');
 };
@@ -350,14 +390,14 @@ $('.avatar-shape-row')?.addEventListener('click', async e => {
     renderShapeButtons();
     renderMessages();
     renderMailbox();
-    await save();
+    await flushSave();
   }
 });
 
 // 资料与音色绑定：改名字／填音色当场落库（控件在 js/mate.js 的「TA 的设置」页，保存逻辑同在该模块）
 
 // 回复设置：自动保存（修改任一输入即存）+ 保存按钮兜底
-function saveBehaviorNow() {
+async function saveBehaviorNow() {
   const bh = data.behavior || {};
   const num = (id, min, max) => { const v = Number($(id).value); return Math.max(min, Math.min(max, Number.isFinite(v) ? v : min)); };
   // 空框＝「这一格先不当数」（回 null，由调用方决定不动哪一个字段）。只用在这一族两格上：
@@ -416,8 +456,9 @@ function saveBehaviorNow() {
   bh.annSelfOn = $('#annSelfOn').checked;
   bh.annSelfProb = num('#annSelfProb', 0, 100);
   data.behavior = bh;
-  // save() 是节流即发即忘设计，不返回 Promise（BUGS.md #037），不能再链 .then
-  save();
+  // iOS 冻结/关页保险：设置这类关键写不等 1200ms 去抖，await flushSave() 真落盘后再返回
+  //（flushSave 现返回 Promise：先同步镜像一份 localStorage，再 await IndexedDB 写；#037 那条旧注释已过时）
+  await flushSave();
   if (typeof rescheduleActiveSend === 'function') rescheduleActiveSend();
   if (typeof _syncBatchBtn === 'function') _syncBatchBtn();   // 开关一翻，输入栏那枚「批量发送」钮立刻跟上（不用等切会话）
   renderProfile();
@@ -425,7 +466,7 @@ function saveBehaviorNow() {
 }
 
 // 通话设置：自动保存 + 保存按钮兜底
-function saveCallNow() {
+async function saveCallNow() {
   const num = (id, min, max) => { const v = Number($(id).value); return Math.max(min, Math.min(max, Number.isFinite(v) ? v : min)); };
   const ringMin = num('#callRingMin', 1, 60);
   const callMin = num('#callMinLen', 1, 60);
@@ -449,8 +490,9 @@ function saveCallNow() {
     voiceGreetEnable: !!$('#callVoiceGreet').checked,
     voiceGreetProb: num('#callVoiceGreetProb', 0, 100)
   };
-  // save() 是节流即发即忘设计，不返回 Promise（BUGS.md #037），不能再链 .then
-  save();
+  // iOS 冻结/关页保险：设置这类关键写不等 1200ms 去抖，await flushSave() 真落盘后再返回
+  //（flushSave 现返回 Promise：先同步镜像一份 localStorage，再 await IndexedDB 写；#037 那条旧注释已过时）
+  await flushSave();
   renderProfile();
   return Promise.resolve('ok');
 }
@@ -544,7 +586,7 @@ function renderPyPunctChips() {
     grid.querySelectorAll('.ap-dot').forEach(c => c.classList.toggle('active', c === chip));
     echoApDotNames();
     applyAppearance();
-    await save();
+    await flushSave();
   });
 });
 
@@ -562,7 +604,7 @@ function renderPyPunctChips() {
     row.querySelectorAll('.contact-chip').forEach(c => c.classList.toggle('active', c === chip));
     applyAppearance();
     if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
-    await save();
+    await flushSave();
   });
 });
 
@@ -607,7 +649,7 @@ $('#chatBgInput').onchange = async e => {
   _caSh().chatBg = img;
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
   showToast('背景已更新');
   e.target.value = '';
 };
@@ -615,7 +657,7 @@ $('#apBgClear').onclick = async () => {
   _caSh().chatBg = '';
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
 };
 
 // 「恢复本会话默认外观」（2026-10-14）：这一位 TA 的外观档此前没有一键回头路。
@@ -652,7 +694,7 @@ $('#apResetAll').addEventListener('click', async () => {
   if (_had) delete data.chatAppearance[data.activeChat];
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
   if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
   // 提示如实：本就没有覆盖档时不说「已恢复」（本仓不留「点了、报了、实际什么都没发生」那一族）
   showToast(_had ? '已恢复默认外观' : '本就已是默认外观');
@@ -661,7 +703,7 @@ $('#apResetAll').addEventListener('click', async () => {
 // 桌面前台弹窗开关：即点即存（js/deskpop.js deskPopEnabled 读取）
 $('#deskPopupToggle').addEventListener('change', async e => {
   data.appearance.deskPopup = e.target.checked;
-  await save();
+  await flushSave();
   showToast(e.target.checked ? '已开启桌面前台弹窗' : '已关闭桌面前台弹窗');
 });
 // 弹窗行数 chips（1 行 / 2 行并行）：即点即存（js/deskpop.js _deskPopMax 读取）
@@ -672,7 +714,7 @@ if (_deskPopRowsRow) _deskPopRowsRow.addEventListener('click', async e => {
   const rows = Number(chip.dataset.rows) === 1 ? 1 : 2;
   if (data.appearance.deskPopRows === rows) return;
   data.appearance.deskPopRows = rows;
-  await save();
+  await flushSave();
   _echoDeskPopRows();
   if (rows === 1 && typeof deskPopEnforceMax === 'function') deskPopEnforceMax();   // 已挂两行时立即收缩为一行
   showToast(rows === 1 ? '已设为 1 行弹窗' : '已设为 2 行并行弹窗');
@@ -692,7 +734,7 @@ if (_nightModeRow) _nightModeRow.addEventListener('click', async e => {
   const mode = NIGHT_MODES.indexOf(chip.dataset.v) >= 0 ? chip.dataset.v : 'ask';
   if (((data.night || {}).mode) === mode) return;
   if (!setNightMode(mode)) return;
-  await save();
+  await flushSave();
   renderNightSettings();
   if (typeof showToast === 'function') showToast(mode === 'off' ? '已关掉：不拦也不再问' : (mode === 'auto' ? '到点自动开启，不再问你' : '每晚问一次'));
 });
@@ -721,27 +763,53 @@ const _gsVol = $('#gameSfxVol');
 if (_gsVol) _gsVol.addEventListener('input', e => { setGameSfx({ vol: +e.target.value }); renderGameSfx(); });
 const _gsTest = $('#gameSfxTest');
 if (_gsTest) _gsTest.addEventListener('click', () => { gameSfxAudition(); renderGameSfx(); });   // 关着时按它＝想听，sound.js 会把开关开回来，这里跟着回显
-// 全站字号 chips（标准 / 大）：即点即存，生效走 theme.css 的 body[data-ap-uifont=large] .app-shell>*{zoom}
-const _uiFontRow = $('#uiFontScaleRow');
-if (_uiFontRow) _uiFontRow.addEventListener('click', async e => {
-  const chip = e.target.closest('.contact-chip');
-  if (!chip) return;
-  const v = chip.dataset.uifont === 'large' ? 'large' : 'medium';
-  if (((data.appearance || {}).uiFontScale) === v) return;
-  data.appearance = data.appearance || {};
-  data.appearance.uiFontScale = v;
-  await save();
-  applyAppearance();
-  _echoUiFontScale();
-  showToast(v === 'large' ? '已放大全站字号' : '已恢复标准字号');
-});
+// 全站字号滑杆（80~140%）：拖到哪就当场生效（applyAppearance 把数字折成 --ui-zoom 写在 body 上＝整站实时缩放），
+// 不弹 toast——底下整屏字当场跟着变就是实时预览；只在松手（change）时落盘一次，不边拖边写库。
+const _uiFontRange = $('#uiFontScaleRange');
+if (_uiFontRange) {
+  _uiFontRange.addEventListener('input', () => {
+    const v = Math.min(140, Math.max(80, Math.round(Number(_uiFontRange.value)) || 100));
+    data.appearance = data.appearance || {};
+    data.appearance.uiFontScale = v;
+    applyAppearance();
+    _echoUiFontScale();
+  });
+  _uiFontRange.addEventListener('change', () => save());
+}
 function _echoUiFontScale() {
-  const row = $('#uiFontScaleRow');
-  if (!row) return;
-  const v = ((data.appearance || {}).uiFontScale) === 'large' ? 'large' : 'medium';
-  row.querySelectorAll('.contact-chip').forEach(ch => ch.classList.toggle('active', ch.dataset.uifont === v));
+  const rng = $('#uiFontScaleRange');
+  const v = Math.min(140, Math.max(80, Math.round(Number((data.appearance || {}).uiFontScale)) || 100));
+  if (rng) rng.value = v;
+  const out = $('#uiFontScaleOut');
+  if (out) out.textContent = v + '%';
   const sum = $('#sumUiFontScale');
-  if (sum) sum.textContent = v === 'large' ? '大' : '标准';
+  if (sum) sum.textContent = v === 100 ? '标准' : (v + '%');
+}
+// 毛玻璃强度滑杆（0~24px）：与字号滑杆同口径——拖到哪当场生效（applyAppearance 写 --frost-blur），
+// 不弹 toast；只在 frost 开那一节里才画（关上时整节收起，不留一根拖了不生效的死杆）。松手 change 落盘一次。
+const _frostRange = $('#frostBlurRange');
+if (_frostRange) {
+  _frostRange.addEventListener('input', () => {
+    const v = Math.min(24, Math.max(0, Math.round(Number(_frostRange.value)) || 14));
+    data.appearance = data.appearance || {};
+    data.appearance.frostBlur = v;
+    applyAppearance();
+    renderFrost();
+  });
+  _frostRange.addEventListener('change', () => save());
+}
+// frost 那一行的回显：开关开时亮出「强度＋气泡」那一节并回填滑杆，关时收起。
+// 由 echoApSets（任何档位 chip 点完都会走）与进页时的 renderApSettings 共用一个入口，不留第二处写手。
+function renderFrost() {
+  const on = !!((data.appearance || {}).frost);
+  const opts = $('#frostOpts');
+  if (opts) opts.hidden = !on;
+  if (!on) return;
+  const v = Math.min(24, Math.max(0, Math.round(Number((data.appearance || {}).frostBlur)) || 14));
+  const rng = $('#frostBlurRange');
+  if (rng) rng.value = v;
+  const out = $('#frostBlurOut');
+  if (out) out.textContent = v + 'px';
 }
 // 外观档位 chips 的白名单——与 js/db.js 的 ensureData 必须同口径，两处不一致就会出现
 // 「点了屏上不动、刷新又回落」那种两头都对不上的状态。
@@ -753,6 +821,10 @@ function _echoUiFontScale() {
 // 另：db.js ensureData 的脏值回落要与 ③ 同改；卡头摘要若要报这一档，写手在 mate.js renderFoldSummaries。
 const AP_SETS = {
   light: ['airy', 'balanced', 'deep'],
+  // 卡片毛玻璃（2026-10-15 重做「卡片通透」那一行）：布尔，chips on/off；defaults.appearance.frost 是 boolean，
+  // 委托与 echoApSets 会按「typeof boolean → on/off」自动换算，无需 _apXxx() 现算。
+  frost: ['on', 'off'],
+  frostBubble: ['on', 'off'],   // 聊天气泡也吃毛玻璃（与 frost 同族，只在 frost 开时可见）
   // 卡片圆角（2026-10-08 补）：small 利落 ∕ medium 标准（默认）∕ large 柔和。
   // ⚠ depth 不在这张表里了——底色只剩一档（现名「雾蓝」）后，界面上那枚永远选中的 chips 就是「看着能点实则无反应」
   //   那一族，已摘（字段与 db 的脏值回落照旧留着，它们管的是旧档，不是屏上控件）。
@@ -803,7 +875,7 @@ document.addEventListener('click', async e => {
   const v = typeof defaults.appearance[key] === 'boolean' ? chip.dataset.v === 'on' : chip.dataset.v;
   if (data.appearance[key] === v) return;
   data.appearance[key] = v;
-  await save();
+  await flushSave();
   applyAppearance();
   echoApSets();
   // 卡头摘要（如「聊天外观」的 #sumChatAp）按档现拼在 renderFoldSummaries 一处：点完档位当场重算，
@@ -829,6 +901,7 @@ function echoApSets() {
     const sum = row.dataset.sum ? $('#' + row.dataset.sum) : null;
     if (sum) sum.textContent = hit ? hit.textContent : '';
   });
+  renderFrost();   // frost 开了才亮「强度＋气泡」那一节；搭这一趟便车，不在每处 chip 处理器里各写一遍
 }
 // 底色档：soft 暖光玻璃（默认）∕ frost 霜白 ∕ flat 纯白 ∕ warm 暖米。旧的「雪原高差／素白／冷白」与
 // 「素白／冷白」两批档位实现（body[data-ap-tier]／[data-ap-snow]）已整族撤除；现在这一族只有
@@ -841,7 +914,7 @@ function echoApSets() {
 const _delMsgEl = $('#delMsgOn');
 if (_delMsgEl) _delMsgEl.addEventListener('change', async e => {
     data.delMsgOn = e.target.checked === true;
-    await save();
+    await flushSave();
     if (typeof resetMessageRender === 'function') resetMessageRender();
     if (typeof renderMessages === 'function') renderMessages();
     if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
@@ -876,7 +949,7 @@ $('#customFontInput').onchange = async e => {
   s.customFontName = file.name;
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
 };
 $('#customFontRemove').onclick = async () => {
   const s = _apSh();
@@ -884,7 +957,7 @@ $('#customFontRemove').onclick = async () => {
   s.customFontName = '';
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
 };
 
 // 自定义气泡CSS：移除
@@ -892,7 +965,7 @@ $('#customBubbleCssRemove').onclick = async () => {
   _caSh().customBubbleCss = '';
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
   showToast('已移除自定义气泡样式');
 };
 // 自定义气泡CSS：输入框应用/清空
@@ -901,7 +974,7 @@ $('#customBubbleCssApply').onclick = async () => {
   _caSh().customBubbleCss = v;
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
   showToast(v ? '气泡样式已更新' : '已移除自定义气泡样式');
 };
 $('#customBubbleCssClear').onclick = () => { $('#customBubbleCssText').value = ''; };
@@ -914,7 +987,7 @@ $('#customGlobalFontCssApply').onclick = async () => {
   s.customGlobalFontName = '';
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
 };
 $('#customGlobalFontCssClear').onclick = () => { $('#customGlobalFontCssText').value = ''; };
 $('#customGlobalFontCssRemove').onclick = async () => {
@@ -923,7 +996,7 @@ $('#customGlobalFontCssRemove').onclick = async () => {
   s.customGlobalFontName = '';
   applyAppearance();
   renderApSettings();
-  await save();
+  await flushSave();
 };
 
 // 旧色值（blue/sakura/peach）渲染同为墨黑，等价到新色板的 ink 点，避免老用户打开弹层无高亮
@@ -968,6 +1041,7 @@ function renderApSettings() {
   _echoDeskPopRows();
   renderNightSettings();
   if (typeof renderSilentEntry === 'function') renderSilentEntry();   // 主动消息入口行那句小字（读数在 js/silent.js 一处）
+  if (typeof renderDeskStation === 'function') renderDeskStation();     // 桌面背景已内联进这一页：预设缩略/三杆读数随本 tab 回显
   _echoUiFontScale();
   echoApSets();
   // 字体状态
@@ -1098,7 +1172,7 @@ let _sfPendingKey = '';
         await save(); renderSoundSettings();
       } else if (e.target.classList.contains('sound-on')) {
         _soundAt(e.target.dataset.key).on = e.target.checked;
-        await save();
+        await flushSave();
       } else if (e.target.classList.contains('sound-preset')) {
         _soundAt(e.target.dataset.key).preset = e.target.value;
         await save(); renderSoundSettings();
@@ -1127,6 +1201,19 @@ let _sfPendingKey = '';
 
 // 数据导入导出
 let _deferredInstall = null;
+// 导出摘别名（BUGS #434）：`data.messages` 与 `data.chats[活跃会话].msgs` 是同一个引用（js/db.js 那条
+// 「活跃会话流绑定」），而 JSON 不保留共享引用＝活跃会话那一本在备份里被原样写了两遍
+// （实测 183M 字符 vs 摘掉后 138M＝白胖 25%，而手机正是拿这整根字符串去 parse 的）。
+// 判据按「是不是同一个对象」比，不按内容猜：老档里 chats 为空、messages 才是正主时照写不误。
+// 读侧不受影响：导入那一路 ensureData 会按 activeChat 把 messages 重新绑回同一份引用（同一条绑定）。
+function _exportPayloadShape(d) {
+  try {
+    const c = Object.assign({}, d);
+    const act = d && d.activeChat;
+    if (act && d.chats && d.chats[act] && d.chats[act].msgs === d.messages) delete c.messages;
+    return c;
+  } catch (e) { return d; }
+}
 $('#exportAll').onclick = () => {
   const p = showProgress('正在导出数据');
   p(5, '正在整理数据…');
@@ -1134,11 +1221,12 @@ $('#exportAll').onclick = () => {
   setTimeout(() => {
     let json;
     try {
-      json = JSON.stringify(data);
+      json = JSON.stringify(_exportPayloadShape(data));
     }
     catch { hideProgress(); showToast('数据导出失败'); return; }
-    p(75, '数据生成完成，正在准备下载…');
+    p(75, '已生成 ' + _impSizeText(json.length) + ' · 正在准备下载…');
     const blob = new Blob([json], { type: 'application/json' });
+    json = null;   // 字节交给 Blob 了就松手：这一根字符串是整棵树里最大的一块
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1183,72 +1271,114 @@ $('#installAppBtn').onclick = async () => {
   _deferredInstall = null;
   $('#installAppBtn').hidden = true;
 };
-function importCompressed(file, cb) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    if (!window.DecompressionStream) {
-      try { cb(null, JSON.parse(reader.result)); }
-      catch (e) { cb(e); }
-      return;
-    }
-    const blob = new Blob([reader.result]);
-    const stream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
-    streamToBlob(stream).then(blob => {
-      const text = blob.text();
-      text.then(str => {
-        try { cb(null, JSON.parse(str)); }
-        catch (e) { cb(e); }
-      }).catch(e => cb(e));
-    });
-  };
-  reader.readAsArrayBuffer(file);
+// ===== 把一份备份读成 JSON 文本 =====
+// 两条通道都只负责「拿到那根字符串」，解析交回 onchange 一处＝解完能立刻把字符串松手，
+// 不让「整根全文 ＋ 整棵新树」同时压在内存上（BUGS #434 的一半账）。
+function importCompressed(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (!window.DecompressionStream) { reject(new Error('这台设备的浏览器不会解压 .gz 备份，请选普通的 .json 备份文件')); return; }
+      const blob = new Blob([reader.result]);
+      try {
+        const stream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
+        streamToBlob(stream).then(b => b.text()).then(resolve).catch(reject);
+      } catch (e) { reject(e); }
+    };
+    reader.onerror = () => reject(reader.error || new Error('读不到这个文件的内容'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+// 老内核没有 File.prototype.text()（#428 记过一次：直接 await f.text() 静默坠进 catch，
+// 只剩一句「导入失败」），退化通道＝FileReader.readAsText
+function importPlain(file) {
+  if (typeof file.text === 'function') return file.text();
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = () => reject(r.error || new Error('文件读取失败'));
+    r.readAsText(file);
+  });
+}
+function importText(file) {
+  return file.name.endsWith('.gz') ? importCompressed(file) : importPlain(file);
 }
 
-function importJSON(file, cb) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try { cb(null, JSON.parse(reader.result)); }
-    catch (e) { cb(e); }
-  };
-  reader.readAsText(file);
+// 体积闸（BUGS #434）：这条链上「整根全文＋整棵新树」都是主线程长任务，而手机一个标签页的内存
+// 有上限——本机实测（同一串调用拿 Node 复现）：45MB 那一份过得去，95MB 那一份在 512MB 预算下
+// 死在解析后的那一步（V8 直接报 heap out of memory），185MB 那一份连 1GB 预算都拦不住。
+// 门槛按这个量级摆：到 40MB 先在屏上写明体积并提醒别切走，到 150MB 当面问一句还要不要试。
+const IMP_WARN = 40 * 1048576;
+const IMP_HARD = 150 * 1048576;
+function _impSizeText(n) {
+  if (!(n > 0)) return '0 B';
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+  if (n >= 1024) return Math.round(n / 1024) + ' KB';
+  return Math.round(n) + ' B';
+}
+// 本站自己那句错：到手上直接念给用户，不再套一层「文件格式不正确」
+function _impErr(msg) { const e = new Error(msg); e.__said = 1; return e; }
+function _impGoAhead(bytes) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('appModal');
+    if (!modal) { resolve(true); return; }   // 没那层壳＝拦不住，照旧往下走（不留一条永远不应答的路）
+    let done = false;
+    const fin = v => { if (done) return; done = true; resolve(v); };
+    hideProgress();   // 进度层 z 9999 盖过弹层＝先收起再问（与 js/cards.js #428 同一手法）
+    window.openModal('这份备份很大', '', () => fin(true), {
+      noInput: true, danger: true, okText: '仍要试试',
+      onCancel: () => fin(false),
+      staticText: '这一份约 ' + _impSizeText(bytes) + '。手机浏览器一个标签页的内存有限，这个量级在解析那一步容易把页面撑崩（闪退）。\n\n想稳一点：先在 设置→数据→存储 里清掉用不上的大图与字卡，重新导一份小的再来。\n\n「仍要试试」＝直接导；「算了」＝这一趟不导。'
+    });
+  });
 }
 
 $('#dataInput').onchange = async e => {
-  if (!e.target.files[0]) return;
-  const file = e.target.files[0];
+  const input = e.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
   const p = showProgress('正在导入数据');
+  let incoming = null, payload = null;
   try {
-    p(5, '正在读取文件…');
-    let incoming;
-    if (file.name.endsWith('.gz')) {
-      incoming = await new Promise((resolve, reject) => {
-        importCompressed(file, (err, obj) => { if (err) reject(err); else resolve(obj); });
-      });
-    } else {
-      incoming = await new Promise((resolve, reject) => {
-        importJSON(file, (err, obj) => { if (err) reject(err); else resolve(obj); });
-      });
-    }
-    p(40, '正在校验数据…');
+    // 立刻把体积说出来：旧写法 5% 那一帧压根上不了屏（下面每一步之间都要让两帧，理由见 js/utils.js 的 progressYield）
+    p(2, '这一份 ' + _impSizeText(file.size) + (file.size >= IMP_WARN ? '·比较大，导的过程别切走' : ''));
+    await progressYield();
+    if (file.size > IMP_HARD && !(await _impGoAhead(file.size))) { hideProgress(); input.value = ''; return; }
+    p(8, '正在读取文件…');
+    let text = await importText(file);
+    p(34, '正在解析…');
+    await progressYield();
+    try { incoming = JSON.parse(text); }
+    finally { text = null; }   // 那根全文交完活就松手：下面要摆一整棵新树，两份同时在＝峰值翻倍
+    p(52, '正在校验数据…');
+    if (!incoming || typeof incoming !== 'object') throw _impErr('这份备份解不开东西，不像是一份 言字卡 导出的 JSON');
     // 兼容两种导出格式：{ profile... }（旧）/ { data: {...}, music: {...} }（播放器还在时导出的形状）；那份 music 如今直接忽略＝旧备份照样能导
-    const payload = (!incoming.profile && incoming.data && incoming.data.profile) ? incoming.data : incoming;
-    if (!payload.profile || !payload.behavior || !Array.isArray(payload.messages) || !Array.isArray(payload.groups) || !Array.isArray(payload.stickers) || !Array.isArray(payload.sentLetters) || !Array.isArray(payload.receivedLetters))
-      throw new Error('invalid');
+    payload = (!incoming.profile && incoming.data && incoming.data.profile) ? incoming.data : incoming;
+    incoming = null;   // 外层那份引用卸掉：只留 payload 一个名字拿着这棵树
+    // 消息这一格认两个户：新版备份不再带 messages 别名（_exportPayloadShape 摘掉了），住 chats 里；
+    // 只认 messages 会把新备份误判成「格式不对」（_importStats 本来就是两边都看）
+    const hasFlow = Array.isArray(payload.messages) || (payload.chats && typeof payload.chats === 'object' && !Array.isArray(payload.chats));
+    if (!payload.profile || !payload.behavior || !hasFlow || !Array.isArray(payload.groups) || !Array.isArray(payload.stickers) || !Array.isArray(payload.sentLetters) || !Array.isArray(payload.receivedLetters))
+      throw _impErr('这份备份缺了必需的东西（消息／字卡／表情包／信件），看着不像 言字卡 导出的文件');
     // 防误覆盖：先把这份备份与当前数据的差异摆出来，再由用户选「合并」/「覆盖」/「取消」
     p(60, '正在对比当前数据…');
+    await progressYield();
     const mode = await _importPreview(payload);
-    if (mode === 'cancel') { hideProgress(); e.target.value = ''; return; }
-    p(75, '正在应用数据…');
+    if (mode === 'cancel') { hideProgress(); payload = null; input.value = ''; return; }
+    p(76, mode === 'merge' ? '正在合并（保留两边）…' : '正在应用备份…');
+    await progressYield();
     data = mode === 'merge' ? _mergeImportData(payload) : ensureData(payload);
-    p(85, '正在保存…');
-    await save();
+    payload = null;   // 备份那一棵树已经交给 data，本函数这一份引用不该再押着
+    p(88, '正在保存…');
+    await progressYield();
+    await flushSave();
     p(100, '导入成功，即将刷新');
     setTimeout(() => location.reload(), 500);
-  } catch {
+  } catch (err) {
     hideProgress();
-    showToast('数据文件格式不正确，请选择 言字卡 导出的 JSON 文件');
+    showToast((err && err.__said) ? err.message : '导入失败：' + String((err && (err.message || err)) || '文件读不出内容'));
   }
-  e.target.value = '';
+  input.value = '';
 };
 
 // ===== 导入差异预览：当前 vs 备份（消息/信/字卡/联系人），三选一 合并/覆盖/取消 =====
@@ -1286,18 +1416,30 @@ function _importPreview(payload) {
       <button type="button" class="sheet-btn sheet-cancel" data-act="cancel">取消</button>
     </div>`;
     document.body.appendChild(m);
+    // 进度层是全屏 fixed・z-index 9999 的遮罩，而 .sheet-mask 只有 z 8：不先收起这一层，下面三枚钮
+    // 就压在遮罩底下——屏上停在「正在对比当前数据…」且点什么都没反应＝用户报的「导入卡住」最常见那一发
+    // （js/cards.js #428 撞过同一处：收起来问，答完再挂回去）
+    hideProgress();
     m.addEventListener('click', e => {
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
       m.remove();
+      showProgress('正在导入数据');   // 后面的百分比要有地方说话（调用方紧接着就 p(76, …)）
       resolve(act === 'over' ? 'over' : (act === 'merge' ? 'merge' : 'cancel'));
     });
   });
 }
 // 合并导入：以备份为基底，把当前数据的内容并进来（按 id / 内容去重；设置沿用当前）
+// ⚠ 这里不许再长出「整树 parse(stringify()) 深克隆」（BUGS #434）：旧写法第一行就把整棵备份复制两遍
+// （一根全文字符串＋一棵新树），本机实测单这一发 ＋644 MB 堆＝手机上那一发闪退。
+// 基底 ensureData(payload) 返回的就是 payload 自己（就地清洗），而 payload 是从文件刚解出来的、
+// 没有别处引用它＝可以直接在上面并。从「当前数据」过来的条目只**共享引用**（那些 base64 字符串不可变，
+// 共享一份不复制字节），旧那一棵树在调用方 `data = …` 之后整体作废，共享串不到谁的账上。
+// 只有「还会被改的那一层」才拷：cards 数组∶会话档∶那一位的 behavior——不拷就会出现「改 A 名下
+// 那一组，B 名下同一组跟着变」∶旧写法拿深克隆顺手兜住了这一条，现在按层写明白。
 function _mergeImportData(payload) {
-  const base = JSON.parse(JSON.stringify(ensureData(payload)));
+  const base = ensureData(payload);
   const cur = data;
   // 消息：按 id 并入各会话
   for (const cid of Object.keys(cur.chats || {})) {
@@ -1315,18 +1457,19 @@ function _mergeImportData(payload) {
   // 字卡组：同名同类合并卡片
   for (const g of (cur.groups || [])) {
     const t = base.groups.find(x => (x.name || '') === (g.name || '') && (x.category || '主字卡') === (g.category || '主字卡'));
-    if (!t) { base.groups.push(JSON.parse(JSON.stringify(g))); continue; }
+    if (!t) { base.groups.push(Object.assign({}, g, { cards: (g.cards || []).slice() })); continue; }
     const have = new Set((t.cards || []).filter(c => typeof c === 'string').map(c => c));
     for (const c of (g.cards || [])) {
       const key = typeof c === 'string' ? c : (c && c.img);
       if (key && !have.has(key)) { t.cards.push(c); have.add(key); }
     }
   }
-  // 联系人：补齐备份里缺的（设置沿用当前）
+  // 联系人：补齐备份里缺的（设置沿用当前）。人那一格浅拷即可∶头像那种大字符串共享一份∶
+  // 但 members 得拷——那是「还会被改」的数组，共享＝两位名下同一个群改一边动两边
   const cIds = new Set((base.contacts || []).map(c => c.id));
   for (const c of (cur.contacts || [])) {
     if (cIds.has(c.id)) continue;
-    base.contacts.push(JSON.parse(JSON.stringify(c)));
+    base.contacts.push(Object.assign({}, c, Array.isArray(c.members) ? { members: c.members.slice() } : null));
     base.chats[c.id] = { msgs: ((cur.chats[c.id] && cur.chats[c.id].msgs) || []).slice(), unread: 0, draft: '' };
     base.chatSettings[c.id] = JSON.parse(JSON.stringify(cur.chatSettings[c.id] || cur.behavior));
   }

@@ -1,10 +1,10 @@
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.6.7';
+window.APP_VER = 'v9.8.2';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.6.7' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.8.2' + s; }
 
 (async function init() {
   try {
@@ -101,26 +101,38 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
     const _appShell = document.querySelector('.app-shell');
     const _vv = window.visualViewport;
     if (_appShell && _vv) {
-      let _vvApplied = null, _vvQueued = false;
+      let _vvApplied = null, _vvQueued = false, _vvPoll = null;
       const _vvApply = () => {
         _vvQueued = false;
         if (document.body.dataset.kbFix === 'off') {
           if (_vvApplied !== '') { _appShell.style.height = ''; _appShell.style.marginTop = ''; _vvApplied = ''; }
+          _vvPollSet(false);   // 逃生阀开着＝轮询也一并停（开着白转）
           return;
         }
         const h = _vv.height;
-        const kb = (h < window.innerHeight - 80);   // 键盘真的开了（≠地址栏收起那几像素的抖）
+        // #435：scale≠1＝页面被放大（iOS 对 <16px 输入框聚焦时的强制自动放大／用户双指缩放），不是键盘——
+        // 键盘只缩高度、从不动 scale。放大时 vv.height 按 CSS px 读出来也变小，旧判据会把它当键盘把壳压矮+平移，
+        // 贴底面板的几何当场被搅乱＝聚焦的框跑出可视区、「打字看不见数字」。此时不补偿，等缩放回去（scale 回 1）再正常判。
+        const kb = ((_vv.scale || 1) <= 1.01) && (h < window.innerHeight - 80);   // 键盘真的开了（≠地址栏收起那几像素的抖）
         const next = kb ? h + 'px' : '';
+        _vvPollSet(kb);   // #442：收敛轮询的开关（键盘开着＝500ms 一查，收起＝停表）
         // 平移量＝这一帧视觉口在布局坐标里的上沿。它是**独立于高度**的量：iOS 在键盘动画途中、
         // 以及用户拖动已开着的键盘时，都会只改平移不改高度 ⇒ 去重键必须带上它，只看高度会漏这几帧。
         const dy = kb ? Math.max(0, Math.round(_vv.offsetTop || 0)) : 0;
-        const key = next + '@' + dy;
+        // #442：sc 一并进去重键（防别的环境里布局口滚动漏报）。补偿生效后文档高度恒＝视口高
+        // （margin 顶下去多少、壳就缩掉多少），scrollY 实测恒 0——真正会漏的是**事件本身**：
+        // iOS 键盘的事件覆盖面不完整（第三方输入法／听写条／浮动键盘各有各的不发 resize/scroll 的形态，
+        // vv 的读数变了却没有任何回调），错过事件补偿就停在旧值＝壳连着遮罩和贴底面板一起错开
+        // 真实可视带——现场＝iPhone 上字卡库「批量添加」面板「面板飞了、满屏灰、点不进框」（BUGS #442）。
+        // 聊天页有贴底稳定循环（render.js _stickLoop）一直兜着所以没露馅，其余贴底面板全靠这一处。
+        // 收口＝下面的收敛轮询＋focusin 一脚即醒；键带上 sc/上屏前重读全部现值，保证轮询醒来总能收敛。
+        const sc = Math.round(window.scrollY || window.pageYOffset || 0);
+        const key = next + '@' + dy + '@' + sc;
         if (key === _vvApplied) return;          // 值没变 → 不写 style，一次重排都不付
         _vvApplied = key;
         // 「壳没加补偿时的天然上沿」按**这一帧实测的矩形**倒推（扣掉上一次已经加过的 margin），
         // 不缓存一个静态值：2026-10-14 起产物改外链加载，app-shell 前面那批浮层万一占地方就不能想当然写 0；
         // vv.offsetTop 是「相对布局口」的量，故目标位置还要加上文档已经滚过的那段。
-        const sc = window.scrollY || window.pageYOffset || 0;
         const curM = parseFloat(_appShell.style.marginTop) || 0;
         const baseTop = Math.round(_appShell.getBoundingClientRect().top + sc - curM);
         _appShell.style.height = next;
@@ -134,7 +146,22 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
       const _vvFix = () => { if (_vvQueued) return; _vvQueued = true; requestAnimationFrame(_vvApply); };
       _vv.addEventListener('resize', _vvFix);
       _vv.addEventListener('scroll', _vvFix);   // iOS 平移可能在高度不变的情况下单独变（见上面 dy 那条）
-      window.addEventListener('pagehide', () => { _vv.removeEventListener('resize', _vvFix); _vv.removeEventListener('scroll', _vvFix); }, { once: true });
+      // #442 收敛兜底：iOS 键盘的事件覆盖面不完整——第三方输入法／听写条／浮动键盘各有各的
+      // 「vv 读数变了却不发 resize/scroll」的形态，错过事件＝补偿停在旧值＝壳连着遮罩和贴底面板
+      // 一起错开真实可视带（BUGS #442 现场：iPhone 字卡库批量添加面板「飞了、满屏灰、点不进框」；
+      // 聊天页有 render.js _stickLoop 一直兜着所以没露馅，其余贴底面板全靠这一处）。
+      // 键盘开着期间每 500ms 重算一次：去重键没变＝零写入零重排，只有真漂了才补；收起即停表。
+      const _vvPollSet = on => {
+        if (on && _vvPoll == null) _vvPoll = setInterval(_vvFix, 500);
+        else if (!on && _vvPoll != null) { clearInterval(_vvPoll); _vvPoll = null; }
+      };
+      // focusin 一脚即醒：键盘刚要起来的那一拍有些输入法还没来得及发 vv 事件，聚焦本身先叫醒一趟。
+      document.addEventListener('focusin', _vvFix, true);
+      window.addEventListener('pagehide', () => {
+        _vv.removeEventListener('resize', _vvFix); _vv.removeEventListener('scroll', _vvFix);
+        document.removeEventListener('focusin', _vvFix, true);
+        if (_vvPoll != null) { clearInterval(_vvPoll); _vvPoll = null; }
+      }, { once: true });
     }
 
     window.addEventListener('pagehide', () => {
@@ -142,8 +169,9 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
       pauseWriteScheduler();
       pauseActiveSend();
       pauseMomentsScheduler();
+      // flushSave 自己已经同步兑了一份 localStorage 镜像（js/db.js），这里不再第二发——
+      // 旧写法那一句是 #006 那时 flushSave 还不存在留下的尾巴，留着＝卸载前再整树 stringify 一遍（BUGS #434）
       flushSave();
-      try { lsSet(data); } catch {}
     });
 
     if ('serviceWorker' in navigator) {

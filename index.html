@@ -128,7 +128,15 @@
           <div class="ag-row"><span class="ag-no">07</span><div class="ag-rowc"><h4>纯本地数据，请定期备份</h4><p>无后端服务器、无账号体系，所有数据仅保存在你自己的设备浏览器中，<strong>不会上传至任何网络</strong>。清除浏览器数据即丢失，请务必定期导出备份，作者无法找回。</p></div></div>
           <div class="ag-row"><span class="ag-no">08</span><div class="ag-rowc"><h4>导入素材版权自负</h4><p>你自行导入或保存的音乐、图片、表情、字卡等素材，其版权与合法性由你本人负责。</p></div></div>
           <div class="ag-row"><span class="ag-no">09</span><div class="ag-rowc"><h4>违法违规，责任自负</h4><p>禁止利用本站从事任何违法违规活动，包括但不限于骚扰、辱骂、诈骗、传播违法信息等，违者自行承担全部法律责任。</p></div></div>
-          <div class="ag-row"><span class="ag-no">10</span><div class="ag-rowc"><h4>署名 · 设计与参考</h4><p>设计与制作：小红书 @言序（1842523578）。<br>参考：言字卡部分功能，参考了我自己 7 月时做的字卡星言和 8 月时做的字卡 mochi。<br>灵感：除随机回复的基础逻辑、基础框架外（灵感来源为 milk 字卡 · 小红书 @milk（2777299956）），以下功能为借鉴：公用字卡＋专享字卡模式，借鉴自小红书 @默玉（8012400317）；需正确回答问卷才能进入使用网站的模式，借鉴自小红书 @小狗咖啡猫（5435843310）。<br>以下功能源于网络上已有的类似想法，但设计均由我独立完成：情绪字卡，源于早期网络上的类似提议（有人建议在聊天中加入情绪字卡以方便交流，小红书 @心汋是颗彩虹多宝糖（9725312970）也提过这个模式）；换头像，灵感来自看到网络上有人提议小手机想要 chat 自己换头像。</p></div></div>
+          <div class="ag-row"><span class="ag-no">10</span><div class="ag-rowc"><h4>署名 · 设计与参考</h4>
+            <div class="ag-ref">
+              <div class="ag-ref-item"><span class="ag-ref-k">设计与制作</span><span class="ag-ref-v">小红书 @言序（1842523578）。</span></div>
+              <div class="ag-ref-item"><span class="ag-ref-k">参考</span><span class="ag-ref-v">言字卡部分功能，参考了我自己 7 月时做的字卡星言和 8 月时做的字卡 mochi。</span></div>
+              <div class="ag-ref-item"><span class="ag-ref-k">灵感</span><span class="ag-ref-v">除随机回复的基础逻辑、基础框架外，灵感来源为 milk 字卡 · 小红书 @milk（2777299956）。</span></div>
+              <div class="ag-ref-item"><span class="ag-ref-k">借鉴</span><span class="ag-ref-v"><ul class="ag-ref-list"><li>公用字卡＋专享字卡模式，借鉴自小红书 @默玉（8012400317）</li><li>需正确回答问卷才能进入使用网站的模式，借鉴自小红书 @小狗咖啡猫（5435843310）</li></ul></span></div>
+              <div class="ag-ref-item"><span class="ag-ref-k">网络已有想法</span><span class="ag-ref-v">以下功能源于网络上已有的类似想法，但设计均由我独立完成：<ul class="ag-ref-list"><li>情绪字卡，源于早期网络上的类似提议（有人建议在聊天中加入情绪字卡以方便交流，小红书 @心汋是颗彩虹多宝糖（9725312970）也提过这个模式）</li><li>换头像，灵感来自看到网络上有人提议小手机想要 chat 自己换头像</li></ul></span></div>
+            </div>
+          </div></div>
           <div class="ag-row"><span class="ag-no">11</span><div class="ag-rowc"><h4>条款可分割 · 最后更新 2026-10-13</h4><p>本页任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。</p></div></div>
         </div>
         <div class="ag-foot">
@@ -694,12 +702,14 @@
         <div class="ann-hero" id="annHero" role="button" aria-label="编辑主纪念日"></div>
         <div class="setting-card">
           <div class="setting-title"><span class="setting-icon">☆</span><div><strong>纪念日 / 倒数日</strong><small>每条绑定一位联系人后，TA 会在特定日子里按你设的概率到<b>聊天里</b>提起这件事；生日等可设每年重复。点条目可编辑</small></div></div>
+          <div class="fchips ann-owners" id="annOwners" hidden></div>
           <div id="annExtraList"></div>
           <button class="soft-btn full" id="annAddBtn2">＋ 添加纪念日 / 倒数日</button>
         </div>
       </div>
 
       <button type="button" class="fab" id="annAddBtn" aria-label="添加纪念日"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="ann-undo" id="annUndo" hidden><span>已删除「<b id="annUndoName"></b>」</span><button type="button" id="annUndoBtn">撤销</button></div>
     </section>
     <section class="view" id="statsView">
       <div class="stats-list">
@@ -755,7 +765,7 @@
 
         <div class="setting-card fold" id="mxCard" data-tab="notify" data-fold="mx">
           <button type="button" class="fold-hd"><span class="fold-ti">MiniMax 语音</span><span class="fold-sum" id="sumMx"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="check-row"><label class="check-item"><input type="checkbox" id="mxOn"><span>开启 MiniMax 语音</span></label></div><div class="setting-subhead">账户（都可留空）</div><label>API Key<input id="mxKey" type="password" placeholder="开放平台的 Key" autocomplete="off"></label><label>账户组 GroupId<input id="mxGroup" placeholder="老接口才需要"></label><label>接口地址<input id="mxHost" placeholder="默认轮询官方地址"></label><label>模型<input id="mxModel" placeholder="speech-02-turbo"></label><div class="setting-subhead">播放</div><label>语速（0.5~2）<input type="text" id="mxSpeed" min="0.5" max="2" step="0.1" inputmode="decimal"></label><p class="data-note">音色一人一号：只有给某位 TA 绑过 voice_id，对方文字消息旁才出现小喇叭，没绑的 TA 不显示播放按钮，也不会拿别人的声音或全局默认念出来。群聊里按每条消息的署名找同名联系人，谁说的就用谁的音色，查不到本人同样不显示。绑音色与试听都在聊天页右上角 →「TA 的声音」；接口地址、API Key、账户组与语速在这一格填。念错了、或者这个音色念某句怪：**长按那条消息旁边的小喇叭**就会丢掉这句的存档重新合成一遍（同一段话＋同一音色只存一份，念错就一直重放同一段）。合成的语音会自动存进该联系人专属的字卡库（字卡库 → 专属字卡 → 「语音」分类下的「XX的语音」分组），同一段话同一音色只在第一次点播时请求接口，之后直接播库里的存档。</p></div>
+          <div class="fold-bd"><div class="check-row"><label class="check-item"><input type="checkbox" id="mxOn"><span>开启 MiniMax 语音</span></label></div><div class="setting-subhead">账户（都可留空）</div><label>API Key<input id="mxKey" type="password" placeholder="开放平台的 Key" autocomplete="off"></label><label>账户组 GroupId<input id="mxGroup" placeholder="老接口才需要"></label><label>接口地址<input id="mxHost" placeholder="默认轮询官方地址"></label><label>模型<input id="mxModel" placeholder="speech-02-turbo"></label><div class="setting-subhead">播放</div><label>语速（0.5~2）<input type="text" id="mxSpeed" min="0.5" max="2" step="0.1" inputmode="decimal"></label><p class="data-note"><strong>这不是本站自带的功能。</strong>本站没有语音合成引擎、也没有后端或代你配音的服务：MiniMax 语音只是接入第三方「MiniMax 开放平台」的一条通道——要你自己有 MiniMax 账号并填 API Key，能不能念、念成什么样、扣多少额度都由 MiniMax 那边决定，与本站作者无关；这也是全站少数会把内容发到你设备之外的地方（你点哪一句、那句的文字就会传给 MiniMax 服务器）。音色一人一号：只有给某位 TA 绑过 voice_id，对方文字消息旁才出现小喇叭，没绑的 TA 不显示播放按钮，也不会拿别人的声音或全局默认念出来。群聊里按每条消息的署名找同名联系人，谁说的就用谁的音色，查不到本人同样不显示。绑音色与试听都在聊天页右上角 →「TA 的声音」；接口地址、API Key、账户组与语速在这一格填。念错了、或者这个音色念某句怪：**长按那条消息旁边的小喇叭**就会丢掉这句的存档重新合成一遍（同一段话＋同一音色只存一份，念错就一直重放同一段）。合成的语音会自动存进该联系人专属的字卡库（字卡库 → 专属字卡 → 「语音」分类下的「XX的语音」分组），同一段话同一音色只在第一次点播时请求接口，之后直接播库里的存档。</p></div>
         </div>
 
         <!-- 「TA 的世界」那一格 2026-10-11 整格下线（用户「把【TA 的世界】移出来到【更多】里」，BUGS #300）。
@@ -773,13 +783,33 @@
              ＋节标全摘（tag 上已写着名字＝同一件事说两遍，同 BUGS #334 统计页那条）；卡按格显隐，
              切格时 settings.js 把列表滚回顶。 -->
 
-        <div class="setting-card set-entry" data-tab="desk">
-          <button type="button" class="set-entry-row" id="deskStationEntry"><span class="set-entry-tx"><strong>桌面美化</strong><small id="deskEntryState"></small></span><i class="set-entry-arrow" aria-hidden="true">›</i></button>
+        <!-- 桌面背景（原「桌面美化台」浮层面板 2026-10-15 按用户「把背景图入口放进外观页」改成内联一张折叠卡）：
+             控件 id 与 js/desk.js 既有一切绑定逐字不改（背暗/缩放/取景/铺到/导航薄纱/上传/预设/还原），只是宿主
+             从浮层面板搬到外观这一页；样式沿用 css/desk.css 那批 .ds-*（已登记在册）。预览：选「所有页面」时壁纸会直接
+             透在这页的卡片背后；只首页时靠下面预设缩略与状态行读数。#deskEntryState 仍由 js/mate.js 写卡头摘要。 -->
+        <div class="setting-card fold" data-tab="desk" data-fold="deskbg">
+          <button type="button" class="fold-hd"><span class="fold-ti">桌面背景</span><span class="fold-sum" id="deskEntryState"></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
+            <div class="ds-sec-hd"><span>背景图</span><span class="ds-bg-state" id="deskBgState">未设置</span></div>
+            <div class="ds-btns"><button type="button" class="soft-btn" id="deskBgUpload">选一张图</button><button type="button" class="soft-btn" id="deskBgClear">清除</button></div>
+            <div class="ds-presets" id="deskPresets"></div>
+            <p class="ds-hint">预设壁纸是内置的渐变（由浅到深六款），点一枚就用，不用去相册找图；压暗、缩放、取景、铺到全站对预设同样生效。选了自定义照片后，预设自动让位。</p>
+            <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
+            <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
+            <label class="ds-knob"><span>模糊</span><input type="range" id="deskBgBlur" min="0" max="40" step="1"><output id="deskBgBlurOut">0px</output></label>
+            <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
+            <div class="ds-knob ds-size"><span>铺到</span><div class="contact-chip-row" data-ap-set="deskBgAll"><button type="button" class="contact-chip" data-v="off">只有首页</button><button type="button" class="contact-chip" data-v="on">所有页面</button></div></div>
+            <p class="ds-hint">「所有页面」把这张图透到字卡库、信箱那些面上；没选图时这一档不起作用。</p>
+            <p class="ds-hint">「模糊」把壁纸<b>本体</b>糊开（0＝不糊）。单独用只在卡片缝隙里看得出一层软；配「卡片通透」（设置→外观）开时最明显——壁纸透到磨砂卡片后面，与卡片那根磨砂强度各糊一层、可叠加。</p>
+            <label class="ds-knob"><span>导航条薄纱</span><input type="range" id="deskTabVeil" min="0" max="100" step="5"><output id="deskTabVeilOut">45%</output></label>
+            <p class="ds-hint">底下那一行导航条压在这张图上要露多少：0＝完全透出壁纸，100＝与不挂图时一样实。</p>
+            <button type="button" class="soft-btn" id="deskBgReset" style="width:100%">还原默认</button>
+          </div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="light">
           <button type="button" class="fold-hd"><span class="fold-ti">卡片通透</span><span class="fold-sum" id="sumLight"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>通透程度</span><div class="contact-chip-row" style="margin:0" data-ap-set="light" data-sum="sumLight"><button type="button" class="contact-chip" data-v="airy">通透</button><button type="button" class="contact-chip" data-v="balanced">均衡</button><button type="button" class="contact-chip" data-v="deep">厚重</button></div></div><p class="data-note">管的是卡片与气泡<b>透多少</b>，不管颜色（底色全站固定一档，屏上没有可选的族）。三档都是量过的组合，点一下整屏当场换：<b>通透</b>（alpha .70）最透、层次偏平；<b>均衡</b>（默认 .78）折中；<b>厚重</b>（.86）卡片最实、通透感最弱。⚠ 透与层次是一对反向值：越透就越接近底、明度差被吃掉，所以没有「又最透又最有层次」那一档。面的弧度在下一张「卡片圆角」里调，聊天气泡不吃那一档（它有自己的四档，在【TA 的设置 → 外观】的「聊天外观」里）。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>卡片毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frost" data-sum="sumLight"><button type="button" class="contact-chip" data-v="off">关</button><button type="button" class="contact-chip" data-v="on">开</button></div></div><div id="frostOpts" hidden><div class="ap-row"><span>磨砂强度</span><input type="range" id="frostBlurRange" min="0" max="24" step="1" value="14" style="flex:1;min-width:0"><span id="frostBlurOut" style="flex:none;min-width:40px;text-align:right;font-variant-numeric:tabular-nums">14px</span></div></div><p class="data-note">开＝卡片、列表行与弹层变成半透白＋背景<b>模糊</b>的真·毛玻璃（顶栏/输入栏一并跟上）；关＝现在的实心白面。这一档配<b>桌面美化</b>里自传的壁纸最出效果——磨砂感来自「后面的图被糊透上来」，纯色底上主要读作卡片变淡变软。点一下当场生效、重启仍记得；默认关。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="corner">
@@ -805,7 +835,7 @@
 
         <div class="setting-card fold" data-tab="desk" data-fold="uifont">
           <button type="button" class="fold-hd"><span class="fold-ti">字号</span><span class="fold-sum" id="sumUiFontScale"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="contact-chip-row" style="margin:0" id="uiFontScaleRow"><button type="button" class="contact-chip" data-uifont="medium">标准</button><button type="button" class="contact-chip" data-uifont="large">大</button></div><p class="data-note">「大」把全站文字与间距一起放大 12%（含聊天页），点一下立刻生效、重启仍在。默认标准。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>放大比例</span><input type="range" id="uiFontScaleRange" min="80" max="140" step="1" value="100" style="flex:1;min-width:0"><span id="uiFontScaleOut" style="flex:none;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">100%</span></div><p class="data-note">拖到哪、全站文字与间距就当场跟着变多大（含聊天页）＝所见即所得的实时预览；100% 是出厂标准，80% 最紧凑、140% 最大。松手就存下、重启仍在。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="fullscreen">
@@ -836,7 +866,7 @@
             <div class="lic-free">完全免费 · 禁止二传二改 · 禁止商用倒卖</div>
           </div>
           <button type="button" class="fold-hd"><span class="fold-ti">许可与使用条款</span><span class="fold-sum">禁止二传二改 · 禁止商用 · 借鉴来源</span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="setting-subhead">禁止事项</div><div class="ap-row"><span>禁止二传、禁止二改<span style="display:block;font-size:11px;color:var(--muted)">未经作者书面同意，不得转载、搬运、分发、镜像本站或本站的任何部分（代码、界面、文案、素材、安装包），原样转发同样在禁止之列；不得修改、拆解、二次开发或据其制作衍生版本，不得删除、遮盖或替换署名</span></span></div><div class="ap-row"><span>禁止商用、禁止以盈利为目的<span style="display:block;font-size:11px;color:var(--muted)">收费出售本站、本站链接、安装包、「付费版」或自称改过的版本均属侵权。作者只有小红书这一个账号，任何收费均为诈骗；若你花钱买到了链接，请拒付退款并举报卖家</span></span></div><div class="ap-row"><span>不得公开部署<span style="display:block;font-size:11px;color:var(--muted)">本站无后端、无账号，数据只存在你自己的浏览器里，不上传任何网络；不得运营共享服务或代填密钥，也不得把本站（含改动后的版本）部署后公开给不特定的人使用</span></span></div><div class="setting-subhead">借鉴来源</div><p class="data-note">milk 字卡 · 小红书 @milk（2777299956）（基础框架与随机回复逻辑）；@默玉（8012400317）（公用＋专享字卡模式）。</p><p class="data-note">本站为作者自有前作「星言」与「Mochi 字卡」的续作（同一账号 小红书 @言序 1842523578），三作同属一位作者，不属于借鉴来源。</p><p class="data-note">言字卡为原创独立作品（即原版），完全免费。本站不公开分发源码；你在浏览器中读到的页面、代码与文案，不构成转载、分发或二次开发的许可。</p><p class="data-note">使用条款与免责声明见开屏《开屏公告》。</p></div>
+          <div class="fold-bd"><div class="setting-subhead">禁止事项</div><div class="ap-row"><span>禁止二传、禁止二改<span style="display:block;font-size:11px;color:var(--muted)">未经作者书面同意，不得转载、搬运、分发、镜像本站或本站的任何部分（代码、界面、文案、素材、安装包），原样转发同样在禁止之列；不得修改、拆解、二次开发或据其制作衍生版本，不得删除、遮盖或替换署名</span></span></div><div class="ap-row"><span>禁止商用、禁止以盈利为目的<span style="display:block;font-size:11px;color:var(--muted)">收费出售本站、本站链接、安装包、「付费版」或自称改过的版本均属侵权。作者只有小红书这一个账号，任何收费均为诈骗；若你花钱买到了链接，请拒付退款并举报卖家</span></span></div><div class="ap-row"><span>不得公开部署<span style="display:block;font-size:11px;color:var(--muted)">本站无后端、无账号，数据只存在你自己的浏览器里，不上传任何网络；不得运营共享服务或代填密钥，也不得把本站（含改动后的版本）部署后公开给不特定的人使用</span></span></div><div class="setting-subhead">借鉴来源</div><p class="data-note">基础框架与随机回复逻辑的灵感来源为 milk 字卡 · 小红书 @milk（2777299956）。</p><p class="data-note">公用字卡＋专享字卡模式，借鉴自小红书 @默玉（8012400317）。</p><p class="data-note">需正确回答问卷才能进入使用网站的模式，借鉴自小红书 @小狗咖啡猫（5435843310）。</p><p class="data-note">情绪字卡源于早期网络上的类似提议（小红书 @心汋是颗彩虹多宝糖（9725312970）也提过这个模式）；换头像灵感来自网络上有人提议小手机想要 chat 自己换头像。以上功能均源于网络已有想法，设计由作者独立完成。</p><p class="data-note">本站为作者自有前作「星言」与「Mochi 字卡」的续作（同一账号 小红书 @言序 1842523578），三作同属一位作者，不属于借鉴来源。</p><p class="data-note">言字卡为原创独立作品（即原版），完全免费。本站不公开分发源码；你在浏览器中读到的页面、代码与文案，不构成转载、分发或二次开发的许可。</p><p class="data-note">使用条款与免责声明见开屏《开屏公告》。</p></div>
         </div>
       </div>
     </section>
@@ -1042,7 +1072,7 @@
              renderApSettings→echoApSets 一处管（renderProfile 进本页就会走到）。 -->
         <div class="setting-card fold" data-fold="chatap">
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天外观</span><span class="fold-sum" id="sumChatAp"></span></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>头像对齐</span><div class="contact-chip-row" style="margin:0" data-ap-set="alignMode"><button type="button" class="contact-chip" data-v="bottom">底部对齐</button><button type="button" class="contact-chip" data-v="top">顶部对齐</button></div></div><div class="ap-row"><span>小头像</span><div class="contact-chip-row" style="margin:0" data-ap-set="avatarShow"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏通栏</button></div></div><div class="ap-row"><span>日期签</span><div class="contact-chip-row" style="margin:0" data-ap-set="dayPos"><button type="button" class="contact-chip" data-v="flow">消息流里</button><button type="button" class="contact-chip" data-v="head">钉在顶栏</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">「头像对齐」管消息行里头像贴着气泡的上沿还是下沿；「小头像」隐藏后气泡通栏、点头像开面板那一手随之不可用；「日期签＝钉在顶栏」时「今天」这类日期签贴在顶栏下方，往下滚会自动换成当天的。</p><p class="data-note">这十项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>头像对齐</span><div class="contact-chip-row" style="margin:0" data-ap-set="alignMode"><button type="button" class="contact-chip" data-v="bottom">底部对齐</button><button type="button" class="contact-chip" data-v="top">顶部对齐</button></div></div><div class="ap-row"><span>小头像</span><div class="contact-chip-row" style="margin:0" data-ap-set="avatarShow"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏通栏</button></div></div><div class="ap-row"><span>日期签</span><div class="contact-chip-row" style="margin:0" data-ap-set="dayPos"><button type="button" class="contact-chip" data-v="flow">消息流里</button><button type="button" class="contact-chip" data-v="head">钉在顶栏</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><div class="ap-row"><span>气泡毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frostBubble"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">「气泡毛玻璃」把聊天里每条气泡垫成半透＋背后模糊（拿你现在选的那枚气泡色掺透，不抢色）；与上面「顶栏与输入栏」那枚各管各的，也与设置→外观「卡片通透」是两件事。配聊天背景图时最明显。</p><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">「头像对齐」管消息行里头像贴着气泡的上沿还是下沿；「小头像」隐藏后气泡通栏、点头像开面板那一手随之不可用；「日期签＝钉在顶栏」时「今天」这类日期签贴在顶栏下方，往下滚会自动换成当天的。</p><p class="data-note">这些项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
         </div>
           </div>
         </div>
@@ -1102,7 +1132,7 @@
             <label>引用概率（%）<input type="text" id="quoteProb" min="0" max="100" inputmode="numeric"></label>
             <label>撤回概率（%）<input type="text" id="rcProb" min="0" max="100" inputmode="numeric"></label>
             <label>撤回补发概率（%）<input type="text" id="rcRefix" min="0" max="100" inputmode="numeric"></label>
-            <div class="check-row"><label class="check-item"><input type="checkbox" id="recallEnable" checked><span>禁止联系人撤回消息<span style="display:block;font-size:11px;color:var(--muted)">默认开启=联系人不会撤回消息；取消勾选后，联系人才会按上面的撤回概率触发撤回</span></span></label></div>
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="recallEnable"><span>禁止联系人撤回消息<span style="display:block;font-size:11px;color:var(--muted)">默认关闭＝联系人会按上面的撤回概率触发撤回；勾选后，联系人才不会再撤回消息</span></span></label></div>
           </div>
         </div>
 
@@ -1149,6 +1179,7 @@
         <div class="setting-card fold" data-fold="anns">
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">TA 自己想起日子</span><span class="fold-sum" id="mateAnnSum"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
+            <button type="button" class="soft-btn full" id="mateAnnAdd">＋ 给 TA 记个日子（直接绑给这一位）</button>
             <div class="check-row"><label class="check-item"><input type="checkbox" id="annSelfOn"><span>允许 TA 自己新建纪念日</span></label></div>
             <label>到点真建一条的概率（%）<input type="text" id="annSelfProb" min="0" max="100" inputmode="numeric"></label>
             <p class="data-note">开着时 TA 每隔一段随机时间会想起一个日子：从 12 个月里挑一个月、再挑那个月里真实存在的某一天，建一条每年重复的纪念日并自己起个名字，建好当场在聊天里跟你说一声。间隔随机、不设次数上限；概率填 0＝这一位不再自己加日子。TA 建的那几条在「纪念日」页标着「TA 加的」，可以逐条删掉。</p>
@@ -1270,6 +1301,11 @@
           <div class="search-field"><svg class="search-field-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="15.8" y2="15.8"></line></svg><input id="searchInput" autocomplete="off" enterkeyhint="search" maxlength="100" placeholder="搜索聊天 / 信件 / 心愿" aria-label="搜索全部内容"><button type="button" class="search-clear" id="searchClear" aria-label="清空关键词" hidden>×</button></div>
           <button type="button" class="search-cancel" id="searchBack">取消</button>
         </div>
+        <!-- 按谁筛那一行（BUGS #438）：只在「聊天」那一类里有意义（信件∶收藏∶字卡∶心愿不按会话筛），
+             由 js/search.js 现算命中会话数决定画不画（不足两本整行不出＝只有一档别留控件，#091/#265 同口径）。
+             位置在状态栏之上＝先说「在哪几本里搜」再说「找到几条」；它不在 #searchBody 里，
+             所以「一条都没搜到」那一屏也还看得见这行（停在某位身上没结果时，得留着回「全部」的那枚出口）。 -->
+        <div class="fchips search-who-row" id="searchWho" hidden></div>
         <div class="search-status" id="searchStatus"></div>
         <div class="search-body" id="searchBody"></div>
       </div>
@@ -1898,27 +1934,6 @@
         <div class="fit-panel-actions"><button type="button" class="fit-save" id="cfSlotOk">存好</button></div>
       </div>
     </div>
-<!-- 桌面美化台：浮在真首页上的半屏面板（不切视图，首页本身就是预览）。背景图三根杆＋导航条薄纱＋面板高矮两档，入口与逻辑见 js/desk.js（原「主题色」那一行 2026-10-10 随「只留雾蓝」删净，BUGS #245） -->
-<div class="desk-station" id="deskStation" hidden>
-  <button type="button" class="ds-scrim" id="deskStationScrim" aria-label="关闭桌面美化"></button>
-  <section class="ds-panel" role="dialog" aria-label="桌面美化">
-    <header class="ds-hd"><span class="ds-grip" aria-hidden="true"></span><h2>桌面美化</h2><button type="button" class="ds-fold" id="deskPanelH" aria-label="收起或展开面板" aria-pressed="false" title="收起面板"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button type="button" class="ds-close" id="deskStationClose" aria-label="完成">×</button></header>
-    <div class="ds-body">
-      <div class="ds-sec-hd"><span>背景图</span><span class="ds-bg-state" id="deskBgState">未设置</span></div>
-      <div class="ds-btns"><button type="button" class="soft-btn" id="deskBgUpload">选一张图</button><button type="button" class="soft-btn" id="deskBgClear">清除</button></div>
-      <div class="ds-presets" id="deskPresets"></div>
-      <p class="ds-hint">预设壁纸是内置的渐变（由浅到深六款），点一枚就用，不用去相册找图；压暗、缩放、取景、铺到全站对预设同样生效。选了「选一张图」的自定义照片后，预设自动让位。</p>
-      <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
-      <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
-      <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
-      <div class="ds-knob ds-size"><span>铺到</span><div class="contact-chip-row" data-ap-set="deskBgAll"><button type="button" class="contact-chip" data-v="off">只有首页</button><button type="button" class="contact-chip" data-v="on">所有页面</button></div></div>
-      <p class="ds-hint">「所有页面」把这张图透到字卡库、信箱那些面上（卡片仍是实白，字读得出）；没选图时这一档不起作用。</p>
-      <label class="ds-knob"><span>导航条薄纱</span><input type="range" id="deskTabVeil" min="0" max="100" step="5"><output id="deskTabVeilOut">45%</output></label>
-      <p class="ds-hint">底下那一行导航条压在这张图上要露多少：0＝完全透出壁纸，100＝与不挂图时一样实。只在图真透到屏底的那一面起作用（首页，或「所有页面」开着）。</p>
-    </div>
-    <footer class="ds-ft"><button type="button" class="soft-btn" id="deskBgReset">还原默认</button></footer>
-  </section>
-</div>
     <!-- 底部导航四枚（2026-10-11 按用户定档把「设置」搬去「更多」那一页最顶：「帮我把底部导航栏的【设置】按钮移动到【更多】页面的最顶」）。
          这一条自此只管「每天回来看哪一面」＝聊天 · 字卡库 · 世界感知 · 更多；设置是配置页不是日常去处，
          留在导航上等于把「改东西的地方」和「看东西的地方」摆在同一排。搬走后每枚热区由 74.8 宽到 93.5 宽（+25%）。

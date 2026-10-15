@@ -174,6 +174,22 @@
   --danger-ink:#c8443c;
   --danger-hair:rgba(200,68,60,.45);
   --scrim:color-mix(in srgb,var(--ink) 26%,transparent);
+  /* ===== 旧引擎兜底用的 rgb 三元组（BUGS #431）=====
+     上面那几枚面令牌都是不透明色值，所以
+     `color-mix(in srgb,var(--X) N%,transparent)` 与 `rgba(var(--X-rgb),N/100)` 逐值等价。
+     Chrome/Edge 111∶Safari 16.2∶Firefox 113 以下没有 color-mix —— 那条声明被**整条丢掉**（不报错、
+     不降级、屏上什么都看不出来），那一处就回落到外层默认值：顶栏／弹层／输入栏不透明的档变回「有行程的透」，
+     该透的地方变回实白。历轮六把尺子（去黑∶纯白∶彩度∶溢出∶字号∶命中）扫的都是颜色与版式，
+     没有一把问「这条声明在这台引擎上到底存不存在」。
+     ⚠ 这六枚**只为兜底存在**：改上面任何一枚源令牌（--page∶--surface∶--bubble∶--panel∶--topbar-veil∶--danger-ink）
+     必须同步改这里，否则兜底那份会拿旧色去补新档＝比不兜底更难查。
+     等价式只在源令牌**不透明**时成立——一旦谁改成带 alpha 的值，它对应的 rgb 就得跟着作废。 */
+  --page-rgb:247,247,245;
+  --surface-rgb:255,255,255;
+  --bubble-rgb:255,255,255;
+  --panel-rgb:255,255,255;
+  --topbar-veil-rgb:255,255,255;
+  --danger-rgb:200,68,60;
 }
 /* 派生令牌在 :root 与 body 各声明一份：自定义属性在「声明它的那个元素」上就把 var() 换掉，
    复声明一份到 body，任何写在 body 上的内联覆盖（--shadow-rgb / --glass-a1·a2 / --shadow-k）才传得进这些派生量。
@@ -492,11 +508,12 @@ body[data-ap-avat=off] .ap-preview .ap-prev-av{display:none}
    顶栏在滚动区外，sticky top 对着滚动区上缘＝视觉上正好贴着顶栏头像那一行下方。 */
 body[data-ap-daypos=head] .chat-area .day-label{position:sticky;top:6px;z-index:2;margin-bottom:12px}
 
-/* 全站字号（设置-外观「字号」：标准 / 大）：整站文字与间距一起放大，含聊天页
-   zoom 只挂在 .app-shell 的直接子元素上，不挂 html——挂 html 时 100dvh 不跟着缩放，
-   实测壳高 985.6 对 880 视口、底部 105px 被推出屏；挂在子元素这一层则字高 +12%、
+/* 全站字号（设置-外观「字号」：一根 80~140% 的连续滑杆）：整站文字与间距一起缩放，含聊天页。
+   --ui-zoom 由 js/settings.js applyAppearance 把百分比数字折成无单位值写在 body 上（100%→1.0）。
+   zoom 只挂在 .app-shell 的直接子元素上、不挂 html——挂 html 时 100dvh 不跟着缩放，
+   实测壳高 985.6 对 880 视口、底部 105px 被推出屏；挂在子元素这一层则字高跟着变、
    壳高仍等于视口、横向零溢出（量具 tools/_probe_ui_fontscale.js） */
-body[data-ap-uifont=large] .app-shell>*{zoom:1.12}
+.app-shell>*{zoom:var(--ui-zoom,1)}
 
 /* 密度：cozy(默认 margin 12px) / compact(6px)
    compact 只改下外距：chat.css .message 那 11px 上内距是给「主动」小签留的出墨空间（BUGS #022），
@@ -564,6 +581,13 @@ body[data-ap-desk=on][data-view=chats] .app-shell::before,body[data-ap-desk=on][
   background-image:linear-gradient(color-mix(in srgb,var(--ink) calc(var(--desk-veil,44) * 1%),transparent),color-mix(in srgb,var(--ink) calc(var(--desk-veil,44) * 1%),transparent)),var(--desk-bg);
   background-size:var(--desk-size,cover);background-position:center;
   transform:scale(var(--desk-zoom,1))}
+  /* 背景模糊（壁纸本体，--desk-blur 由 js/desk.js applyDeskVars 写）：>0 才挂 data-ap-deskblur＝0 时这一层逐字节同旧。
+     糊的是整张壁纸层（图＋压暗纱），连卡片缝隙与磨砂卡片后面一起变软；inset 外扩＝模糊不会把边缘吃进透明（blur 会拉外部透明像素进来）。
+     ⚠ 虚化那根杆 2026-10-05 曾因「实白卡片挡住、看不出」被删；2026-10-15 卡片毛玻璃给了它宿主才重新启用。 */
+  body[data-ap-desk=on][data-ap-deskblur=on][data-view=chats] .app-shell::before,
+  body[data-ap-desk=on][data-ap-deskblur=on][data-ap-deskall=on] .app-shell::before{
+    inset:calc(var(--desk-blur,0px) * -1.4);
+    -webkit-filter:blur(var(--desk-blur,0px));filter:blur(var(--desk-blur,0px))}
 /* 聊天页只认本会话自己的背景图（--chat-bg，会话外观页按会话上传）；不跟随桌面背景 */
 
 /* 字体：system(默认)/serif/round/custom */
@@ -673,6 +697,41 @@ body[data-ap-light=airy]{--line:rgba(var(--ink-rgb),.06);--hair:rgba(var(--ink-r
 
 /* 厚重：alpha 升到 .86，影与描边同步加厚 —— 层次最强、通透感最弱（接近 #107 那版的观感） */
 body[data-ap-light=deep]{--line:rgba(var(--ink-rgb),.16);--hair:rgba(var(--ink-rgb),.16);--edge-light:rgba(var(--ink-rgb),.16);--ctl-hair:rgba(var(--ink-rgb),.26);--well:rgba(var(--shadow-rgb),.10);--press:rgba(var(--ink-rgb),.10)}
+
+/* ===== 卡片毛玻璃（设置 → 外观 →「卡片通透」的开/关；字段 appearance.frost，2026-10-15 重做）=====
+   旧那一行是「通透/均衡/厚重」三档（只改发丝线浓淡，屏上几乎看不出＝用户报「没作用」），现换成一个开/关。
+   ⚠ glass.css∶frost.css 两件玻璃覆盖层并未登记进 css_order（留底），故本站现在是「实心白」——这一档就地重建磨砂：
+   开＝给画布铺一层冷调浅渐变（供「后面有东西可糊」），再把卡片面的实心白折成半透白＋backdrop-filter 模糊＝真·毛玻璃；
+   关＝什么都不写，回到现在的实心白（基础令牌本身）。
+   ⚠ 不改全局 --surface∶--panel：那两枚会漏进底部弹层、把底下的聊天字透上来压住正文（BUGS #107）；
+     只挑「身后只有画布」的卡片面就地改。配「桌面美化」自传壁纸时磨砂感最明显。 */
+body[data-ap-frost=on]{--glass-blur:var(--frost-blur,14px);--glass-grad:rgba(255,255,255,.60)}
+body[data-ap-frost=on] .app-shell{background:linear-gradient(165deg,#e9eef6 0%,#f3f5f9 42%,#e6ecf5 100%)}
+body[data-ap-frost=on] .setting-card,
+body[data-ap-frost=on] .chat-row,
+body[data-ap-frost=on] .card-item,
+body[data-ap-frost=on] .fav-card{background:rgba(255,255,255,.60)}
+@supports (backdrop-filter:blur(10px)) or (-webkit-backdrop-filter:blur(10px)){
+  body[data-ap-frost=on] .setting-card,
+  body[data-ap-frost=on] .chat-row,
+  body[data-ap-frost=on] .card-item,
+  body[data-ap-frost=on] .fav-card{
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter:blur(var(--glass-blur)) saturate(150%);
+  }
+}
+/* 气泡毛玻璃（frostBubble）：聊天外观里的独立一枚开关（住 TA 设置页），与上面「卡片通透」那套**互不依赖**。
+   颜色不写死——拿当前生效的那枚底色（默认 --surface ∶我方 --mine ∶配了对方色的 --partner-bubble）用 color-mix 掺透＝不抢用户选的气泡色。
+   三行都排在上面 body[data-ap-partner] 那批配色档之后且特异度更高，所以盖得住、又不换顺位。 */
+body[data-ap-frost-bubble=on] .chat-area .bubble{background:color-mix(in srgb,var(--surface) 82%,transparent)}
+body[data-ap-frost-bubble=on] .chat-area .message.mine .bubble{background:color-mix(in srgb,var(--mine) 78%,transparent)}
+body[data-ap-partner][data-ap-frost-bubble=on] .chat-area .message:not(.mine) .bubble{background:color-mix(in srgb,var(--partner-bubble) 82%,transparent)}
+@supports (backdrop-filter:blur(8px)) or (-webkit-backdrop-filter:blur(8px)){
+  body[data-ap-frost-bubble=on] .chat-area .bubble{
+    -webkit-backdrop-filter:blur(12px) saturate(150%);
+    backdrop-filter:blur(12px) saturate(150%);
+  }
+}
 
 /* ===== 卡片圆角档（设置 → 外观 →「底色与光影」；字段 appearance.corner）=====
    三档只改上面那两枚令牌，各面不再自己写数：

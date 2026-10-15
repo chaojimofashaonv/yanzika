@@ -1191,6 +1191,12 @@ function closeMomentsSettings() {
   const close = $('#mmSetClose'); if (close) close.onclick = closeMomentsSettings;
   const mask = $('#mmSetMask');
   if (mask) mask.addEventListener('click', e => { if (e.target === mask) closeMomentsSettings(); });
+  // #435：面板自己挂活保存（input＋change 各一路，照隔壁收藏面板 js/collect.js bindCollectSettings 同款）。
+  // 旧版这二十三枚数字格与两枚勾选**一处保存绑定都没有**——只有「换人」那一下才顺带收账，
+  // 改完概率直接点 ×／点遮罩关面板＝这趟改动整趟丢（重开面板回显旧值＝「改了像没改」）。
+  // saveMomentsNow 里改写 el.value 是程序赋值、不再触发 input＝这里不会自己套自己。
+  const sheet = $('#mmSetSheet');
+  if (sheet) { sheet.addEventListener('input', saveMomentsNow); sheet.addEventListener('change', saveMomentsNow); }
   const own = $('#mmOwnersSet');
   if (own) own.addEventListener('click', e => {
     const b = e.target.closest('[data-mm-scope]');

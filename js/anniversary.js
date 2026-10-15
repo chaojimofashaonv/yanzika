@@ -105,6 +105,7 @@ function renderAnniversary() {
     // 站内唯一一枚「独立成块且语义真是序数」的大数字：相伴第 N 天（BUGS #225）
     hero.innerHTML = `<div class="ann-hero-name">${escapeHTML(main.name || '纪念日')}</div><div class="ann-hero-days">${ordSup(_annDays(main.date))}<em>天</em></div><div class="ann-hero-date">${main.date.split('-').join('.')} 起 · ${who}</div>${nextHtml}`;
   }
+  renderAnnOwners();
   renderAnnExtras();
 }
 
@@ -113,15 +114,20 @@ function renderAnnExtras() {
   if (!list) return;
   // 排序键：每年重复型取下次到来的时刻（永远在未来组）；普通型取日期本身
   const tsOf = it => it.yearly ? _annNext(it.date).date.getTime() : new Date(it.date + 'T00:00:00').getTime();
-  const items = annList().slice().sort((a, b) => {
+  const sorted = annList().slice().sort((a, b) => {
     const ta = tsOf(a), tb = tsOf(b);
     const t = _annToday0().getTime();
     const ga = ta >= t ? 0 : 1, gb = tb >= t ? 0 : 1;
     if (ga !== gb) return ga - gb;
-    return ta - tb; // 未来：近的在前；过去：近的也在前
+    return ta - tb; // 未来：近的也在前；过去：近的也在前
   });
+  // 按联系人筛选（列表页顶部那排 chips；''=全部 · '__none'=通用 · 否则=某位）
+  const items = _annFilter === '__none' ? sorted.filter(it => !it.contactId)
+    : _annFilter ? sorted.filter(it => it.contactId === _annFilter) : sorted;
   if (!items.length) {
-    list.innerHTML = '<div class="ann-empty">还没有添加。点下方按钮记一个日子，<b>绑定一位联系人</b>后 TA 就会按你设的概率，在那几天里到聊天里跟你说这件事</div>';
+    list.innerHTML = _annFilter
+      ? '<div class="ann-empty">这一档下还没有日子。</div>'
+      : '<div class="ann-empty">还没有添加。点下方按钮记一个日子，<b>绑定一位联系人</b>后 TA 就会按你设的概率，在那几天里到聊天里跟你说这件事</div>';
     return;
   }
   const t0 = _annToday0().getTime();
@@ -160,7 +166,7 @@ function renderAnnExtras() {
       const whenTxt = whens.length ? whens.map(w => w.when).join(' / ') : '当天';
       talkHtml = `<div class="ann-extra-talk">${escapeHTML(annContactName(it.contactId))} 会在 ${escapeHTML(whenTxt)} 提起 · ${wc.prob}%</div>`;
     }
-    return `<div class="ann-extra" data-id="${escapeHTML(it.id)}"><div class="ann-extra-info"><div class="ann-extra-name">${mainTag}${byTag}${escapeHTML(it.name)}</div><div class="ann-extra-date">${dateStr}${who}</div>${talkHtml}</div><span class="ann-extra-days${cls}">${label}</span><button class="ann-extra-del" data-id="${escapeHTML(it.id)}" aria-label="删除">×</button></div>`;
+    return `<div class="ann-extra" data-id="${escapeHTML(it.id)}"><div class="ann-extra-info"><div class="ann-extra-name">${mainTag}${byTag}${escapeHTML(it.name)}</div><div class="ann-extra-date">${dateStr}${who}</div>${talkHtml}</div><span class="ann-extra-days${cls}">${label}</span><button class="ann-extra-star${it.main ? ' on' : ''}" data-id="${escapeHTML(it.id)}" aria-label="${it.main ? '取消主纪念日' : '设为主纪念日'}" title="设为主纪念日">★</button><button class="ann-extra-del" data-id="${escapeHTML(it.id)}" aria-label="删除">×</button></div>`;
   }).join('');
 }
 
@@ -271,9 +277,17 @@ function _annCalGridBind(panel, ym, sel, repaint) {
 
 // ===== 添加 / 编辑纪念日弹层（名称 + 类型 + 归属联系人选择 + 月历 + 主纪念日 + TA提起开关与概率） =====
 let _annEditorMask = null;
-let _annPickMask = null;
-// entry=null 添加（归属默认「通用」，点字段弹列表再选联系人）；否则编辑该条
-function openAnnEditor(entry) {
+// 操作优化（2026-10-15 用户「还能怎么优化操作」四批一起收）：
+//①列表页顶部按联系人筛选 _annFilter（''=全部 · '__none'=通用 · 否则=某位 id）
+//②删除改「即删＋5s 撤销条」，不再弹模态；撤销用整册快照还原（连「主」标记一起回）
+//③编辑器里绑定联系人＝内联头像 chips，去掉旧那层「点字段再弹一张选人 sheet」（原 openAnnCidPick/_annPickMask 退役）
+//④编辑器里月历折成一行摘要（点开才铺）、名称出厂预填「纪念日」、空名不再拦、TA 提起关掉就整节收起
+//⑤倒数日可填「还有 N 天」自动算日期；entry=null 且 presetCid 有效＝从 TA 页带着这位进来
+let _annFilter = '';
+let _annUndoSnap = null;
+let _annUndoTimer = null;
+// entry=null 添加（可带 presetCid＝从 TA 页预绑定）；否则编辑该条
+function openAnnEditor(entry, presetCid) {
   const contacts = data.contacts || [];
   // 每年重复型存档只有 MM-DD：借当前年份补全成完整日期喂给月历
   let d0 = '';
@@ -281,7 +295,7 @@ function openAnnEditor(entry) {
   const st = {
     id: entry ? entry.id : null,
     date: d0 || _annToday(),
-    cid: entry ? (entry.contactId || '') : '',
+    cid: entry ? (entry.contactId || '') : (contacts.some(c => c.id === presetCid) ? presetCid : ''),
     yearly: entry ? !!entry.yearly : false,
     wish: entry ? entry.wish !== false : true,
     wishProb: (entry && typeof entry.wishProb === 'number' && entry.wishProb >= 0 && entry.wishProb <= 100) ? entry.wishProb : 100,
@@ -303,7 +317,6 @@ function openAnnEditor(entry) {
     }
   });
   if (_annEditorMask) _annEditorMask.remove();
-  if (_annPickMask) { _annPickMask.remove(); _annPickMask = null; }
   const mask = document.createElement('div');
   mask.className = 'ann-mask';
   mask.innerHTML =
@@ -311,10 +324,10 @@ function openAnnEditor(entry) {
     `<div class="ann-panel-head"><span class="ann-panel-title">${entry ? '编辑纪念日' : '添加纪念日 / 倒数日'}</span><button class="ann-panel-close">×</button></div>` +
     '<input id="annEdName" class="ann-name-input" maxlength="16" placeholder="名称（如：在一起 / 生日 / 见面倒数）">' +
     '<div class="ann-type-row"><button type="button" class="ann-type-chip" data-t="full">普通日期</button><button type="button" class="ann-type-chip" data-t="yearly">每年重复（生日等）</button></div>' +
-    '<button type="button" class="ann-cid-pick" id="annEdCidPick"><span class="ann-cid-pick-label">绑定联系人</span><span class="ann-cid-pick-val" id="annEdCidVal"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
-    _ANN_CAL_NAV +
-    _ANN_CAL_MONTHS +
-    '<div class="ann-cal-grid"></div>' +
+    '<div class="fchips ann-owners" id="annEdOwners"></div>' +
+    '<button type="button" class="ann-cal-sum" id="annCalSum" aria-expanded="false"></button>' +
+    '<div class="ann-off-row" id="annOffRow"><span>倒数日 · 还有几天</span><input type="text" id="annEdOffset" inputmode="numeric" placeholder="如 30"><em>自动填日期</em></div>' +
+    '<div class="ann-cal-fold" id="annCalFold" hidden>' + _ANN_CAL_NAV + _ANN_CAL_MONTHS + '<div class="ann-cal-grid"></div></div>' +
     '<label class="ann-main-row"><input type="checkbox" id="annEdMain"><span>设为主纪念日 · 聊天首页「今天」会显示天数</span></label>' +
     '<label class="ann-main-row"><input type="checkbox" id="annEdWish"><span>让 TA 到聊天里主动提起这件事</span></label>' +
     '<div class="ann-prob-row" id="annProbRow"><span class="ann-prob-label">提起概率</span>' +
@@ -325,35 +338,53 @@ function openAnnEditor(entry) {
     '<div class="ann-panel-foot"><button class="soft-btn ann-cancel">取消</button><button class="soft-btn ann-ok">保存</button></div>' +
     '</div>';
   (document.querySelector('.app-shell') || document.body).appendChild(mask);
-  const close = () => { mask.hidden = true; if (_annPickMask) { _annPickMask.remove(); _annPickMask = null; } };
+  const close = () => { mask.hidden = true; };
   mask.querySelector('.ann-panel-close').addEventListener('click', close);
   mask.querySelector('.ann-cancel').addEventListener('click', close);
   mask.addEventListener('click', e => { if (e.target === mask) close(); });
-  const paintCid = () => {
-    const c = contacts.find(x => x.id === st.cid);
-    mask.querySelector('#annEdCidVal').textContent = c ? (c.chatName || c.name) + (c.kind === 'group' ? ' · 群' : '') : '不绑定';
-    paintTalk();
-  };
-  mask.querySelector('#annEdCidPick').addEventListener('click', () => {
-    openAnnCidPick(st.cid, id => { st.cid = id; paintCid(); });
-  });
   // 「TA 会在哪几天、说什么样的话」写死给用户看：概率掷骰是黑盒，不写出来他只能猜配没配生效
+  // 关掉「让 TA 提起」＝整节收起（概率行与这句说明都不占位），表单短一截
   const paintTalk = () => {
     const box = mask.querySelector('#annTalkWhen');
-    if (!box) return;
-    if (!st.wish) { box.textContent = '关着：TA 完全不会提起这件事'; box.className = 'ann-talk-when off'; return; }
+    const prow = mask.querySelector('#annProbRow');
+    if (!box || !prow) return;
+    if (!st.wish) { prow.hidden = true; box.hidden = true; return; }
+    box.hidden = false; prow.hidden = false;
     const c = contacts.find(x => x.id === st.cid);
     if (!c) { box.textContent = '还没绑定联系人 —— 这样 TA 不会到聊天里提起这件事（通用纪念日只记日期）'; box.className = 'ann-talk-when warn'; return; }
-    const whenTxt = annWishWhen({ date: st.yearly ? st.date.slice(5) : st.date, yearly: st.yearly })
+    const whenTxt = annWishWhen({ date: st.yearly ? sel.v.slice(5) : sel.v, yearly: st.yearly })
       .map(w => w.when).join(' / ') || '当天';
-    box.textContent = `${c.chatName || c.name} 会在 ${whenTxt} 以 ${st.wishProb}% 的概率 跟你提起这件事`;
+    box.textContent = `${fixedNameOf(c) || 'TA'} 会在 ${whenTxt} 以 ${st.wishProb}% 的概率 跟你提起这件事`;
     box.className = 'ann-talk-when';
   };
-  paintCid();
-  const repaintCal = () => { _annCalPaint(mask, ym, sel.v, marks, st.yearly ? sel.v.slice(5) : ''); paintTalk(); };
+  // 内联绑定：一排 chips（不绑定 + 每位），点一下就选中——省掉旧那层「再弹一张选人 sheet」
+  const paintOwners = () => {
+    const row = mask.querySelector('#annEdOwners');
+    if (!row) return;
+    let html = `<button type="button" class="fchip${st.cid ? '' : ' on'}" data-cid="">不绑定</button>`;
+    contacts.forEach(c => {
+      html += `<button type="button" class="fchip${c.id === st.cid ? ' on' : ''}" data-cid="${escapeHTML(c.id)}">${escapeHTML(fixedNameOf(c) || '未命名')}${c.kind === 'group' ? ' · 群' : ''}</button>`;
+    });
+    row.innerHTML = html;
+    paintTalk();
+  };
+  mask.querySelector('#annEdOwners').addEventListener('click', e => {
+    const b = e.target.closest('.fchip'); if (!b) return;
+    st.cid = b.dataset.cid || ''; paintOwners();
+  });
+  // 月历折成一行摘要：默认收起、点开才铺；点某天后回填摘要并自动收起
+  const sumEl = mask.querySelector('#annCalSum');
+  const foldEl = mask.querySelector('#annCalFold');
+  const paintCalSum = () => { sumEl.textContent = _annCalSumText(sel.v, st.yearly); };
+  sumEl.addEventListener('click', () => {
+    const open = foldEl.hidden; foldEl.hidden = !open;
+    sumEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  const repaintCal = () => { _annCalPaint(mask, ym, sel.v, marks, st.yearly ? sel.v.slice(5) : ''); paintCalSum(); paintTalk(); };
   const paintType = () => {
     mask.querySelectorAll('.ann-type-chip').forEach(b => b.classList.toggle('on', (b.dataset.t === 'yearly') === st.yearly));
     mask.querySelector('.ann-type-hint').textContent = st.yearly ? '每年重复：只记 月/日，到点自动倒数' : '未来日期自动倒数，过去日期自动累计';
+    mask.querySelector('#annOffRow').hidden = st.yearly;   // 倒数日「还有几天」只对带年份的普通日期有意义
     repaintCal();
   };
   mask.querySelector('.ann-type-row').addEventListener('click', e => {
@@ -362,31 +393,39 @@ function openAnnEditor(entry) {
     st.yearly = b.dataset.t === 'yearly';
     paintType();
   });
-  const paintWish = () => {
-    mask.querySelector('#annEdWish').checked = st.wish;
-    mask.querySelector('#annProbRow').hidden = !st.wish;
-    mask.querySelectorAll('.ann-prob-chip').forEach(b => b.classList.toggle('on', +b.dataset.p === st.wishProb));
-    paintTalk();
-  };
+  // 倒数日：填「还有 N 天」→ 现算日期、同步月历与摘要（不清自己的框，边输边看）
+  mask.querySelector('#annEdOffset').addEventListener('input', e => {
+    const n = parseInt(e.target.value, 10);
+    if (!isFinite(n)) return;
+    const dt = new Date(_annToday0().getTime() + n * 864e5);
+    const ds = dt.getFullYear() + '-' + _annPad2(dt.getMonth() + 1) + '-' + _annPad2(dt.getDate());
+    sel.v = ds; ym.y = dt.getFullYear(); ym.m = dt.getMonth();
+    if (!foldEl.hidden) _annCalPaint(mask, ym, sel.v, marks, st.yearly ? sel.v.slice(5) : '');
+    paintCalSum(); paintTalk();
+  });
+  const paintWish = () => { mask.querySelector('#annEdWish').checked = st.wish; paintTalk(); };
   mask.querySelector('#annEdWish').addEventListener('change', e => { st.wish = e.target.checked; paintWish(); });
   mask.querySelector('#annProbRow').addEventListener('click', e => {
     const b = e.target.closest('.ann-prob-chip');
     if (!b) return;
     st.wishProb = +b.dataset.p || 100;
-    paintWish();
+    mask.querySelectorAll('.ann-prob-chip').forEach(x => x.classList.toggle('on', +x.dataset.p === st.wishProb));
+    paintTalk();
   });
-  // 编辑态回显名称与两个勾选
-  mask.querySelector('#annEdName').value = entry ? (entry.name || '') : '';
+  // 回显：名称出厂预填「纪念日」（编辑态用原值），勾选与概率档现读
+  mask.querySelector('#annEdName').value = entry ? (entry.name || '') : '纪念日';
   mask.querySelector('#annEdMain').checked = entry ? !!entry.main : false;
+  mask.querySelectorAll('.ann-prob-chip').forEach(x => x.classList.toggle('on', +x.dataset.p === st.wishProb));
   _annCalNavBind(mask, ym, repaintCal);
   _annCalMonthBind(mask, ym, repaintCal);
-  _annCalGridBind(mask, ym, sel, repaintCal);
+  _annCalGridBind(mask, ym, sel, () => { repaintCal(); foldEl.hidden = true; sumEl.setAttribute('aria-expanded', 'false'); });
+  paintOwners();
   paintType();
   paintWish();
   mask.querySelector('.ann-ok').addEventListener('click', () => {
     const nameInput = mask.querySelector('#annEdName');
-    const name = (nameInput.value || '').trim();
-    if (!name) { nameInput.focus(); showToast('请填写名称'); return; }
+    let name = (nameInput.value || '').trim();
+    if (!name) name = '纪念日';   // 空名不拦人：给个诚实默认值即可（旧那发「请填写名称」正是上次那个够不着的框）
     const dsFull = _annNormDate(sel.v);
     const dsMd = _annNormMD(sel.v.slice(5));
     if (st.yearly ? !dsMd : !dsFull) { showToast('请选择日期'); return; }
@@ -408,38 +447,18 @@ function openAnnEditor(entry) {
   });
   _annEditorMask = mask;
   mask.hidden = false;
-  if (!entry) setTimeout(() => { const i = mask.querySelector('#annEdName'); if (i) i.focus(); }, 80);
 }
 
-// 归属联系人选择列表：通用 + 各联系人，小字显示该归属现有主纪念日（防重复设主）
-function openAnnCidPick(cur, onPick) {
-  const contacts = data.contacts || [];
-  const mainNameOf = cid => {
-    const m = annList().find(a => a.main && (a.contactId || '') === cid);
-    return m ? '现有主纪念日「' + (m.name || '纪念日') + '」' : '还没有主纪念日';
-  };
-  if (_annPickMask) { _annPickMask.remove(); _annPickMask = null; }
-  const mask = document.createElement('div');
-  mask.className = 'ann-mask';
-  mask.innerHTML =
-    '<div class="ann-panel">' +
-    '<div class="ann-panel-head"><span class="ann-panel-title">绑定给谁 · 谁来说这件事</span><button class="ann-panel-close">×</button></div>' +
-    '<div class="ann-bind-list">' +
-    `<button type="button" class="ann-bind-opt${cur ? '' : ' on'}" data-cid="">不绑定（只记日期）<i>TA 不会到聊天里提起这件事</i></button>` +
-    contacts.map(c => `<button type="button" class="ann-bind-opt${cur === c.id ? ' on' : ''}" data-cid="${escapeHTML(c.id)}">${escapeHTML(c.chatName || c.name)}${c.kind === 'group' ? ' · 群' : ''}<i>TA 会在这位那儿提起 · ${escapeHTML(mainNameOf(c.id))}</i></button>`).join('') +
-    '</div>' +
-    '</div>';
-  (document.querySelector('.app-shell') || document.body).appendChild(mask);
-  const close = () => { mask.remove(); if (_annPickMask === mask) _annPickMask = null; };
-  mask.querySelector('.ann-panel-close').addEventListener('click', close);
-  mask.addEventListener('click', e => { if (e.target === mask) close(); });
-  mask.querySelector('.ann-bind-list').addEventListener('click', e => {
-    const b = e.target.closest('.ann-bind-opt');
-    if (!b) return;
-    close();
-    onPick(b.dataset.cid || '');
-  });
-  _annPickMask = mask;
+// 折叠摘要那一行的日期文字（普通型「2026年3月15日 · 周日 · 还有 12 天」；每年重复型「每年 3月15日 · 下次还有 12 天」）
+function _annCalSumText(ds, yearly) {
+  const wd = ['日', '一', '二', '三', '四', '五', '六'];
+  const d = new Date(ds + 'T00:00:00');
+  if (isNaN(d.getTime())) return '选择日期';
+  const mo = d.getMonth() + 1, day = d.getDate(), w = '周' + wd[d.getDay()];
+  if (yearly) { const nx = _annNext(ds); return `每年 ${mo}月${day}日 · ${w}${nx.cd === 0 ? ' · 就是今天' : ' · 下次还有 ' + nx.cd + ' 天'}`; }
+  const diff = Math.round((d - _annToday0()) / 864e5);
+  const tail = diff > 0 ? ' · 还有 ' + diff + ' 天' : diff < 0 ? ' · 已过 ' + (-diff) + ' 天' : ' · 就是今天';
+  return `${d.getFullYear()}年${mo}月${day}日 · ${w}${tail}`;
 }
 
 // ===== TA 提起纪念日：当天祝福 / 前几天预告 / 里程碑前夜埋伏笔（annWishTick 挂 mailbox 30s 调度） =====
@@ -627,6 +646,59 @@ function annSelfTick() {
   if (made) { save(); renderAnniversary(); }
 }
 
+// ===== 列表页操作（2026-10-15 优化批）=====
+// 顶部按联系人筛选的 chips（条目 <2 不画＝不制造噪音）；点谁筛谁，''=全部 · '__none'=通用
+function renderAnnOwners() {
+  const row = $('#annOwners');
+  if (!row) return;
+  const l = annList();
+  if (l.length < 2) { row.hidden = true; row.innerHTML = ''; return; }
+  row.hidden = false;
+  const cnt = f => l.filter(f).length;
+  let html = `<button type="button" class="fchip${_annFilter === '' ? ' on' : ''}" data-f="">全部 ${l.length}</button>`;
+  html += `<button type="button" class="fchip${_annFilter === '__none' ? ' on' : ''}" data-f="__none">通用 ${cnt(a => !a.contactId)}</button>`;
+  (data.contacts || []).forEach(c => {
+    const n = cnt(a => a.contactId === c.id);
+    if (!n) return;
+    html += `<button type="button" class="fchip${_annFilter === c.id ? ' on' : ''}" data-f="${escapeHTML(c.id)}">${escapeHTML(fixedNameOf(c) || '未命名')} ${n}</button>`;
+  });
+  row.innerHTML = html;
+}
+// 一键设为主（同归属唯一）——不用进编辑器勾那格
+function _annSetMain(id) {
+  const l = annList(); const rec = l.find(a => a.id === id);
+  if (!rec) return;
+  const turnOn = !rec.main;
+  l.forEach(a => { if ((a.contactId || '') === (rec.contactId || '')) a.main = false; });
+  rec.main = turnOn;
+  save(); renderAnniversary(); _annRefreshChat();
+  showToast(turnOn ? '已设为主纪念日' : '已取消主纪念日');
+}
+// 删除＝即删＋5s 撤销（整册快照还原，连「主」标记一起回），不再弹模态确认
+function _annRemove(id) {
+  const l = annList(); const rec = l.find(a => a.id === id);
+  if (!rec) return;
+  _annUndoSnap = l.slice();
+  data.anniversaries = l.filter(a => a.id !== id);
+  save(); renderAnniversary(); if (rec.main) _annRefreshChat();
+  const bar = $('#annUndo'); const nm = $('#annUndoName');
+  if (bar && nm) { nm.textContent = rec.name || '纪念日'; bar.hidden = false; }
+  if (_annUndoTimer) clearTimeout(_annUndoTimer);
+  _annUndoTimer = setTimeout(_annUndoHide, 5000);
+}
+function _annUndoHide() {
+  _annUndoSnap = null;
+  if (_annUndoTimer) { clearTimeout(_annUndoTimer); _annUndoTimer = null; }
+  const bar = $('#annUndo'); if (bar) bar.hidden = true;
+}
+function _annUndoRestore() {
+  if (!_annUndoSnap) { _annUndoHide(); return; }
+  data.anniversaries = _annUndoSnap;
+  const wasMain = _annUndoSnap.some(a => a && a.main);
+  save(); _annUndoHide(); renderAnniversary(); if (wasMain) _annRefreshChat();
+  showToast('已放回');
+}
+
 // ===== 事件绑定 =====
 $('#annAddBtn') && $('#annAddBtn').addEventListener('click', () => openAnnEditor(null));
 $('#annAddBtn2') && $('#annAddBtn2').addEventListener('click', () => openAnnEditor(null));
@@ -635,20 +707,20 @@ $('#annHero') && $('#annHero').addEventListener('click', () => {
   const cid = (typeof currentContact === 'function' && (currentContact() || {}).id) || '';
   openAnnEditor(annMainFor(cid) || null);
 });
+// 顶部筛选 chips：点谁筛谁（全部/通用/某位）
+$('#annOwners') && $('#annOwners').addEventListener('click', e => {
+  const b = e.target.closest('.fchip');
+  if (!b) return;
+  _annFilter = b.dataset.f || '';
+  renderAnniversary();
+});
+// 删除后的撤销条
+$('#annUndoBtn') && $('#annUndoBtn').addEventListener('click', _annUndoRestore);
 $('#annExtraList') && $('#annExtraList').addEventListener('click', e => {
   const del = e.target.closest('.ann-extra-del');
-  if (del) {
-    const rec = annList().find(a => a.id === del.dataset.id);
-    if (!rec) return;
-    openModal('删除纪念日', '', () => {
-      data.anniversaries = annList().filter(a => a.id !== rec.id);
-      save();
-      renderAnniversary();
-      if (rec.main) _annRefreshChat();
-      showToast('已删除');
-    }, { noInput: true, staticText: `删除「${rec.name}」？不可恢复。`, okText: '删除', danger: true });
-    return;
-  }
+  if (del) { _annRemove(del.dataset.id); return; }
+  const star = e.target.closest('.ann-extra-star');
+  if (star) { _annSetMain(star.dataset.id); return; }
   const row = e.target.closest('.ann-extra');
   if (row) {
     const rec = annList().find(a => a.id === row.dataset.id);

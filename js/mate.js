@@ -370,6 +370,14 @@ if (_mateScopeBar) _mateScopeBar.addEventListener('click', e => {
 // 删除这一会话：呼出首页长按那同一张动作单
 const _mateDelChat = $('#mateDelChat');
 if (_mateDelChat) _mateDelChat.addEventListener('click', () => { if (typeof _askDeleteChat === 'function') _askDeleteChat(data.activeChat); });
+// 给 TA 手动记个日子：跳到纪念日页并带着这位进来预绑定（openAnnEditor(null, cid)）
+const _mateAnnAdd = $('#mateAnnAdd');
+if (_mateAnnAdd) _mateAnnAdd.addEventListener('click', () => {
+  const c = (typeof currentContact === 'function' && currentContact()) || null;
+  const cid = (c && c.id) || '';
+  if (typeof showView === 'function') showView('anniversary');
+  if (typeof openAnnEditor === 'function') openAnnEditor(null, cid);
+});
 
 // 进入「TA 的设置」：回显当前联系人的全套控件
 function openMatePage() {

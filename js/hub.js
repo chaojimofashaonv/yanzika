@@ -55,7 +55,7 @@ const HUB_GROUPS = [
       { ico: '<rect x="8" y="3" width="13" height="13" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2"/>', name: '字卡库', desc: '你自己新建的分组与字卡，公用 / 专属两档', nav: 'cards', more: { d: '公用 · 专属两档' } },
       { ico: '<path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="M3 12.5 12 17l9-4.5"/>', name: '系统预设字卡', desc: '出厂自带的话术与 TA 心里话各池', nav: 'syscards', more: { d: '出厂话术 · 按功能分' } },
       { ico: '<path d="M4.5 6.5h9M4.5 12h7M4.5 17.5h5"/><path d="m14.5 15.5 2.2 2.2 4.3-5"/>', name: '字卡适应度', desc: '按人对账：这位现在说得出哪几类·哪些说法库里筛不到', nav: 'cardfit', more: { d: '按人对账 · 说得出的说法' } },
-      { ico: '<path d="M20.5 12.5c0 4.2-6.2 8-7.5 8s-7.5-3.8-7.5-8a5.5 5.5 0 0 1 11-3.7A5.5 5.5 0 0 1 20.5 12.5z"/><path d="M7 12.5h10"/>', name: '聊天情绪', desc: '三级标签链与逻辑连接词：星言 ∶ mochi ∶ 混合 三档可切（出厂走「混合」，2026-10-14 用户定档）', nav: 'emotion', more: { d: '标签链 · 连接词 · 三档可切' } }, 
+      { ico: '<path d="M12 8.6A4.6 4.6 0 0 1 20.6 9.6C20.6 14.2 17.4 17.6 12 20.6C6.6 17.6 3.4 14.2 3.4 9.6A4.6 4.6 0 0 1 12 8.6Z"/>', name: '聊天情绪', desc: '三级标签链与逻辑连接词：星言 ∶ mochi ∶ 混合 三档可切（出厂走「混合」，2026-10-14 用户定档）', nav: 'emotion', more: { d: '标签链 · 连接词 · 三档可切' } }, 
       { ico: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.6a3.5 3.5 0 0 1 0 6.8M17.5 14.4A6 6 0 0 1 21 20"/>', name: '头像昵称', desc: '互相换形象，TA 会留下印象', nav: 'avatarlib', more: { d: '头像池 · 昵称池 · 印象' } },
       { ico: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>', name: '问问 TA', desc: '你出题 TA 选，或你写字卡 TA 回', nav: '#ask', more: { d: '你出题 · TA 选' } },
       { ico: '<rect x="2.5" y="7" width="19" height="10.5" rx="5"/><path d="M7 10v4.5M4.8 12.2h4.4M15.5 11h.01M18 13.5h.01"/>', name: '游戏中心', desc: '合成 · 2048 · 星星 · 连连看 · 拼图 · 方块（屏上那一排 tab 就是这六款），TA 立挑战分等你破', nav: 'games', more: { d: '六款 · 合作 · 对战' } },
@@ -84,7 +84,7 @@ const HUB_GROUPS = [
       { ico: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/><line x1="4" y1="4" x2="20" y2="20"/>', name: '主动消息管理', desc: '批量关闭哪些联系人和群不再有 TA 主动发消息；单聊群聊同一道闸，回话与来电不受影响', nav: 'silent', more: { d: '批量关闭谁主动发消息 · 单聊群聊都算' } },
       { ico: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>', name: '提示音', desc: '消息和来电各配一声提示音', nav: '#sound' },
       { ico: '<rect x="5" y="2" width="14" height="20" rx="3"/><path d="M9.5 18.5h5"/>', name: '安装到桌面', desc: '装到桌面，像 App 一样打开', nav: '#install' },
-      { ico: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>', name: '字号', desc: '全站文字大小两档，点一下立刻生效', nav: '#uifont', more: { d: '全站两档 · 点一下生效' } },
+      { ico: '<path d="M4 7V5h16v2M12 5v14M9 19h6"/>', name: '字号', desc: '全站文字 80~140% 拖杆调节，拖到哪当场变多大', nav: '#uifont', more: { d: '80~140% 拖杆 · 实时预览' } },
       { ico: '<path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M12 8v5M12 16h.01" stroke-width="2.2"/>', name: '诊断信息', desc: '设备与存储的体检报告，能复制导出', nav: '#diag', more: { d: '排障报告 · 可复制导出' } },
       { ico: '<path d="M4 4.5h16v15H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>', name: '许可与关于', desc: '禁止二传二改，禁止商用倒卖', nav: '#about' },
       { ico: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>', name: '桌面美化', desc: '壁纸（六款内置渐变或自己选一张）· 压暗 · 缩放 · 取景 · 铺到 只有首页/所有页面 · 导航条薄纱', nav: '#desk', more: { d: '壁纸 · 压暗 · 铺到哪' } },
@@ -169,7 +169,7 @@ function _hubRoute(nav) {
     if (nav === '#ask') { showView('chat'); const b = document.getElementById('askBtn'); if (b) b.click(); return; }
     if (nav === '#chat') { showView('chat'); enterChatAtLatest(); return; }   // 功能中心进聊天＝打开会话，定位到最新（BUGS #014）
     if (nav === '#data') { _hubGoFold('data', 'data'); return; }   // 数据备份那一格住在 数据 这一格里（:195 的「安装到桌面」走的是同一条路）
-    if (nav === '#desk') { openDeskStation(); return; }   // 美化台浮在首页那一面上，openDeskStation 内部自己 showView('chats')
+    if (nav === '#desk') { _hubGoFold('desk', 'deskbg'); return; }   // 桌面背景已内联进 设置→外观（原浮层美化台 2026-10-15 改版），直达那一格
     if (nav === '#search') { if (typeof openSearch === 'function') openSearch('all'); return; }   // 统一搜索是全屏浮层，不走 showView（这一条搜全部五类＝聊天/信/收藏/字卡/心愿，首页那条只搜聊天记录，FIX 2026-10-09 #226）
     // ↓ 以下是聊天页内的动作行：先进会话，再触发对应的按钮/面板（入口全在 view-chat.html 输入栏与消息长按条）
     if (nav === '#poke') { showView('chat'); enterChatAtLatest(); if (typeof openPokePanel === 'function') openPokePanel(); return; }

@@ -2,8 +2,40 @@
 // 首页搜索条打开半屏浮层，压在当前那一面之上（点遮罩或「取消」收回）：
 // 实时检索五类内容，按分类分组展示，点结果直达对应位置（聊天跳定位、信件开信、收藏滚到卡片、字卡进分组、心愿进心愿页）。
 // 每类单独限行数，防大数据量卡顿；状态栏给分类计数。
+// 聊天那一类另有一行「按谁筛」（BUGS #438）：芯片＝会话名单，只影响「聊天」那一段，信件/收藏/字卡/心愿不牵连。
 
 const SEARCH_MAX = { msg: 300, letter: 100, collect: 100, card: 60, wish: 60 };
+
+// 「按谁筛」那一行的筛选态：与字卡库 #265／信箱分册 #091 同一写法——只存本机、不进 data 不进备份
+// （筛的是阅读位置不是数据），'all' 直接删键；键名带 ordinal- 前缀＝「清空本站全部数据」那一族扫得到。
+const SEARCH_WHO_KEY = 'ordinal-search-who';
+let currentSearchWho = (() => { try { return localStorage.getItem(SEARCH_WHO_KEY) || 'all'; } catch (e) { return 'all'; } })();
+function saveSearchWho(w) {
+  currentSearchWho = w || 'all';
+  try {
+    if (currentSearchWho === 'all') localStorage.removeItem(SEARCH_WHO_KEY);
+    else localStorage.setItem(SEARCH_WHO_KEY, currentSearchWho);
+  } catch (e) {}
+}
+// 芯片名走 fixedNameOf（BUGS #407 那把尺：搜索面板不是聊天页那一本，写「聊天里那份昵称」会跟
+// 信箱∶字卡∶播放器那几行「按谁筛」的芯片各叫一个名）；群聊补「 · 群」＝#237 定的那条标注。
+// 认不出这位就说实话「已不在通讯录」，不拿 cid 当名字端上屏。
+function _searchWhoLabel(cid) {
+  const c = (data.contacts || []).find(x => x && x.id === cid);
+  if (!c) return '已不在通讯录';
+  return (fixedNameOf(c) || '未命名') + (c.kind === 'group' ? ' · 群' : '');
+}
+// 芯片那一行由这里一处画：不足两本就整行不出（只有一档时它是纯噪音）。名单给的是**所有会话**
+// （这一发没命中的也列、数写 0）——只列命中的话，筛中某人而他换了个词没命中时他这枚会凭空消失，
+// 用户刚点的东西回不去，只能靠清关键词出来。数＝点进去列得出的数（#079 那一刀）。
+function _searchWhoRender(list, who) {
+  const el = $('#searchWho');
+  if (!el) return;
+  if (!list || list.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.innerHTML = [{ id: 'all', n: list.reduce((a, b) => a + b.n, 0), label: '全部' }].concat(list).map(b =>
+    `<button type="button" class="fchip${who === b.id ? ' on' : ''}" data-search-who="${escapeHTML(b.id)}">${escapeHTML(b.label)}<span class="n">${b.n}</span></button>`).join('');
+}
 
 function _searchHlHTML(text, q) {
   // 对原文按关键词切段并高亮：先定位后逐段 escapeHTML，避免转义后下标错位
@@ -45,6 +77,7 @@ function doSearch() {
   clearBtn.hidden = !q;
   if (!q) {
     status.textContent = '';
+    _searchWhoRender([], 'all');
     body.innerHTML = '<div class="search-empty"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="15.8" y2="15.8"></line></svg>' + (_searchMode === 'all' ? '搜索聊天、信件、收藏、字卡和心愿' : '搜索聊天记录') + '<br>输入关键词，点结果直达</div>';
     return;
   }
@@ -53,15 +86,19 @@ function doSearch() {
   const counts = [];
 
   // 聊天：全部会话（排除系统提示/已撤回/纯表情包）
-  const _searchAll = _searchMode === 'all'; const msgRows = []; let msgN = 0;
+  // 逐本会话各收各的命中（BUGS #438）：限行由「整类一条」改成「每本一条」——旧写法整类攒满就停止收，
+  // 聊得最多的那一位能把后面所有人的命中整本挤掉＝芯片少一枚、下面也搜不到他，
+  // 这是「我明明有多个联系人，却只搜得出一个」那一读感里真存在的那一半（另一半是行上的名字读成了同一个人）。
+  const _searchAll = _searchMode === 'all'; const chatBuckets = [];
   for (const cid of Object.keys(data.chats || {})) {
+    const rows = []; let n = 0;
     const ms = (data.chats[cid].msgs || []).slice().reverse();
     for (const m of ms) {
       if (!m || m.from === 'system' || m.recalled) continue;
       const t = m.text;
       if (!t || t === '[表情包]' || !t.toLowerCase().includes(lq)) continue;
-      msgN++;
-      if (msgRows.length >= SEARCH_MAX.msg) continue;
+      n++;
+      if (rows.length >= SEARCH_MAX.msg) continue;
       const mine = m.from === 'me';
       // 我方那一枚按**这一本会话**取名与取脸（2026-10-08 按会话分开）。
       // 对方那一侧仍走 chatPartnerName()/chatPartnerAvatar()＝读当前开着的联系人，跨会话搜出来的行
@@ -69,13 +106,29 @@ function doSearch() {
       const who = mine ? chatMyName(cid) : chatPartnerName();
       const av = mine ? avatarHTML(chatMyAvatar(cid), firstChar(who)) : avatarHTML(chatPartnerAvatar(), firstChar(who));
       const dateLabel = m.date ? '<small>' + escapeHTML(formatDateLabel(m.date)) + '</small>' : '';
-      msgRows.push('<div class="search-row" role="button" tabindex="0" data-kind="msg" data-cid="' + escapeHTML(cid) + '" data-id="' + escapeHTML(m.id) + '">'
+      rows.push('<div class="search-row" role="button" tabindex="0" data-kind="msg" data-cid="' + escapeHTML(cid) + '" data-id="' + escapeHTML(m.id) + '">'
         + '<span class="mini-avatar">' + av + '</span>'
         + '<span class="search-main"><span class="search-top"><span class="search-who">' + escapeHTML(who) + dateLabel + '</span>'
         + '<span class="search-time">' + escapeHTML(m.time || '') + '</span></span>'
         + '<span class="search-text">' + _searchHlHTML(m.text || '', q) + '</span></span></div>');
     }
+    chatBuckets.push({ id: cid, n, rows, label: _searchWhoLabel(cid) });
   }
+  // 顺序跟通讯录名单（#066 那一课：随 data.chats 的键序漂＝同一位在屏上来回跳位），认不出的那位排最后
+  const whoOrder = (data.contacts || []).map(c => c.id);
+  const whoRank = id => { const i = whoOrder.indexOf(id); return i < 0 ? 9e9 : i; };
+  chatBuckets.sort((a, b) => whoRank(a.id) - whoRank(b.id));
+  // 停在一条已删掉的会话上＝一屏空白，当场回落「全部」（#265 同一刀，不留第三种屏）
+  const who = chatBuckets.some(b => b.id === currentSearchWho) ? currentSearchWho : 'all';
+  _searchWhoRender(chatBuckets, who);
+  // 筛中某人＝那一本的额度整份给他（「细化」这一步正是这行芯片该做到的事）；「全部」那一档按**有命中的本数**
+  // 分额度＝谁也不许把谁挤掉，而总量仍锁在 SEARCH_MAX.msg 内（第 4 行那句「防大数据量卡顿」的承诺不作废；
+  // 只有一本命中时分到整 300＝与旧写法一字不差的观感，不会为公平把唯一那位削成 100 条）
+  const hitBuckets = chatBuckets.filter(b => b.n > 0);
+  const perBucket = Math.ceil(SEARCH_MAX.msg / Math.max(1, hitBuckets.length));
+  const kept = who === 'all' ? hitBuckets : chatBuckets.filter(b => b.id === who);
+  const msgRows = kept.reduce((a, b) => a.concat(who === 'all' ? b.rows.slice(0, perBucket) : b.rows), []);
+  const msgN = kept.reduce((a, b) => a + b.n, 0);
   if (msgN) { counts.push('聊天 ' + msgN); html.push(_searchGroupHTML('聊天', msgN)); html.push(msgRows.join('')); }
 
   // 信件：来信 + 寄出的
@@ -149,12 +202,15 @@ function doSearch() {
 
   const shown = msgRows.length + letterRows.length + collectRows.length + cardRows.length + wishRows.length;
   const total = msgN + letterN + collectN + cardN + wishN;
+  // 筛在人身上时那句「共找到 N 条」得说清是这一位的 N 条，否则读起来像全站只有这么多（#265 同一刀）
+  const whoTip = who === 'all' ? '' : '<span class="search-filter-who">只看 ' + escapeHTML(_searchWhoLabel(who)) + '</span> · ';
   if (!total) {
     status.textContent = '';
-    body.innerHTML = '<div class="search-empty">没有找到与「<span class="hl">' + escapeHTML(q) + '</span>」相关的内容<br>' + (_searchMode === 'all' ? '换个关键词试试' : '这里只搜聊天记录 · 换个关键词试试') + '</div>';
+    // 芯片此刻就在上面（这一发没命中也要留着那枚出口），故这句得指它——只说「换个关键词」＝把人困在一屏空白里
+    body.innerHTML = '<div class="search-empty">没有找到与「<span class="hl">' + escapeHTML(q) + '</span>」相关的内容<br>' + (who !== 'all' && chatBuckets.length >= 2 ? '「' + escapeHTML(_searchWhoLabel(who)) + '」的聊天里没有这一句 · 点上面「全部」看所有会话' : (_searchMode === 'all' ? '换个关键词试试' : '这里只搜聊天记录 · 换个关键词试试')) + '</div>';
     return;
   }
-  status.innerHTML = '共找到 <b>' + total + '</b> 条 · ' + counts.join(' · ') + (total > shown ? '（部分已省略，请细化）' : '');
+  status.innerHTML = whoTip + '共找到 <b>' + total + '</b> 条 · ' + counts.join(' · ') + (total > shown ? '（部分已省略，请细化）' : '');
   body.innerHTML = html.join('');
 }
 
@@ -276,6 +332,15 @@ $('#searchInput').addEventListener('input', () => {
 });
 $('#searchInput').addEventListener('keydown', e => {
   if (e.key === 'Escape') closeSearch();
+});
+// 「按谁筛」那一行的委托：芯片在 #searchBody **外面**（那一段的委托按 .search-row 认，两者互不牵连），
+// 点一枚只重跑一次检索——关键词不动∶滚动位置由浏览器自己留着，不重建输入框也不关面板
+const _searchWhoEl = $('#searchWho');
+if (_searchWhoEl) _searchWhoEl.addEventListener('click', e => {
+  const chip = e.target.closest('.fchip');
+  if (!chip || !_searchWhoEl.contains(chip)) return;
+  saveSearchWho(chip.dataset.searchWho);
+  doSearch();
 });
 $('#searchBody').addEventListener('click', e => {
   const row = e.target.closest('.search-row');

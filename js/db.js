@@ -28,7 +28,7 @@ function _scheduleLsSave() {
   _lsTimer = setTimeout(() => {
     _lsTimer = null;
     _lsPending = false;
-    const doIt = () => { _stampNow(); try { lsSet(data); } catch {} };
+    const doIt = () => _lsMirror();
     if (typeof requestIdleCallback === 'function') requestIdleCallback(doIt, { timeout: 1500 });
     else setTimeout(doIt, 100);
   }, 300);
@@ -56,8 +56,52 @@ function lsGet() {
   } catch { return null; }
 }
 
+// ===== localStorage 那一份整包副本的体积闸（2026-10-15 BUGS #434，手机端「导入／保存时卡住然后闪退」那一批的一档）=====
+// LS 里这一枚 `ordinal-data` 是「iOS 被系统冻结／关页赶在异步事务前」的保险，同一棵树的整包副本。
+// 存档一大（字卡∶聊天里的 base64 图）这一发三件事同时坏：
+//   ① 整树 JSON.stringify 是主线程长任务（实测 183M 字符那一份桌面要 0.4s，手机按 3~5 倍算）；
+//   ② 移动端 localStorage 配额约 5MB，超了一律 QuotaExceededError——必然写不进去；
+//   ③ 旧写法 `catch {}` 把失败吞干净＝用户以为「下一次 load 能从 LS 兜回来」，其实那份备份压根没写成。
+// 现在先按节点估一把，估不过就不写镜像：load 按 _savedAt 取较新通道（#024），镜像没动→IDB 那一份照常赢，
+// 既不丢数据也不写假话，而且不再为「一个装不下的东西」花那一整轮 stringify。
+// ⚠ 唯一不能跳的是降级模式（_useLS＝IndexedDB 用不了，LS 就是主库）：那时照写，写不下就在屏上说一句。
+const LS_MIRROR_MAX = 3 * 1024 * 1024;
+let _lsMirrorQuiet = 0;
+function _lsSay(msg) {
+  // 一次会话只说一次：这是每次保存都会走的路径，toast 连发＝刷屏
+  if (_lsMirrorQuiet) return;
+  _lsMirrorQuiet = 1;
+  try { if (typeof showToast === 'function') showToast(msg); } catch (e) {}
+}
+// 估算＝字符串长度 ＋ 每格一点结构开销；一超预算立刻收手返回 -1（不为「量一个装不下的东西」跑完整棵树）
+function _roughJsonBytes(node, budget) {
+  let total = 0;
+  const stack = [[node, 0]];
+  while (stack.length) {
+    const cur = stack.pop();
+    const v = cur[0], d = cur[1];
+    if (v === null || v === undefined) continue;
+    const t = typeof v;
+    if (t === 'string') { total += v.length; if (total > budget) return -1; continue; }
+    if (t !== 'object') { total += 8; continue; }
+    total += 16;
+    if (d > 8) continue;   // 与本站那些「最深六七层」的形状对齐∶再深的不量了，宁少估不多估（少估＝多写一次镜像，不写坏数据）
+    if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) stack.push([v[i], d + 1]); continue; }
+    for (const k in v) { total += k.length; if (total > budget) return -1; stack.push([v[k], d + 1]); }
+  }
+  return total;
+}
+
 function lsSet(obj) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch {}
+  if (!_useLS && _roughJsonBytes(obj, LS_MIRROR_MAX) < 0) {
+    _lsSay('这份存档比本机的存储镜像大得多，镜像就没写了（数据存在主库里，不会丢）');
+    return false;
+  }
+  try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); return true; }
+  catch (e) {
+    _lsSay('本机存储装不下这一份，没兜住这一发镜像备份；建议先在 设置→数据→存储 里清掉大图再重新导出');
+    return false;
+  }
 }
 
 // 递归合并旧数据到默认结构上（缺字段则补默认值）
@@ -922,6 +966,8 @@ function ensureData(raw) {
   if (!PL_PERMS || !PL_MODES.includes(_plr.mode)) _plr.mode = def.player.mode;
   // relay／ncmRelay 两格已随「中转」整条下线（2026-10-14）：不再补种，老档里残留的同名值留着不动也不读。
   if (typeof _plr.ncmCookie !== 'string') _plr.ncmCookie = '';   // 网易云登录＝MUSIC_U Cookie（2026-10-13，love-boat 同款做法）
+  // 网易云接口地址（#422 二批：昵称∶日推∶我的歌单∶会员歌完整版都要一台答话的接口，这一格让用户填自己那台）
+  if (typeof _plr.ncmApi !== 'string') _plr.ncmApi = '';
   if (!['string', 'number'].includes(typeof _plr.current) || !_tk.has(_plr.current)) _plr.current = '';
   if (_plr.withCid && !((raw.contacts || []).some(c => c && c.id === _plr.withCid && c.kind !== 'group'))) _plr.withCid = '';
   _plr.invites = _plr.invites.filter(v => v && typeof v.id === 'string' && typeof v.cid === 'string' && typeof v.trackId === 'string')
@@ -1005,8 +1051,19 @@ function ensureData(raw) {
     // 旧档残留字段一并清掉，留着也不再有任何读取方（BUGS #036）
     delete a.snow; delete a.tier;
     if (!['auto', 'white', 'black', 'gold'].includes(a.mineText)) a.mineText = da.mineText;
-    // 全站字号（设置-外观「字号」两档）：不进 chatAppearanceDefault，故不受按会话迁移的删除循环波及
-    if (!['medium', 'large'].includes(a.uiFontScale)) a.uiFontScale = da.uiFontScale;
+    // 全站字号（设置-外观「字号」）：2026-10-15 由「标准/大」两档改成 80~140 的连续数字（放大百分比）。
+    // 不进 chatAppearanceDefault，故不受按会话迁移的删除循环波及。旧档那两枚字符串先折成数字（large→112、
+    // medium→100），再把剩下的脏值/越界一律夹回 80~140（回落默认 100）。
+    if (a.uiFontScale === 'large') a.uiFontScale = 112;
+    else if (a.uiFontScale === 'medium') a.uiFontScale = 100;
+    if (!(typeof a.uiFontScale === 'number' && isFinite(a.uiFontScale))) a.uiFontScale = da.uiFontScale;
+    a.uiFontScale = Math.min(140, Math.max(80, Math.round(a.uiFontScale)));
+    // 卡片毛玻璃开关（appearance.frost）：布尔，脏值回落默认（四落点之②）
+    if (typeof a.frost !== 'boolean') a.frost = da.frost;
+    // 毛玻璃强度（frostBlur 0~24px）与「气泡也吃」（frostBubble）：与 frost 同族，脏值/越界夹回默认
+    if (!(typeof a.frostBlur === 'number' && isFinite(a.frostBlur))) a.frostBlur = da.frostBlur;
+    a.frostBlur = Math.min(24, Math.max(0, Math.round(a.frostBlur)));
+    if (typeof a.frostBubble !== 'boolean') a.frostBubble = da.frostBubble;
     if (!['cozy', 'compact'].includes(a.density)) a.density = da.density;
     // 三组排版新档（2026-10-15）脏值回落：枚举与 utils defaults 对齐
     if (!['bottom', 'top'].includes(a.alignMode)) a.alignMode = da.alignMode;
@@ -1018,7 +1075,9 @@ function ensureData(raw) {
     // 桌面美化台（设置-外观「桌面美化」）：壁纸 dataURL 与四根杆
     if (typeof a.deskBg !== 'string') a.deskBg = da.deskBg;
     // 桌面美化台三根杆：越界与脏值一律回落默认（面板侧 desk.js 同口径再夹一次）
-    delete a.deskBgBlur;   // 虚化那根杆已删（壁纸只从卡片缝隙露出，糊与不糊逐像素差 4.5/255＝看不出作用），清掉旧档残留
+    // 背景模糊（2026-10-15 重新启用：卡片毛玻璃给了它宿主）：越界与脏值夹回 0~40（默认 0）
+    if (!(typeof a.deskBgBlur === 'number' && isFinite(a.deskBgBlur))) a.deskBgBlur = da.deskBgBlur;
+    a.deskBgBlur = Math.min(40, Math.max(0, Math.round(a.deskBgBlur)));
     if (!(typeof a.deskBgVeil === 'number' && a.deskBgVeil >= 0 && a.deskBgVeil <= 90)) a.deskBgVeil = da.deskBgVeil;
     if (!(typeof a.deskBgZoom === 'number' && a.deskBgZoom >= 100 && a.deskBgZoom <= 200)) a.deskBgZoom = da.deskBgZoom;
     if (!(typeof a.deskTabVeil === 'number' && a.deskTabVeil >= 0 && a.deskTabVeil <= 100)) a.deskTabVeil = da.deskTabVeil;
@@ -1599,6 +1658,10 @@ async function load() {
   // 整个会话只写 localStorage，下个会话把 LS 快照回写 IDB 后再下个会话只认 IDB 旧快照 → 中间会话数据静默丢失。
   // 两个 store 都存 _savedAt 时间戳，双通道时取较新的一方，避免瞬时失败造成的单向覆盖。
   const _stamp = (o) => (o && typeof o._savedAt === 'number') ? o._savedAt : 0;
+  // 设置小快照兜底：若它比所选 base 更新（上次异步全量写没赶上、但同步设置快照落了），在 ensureData 归一之前
+  // 把设置并回 raw——深并只覆盖快照里存在的叶子，主库的大资产（背景图／字体／头像）原样保留。
+  const _snap = lsSettingsGet();
+  const _applySnap = (raw) => { if (raw && _snap && _snap.s && _stamp(_snap) > _stamp(raw)) _mergeSettingsInto(raw, _snap.s); return raw; };
   try {
     const db = await getDB();
     let result = null;
@@ -1613,35 +1676,99 @@ async function load() {
       const ls = lsGet();
       if (ls && _stamp(ls) > _stamp(result)) {
         // localStorage 里有更新的数据（上次会话曾降级写入）：以较新方为准回填 IDB
-        const merged = ensureData(ls);
+        const merged = ensureData(_applySnap(ls));
         try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
         return merged;
       }
-      const merged = ensureData(result);
+      const merged = ensureData(_applySnap(result));
       // 同时写回 IndexedDB 修复结构
       try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
       return merged;
     }
     // IDB 可用但库为空（新装/清库）：用 LS 数据（若有）做种子回填，此后正常走 IDB，不降级
-    const merged = ensureData(lsGet());
+    const merged = ensureData(_applySnap(lsGet()));
     try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
     return merged;
   } catch { /* IndexedDB 真不可用才降级 localStorage */ }
   _useLS = true;
-  const merged2 = ensureData(lsGet());
+  const merged2 = ensureData(_applySnap(lsGet()));
   return merged2;
 }
 
 function save() {
   if (_useLS) { _scheduleLsSave(); return; }
+  // 镜像不再每发同步写（2026-10-15 收口）。那一发是当天为「iOS 赶在异步事务 oncomplete 之前被冻结」加的
+  // 保险，方向对，但挂在 save() 上＝**每一次** save 都同步把整棵树 stringify 一遍：连发消息时十几发
+  // 全砸在主线程上（与 BUGS #434 查到的「手机端导入卡住／闪退」同一笔账）。现在与 IndexedDB 走同一枚去抖，
+  // 而真正需要立即兑齐的三个路口——切后台（visibilitychange∶本文件末尾）、离开（pagehide∶js/app.js）、
+  // 关键写（导入／设置那几处 await 的 flushSave）——照旧同步落镜像。
+  // 代价只有一种：改动后 1.2s 内进程被硬杀、且那一发异步 IDB 写没赶上——那 1.2s 里的改动由下一次 load
+  // 按 _savedAt 取较新通道回填兜住（#024 双通道），不丢整本。
   _savePending = true;
   if (_saveTimer) return;
+  // 设置小快照每次都同步落一份（剔大资产、恒几 KB）：兜住「大存档过不了全量镜像那枚 3MB 体积闸 ∶ iOS 关页赶在异步事务前」那一族丢设置
+  saveSettingsSnap();
   _saveTimer = setTimeout(() => {
     _saveTimer = null;
     if (!_savePending) return;
     _savePending = false;
+    _lsMirror();
     _doSave();
   }, SAVE_DEBOUNCE_MS);
+}
+
+// 同步镜像一份到 localStorage（闸在 lsSet 里：装不下就跳、并在屏上说一句）
+function _lsMirror() { _stampNow(); lsSet(data); }
+
+// ===== 设置小快照（2026-10-15 拆分）=====
+// 全量 LS 镜像有 3MB 体积闸（见上 lsSet/_roughJsonBytes）：大存档（字卡∶聊天里的 base64 图）压根进不了 LS，
+// 于是那批用户的「设置」只剩 IndexedDB 一条命——iOS 赶在异步事务 oncomplete 之前被冻结那一发时，
+// 回复节奏∶信箱∶朋友圈那些概率与数字就跟着重置。这一枚把「设置类小对象」单独**同步**写一份（剔掉一切
+// 大资产，恒几 KB，永远过得了配额）：save() 每次都落它，load() 里若它比主库新就把设置并回去。
+// 深并只覆盖快照里存在的叶子，缺的键（大资产）＝保留主库那一份，不会误清用户背景图／字体／头像。
+const LS_SETTINGS_KEY = 'ordinal-settings';
+const SNAP_ASSET_MAX = 4096;   // 超此长的字符串＝dataURL 大资产，不进小快照
+const SETTINGS_SNAP_KEYS = [
+  'behavior', 'chatSettings', 'groupBh', 'callSettings',
+  'mailbox', 'mailboxSettings', 'momentsSettings', 'momentsBy',
+  'emotion', 'emotionBy', 'emotionOff', 'collectSettings',
+  'sounds', 'chatSounds', 'minimax', 'theme', 'avatarShape',
+  'appearance', 'chatAppearance', 'chatAppearanceDefault',
+  'night', 'silent', 'cjian', 'cardFit',
+  'taAskOn', 'flashOn', 'wishOn', 'referOn', 'meantOn', 'delMsgOn'
+];
+function _snapVal(v) {
+  if (v === null || v === undefined) return v;
+  const t = typeof v;
+  if (t === 'string') return v.length > SNAP_ASSET_MAX ? undefined : v;
+  if (t !== 'object') return v;                              // number/boolean
+  if (Array.isArray(v)) { const a = []; for (const x of v) { const s = _snapVal(x); if (s !== undefined) a.push(s); } return a; }
+  const o = {}; for (const k in v) { const s = _snapVal(v[k]); if (s !== undefined) o[k] = s; } return o;
+}
+function _snapSettings() {
+  const s = {};
+  for (const k of SETTINGS_SNAP_KEYS) { if (!(k in data)) continue; const v = _snapVal(data[k]); if (v !== undefined) s[k] = v; }
+  return { _savedAt: Date.now(), s };
+}
+function saveSettingsSnap() {
+  try { localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(_snapSettings())); }
+  // 写失败不静默（诊断 2026-10-15 加固 #4）：快照存不进＝这台机配额满了/禁了 localStorage，
+  // 那这一发「关太快也不丢」的保险就没了——只能说一句让用户赶紧导出，不能假装存住了（_lsSay 一次会话只说一次）
+  catch (e) { _lsSay('设置快照没能存进本机存储：刚改的东西只存在主库里，若改完立刻关掉页面可能会丢，建议尽快在 设置→数据 导出一次备份'); }
+}
+function lsSettingsGet() { try { const raw = localStorage.getItem(LS_SETTINGS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+// 深并：只把 src 里存在的叶子写进 target（数组∶基本值整体赋值；对象递归）——大资产不在快照里＝不动 target
+function _mergeSettingsInto(target, src) {
+  if (!src || typeof src !== 'object') return;
+  for (const k of Object.keys(src)) {
+    const sv = src[k];
+    if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
+      if (!target[k] || typeof target[k] !== 'object' || Array.isArray(target[k])) target[k] = {};
+      _mergeSettingsInto(target[k], sv);
+    } else if (sv !== undefined) {
+      target[k] = sv;
+    }
+  }
 }
 
 // 落盘时间戳：load 时比较 IDB 与 LS 两个通道谁更新（#024 双通道防单向覆盖）
@@ -1659,10 +1786,12 @@ async function _doSave() {
     tx.objectStore(STORE).put(data, 'all');
     await new Promise(resolve => {
       tx.oncomplete = resolve;
-      tx.onerror = () => { console.error('保存失败:', tx.error); resolve(); };
+      tx.onerror = () => { console.error('保存失败:', tx.error); _lsSay('保存到本机主库失败：请检查本机的存储空间，并尽快在 设置→数据 导出一次备份'); resolve(); };
+      tx.onabort = () => { console.error('保存被中断:', tx.error); _lsSay('保存到本机主库时被中断：数据可能没存住，请检查存储空间并尽快导出备份'); resolve(); };
     });
   } catch (err) {
     console.error('保存失败:', err);
+    _lsSay('保存到本机主库失败：请检查本机的存储空间，并尽快在 设置→数据 导出一次备份');
   }
 }
 
@@ -1673,9 +1802,13 @@ function isLSMode() { return _useLS === true; }
 // FIX 2026-09-01 #006 页面卸载兜底保存：app.js 的 pagehide 一直调用 flushSave 但本文件从未定义，
 // 导致卸载时抛 ReferenceError，其后的 lsSet(data) 兜底备份不执行
 function flushSave() {
-  if (_useLS) { _stampNow(); lsSet(data); return; }
+  saveSettingsSnap();   // 设置小快照：立即兑一份，与全量镜像同一时刻（闸在 lsSet 里）
+  // 返回 Promise：调用方（设置页）可 await 到 IndexedDB 事务真正完成，不再靠去抖能否赶在冻结前跑完
+  if (_useLS) { _lsMirror(); return Promise.resolve(); }
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; _savePending = false; }
-  _doSave();
+  // 立即兑一份同步镜像兜 iOS 冻结，再 await 异步 IndexedDB 写（与 save() 同一把尺，闸在 lsSet 里）
+  _lsMirror();
+  return _doSave();
 }
 
 // 切后台立即冲刷：去抖窗内的改动不能等 pagehide（移动端切走后 pagehide 可能永远不来）
@@ -1687,6 +1820,7 @@ const fresh = JSON.parse(JSON.stringify(defaults));
 for (const k of Object.keys(data)) if (!(k in fresh)) delete data[k];
 Object.assign(data, fresh);
 try { localStorage.removeItem(LS_KEY); } catch {}
+try { localStorage.removeItem(LS_SETTINGS_KEY); } catch {}
 try { localStorage.removeItem('lastBackupAt'); } catch {}
 if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; _savePending = false; }
 if (_lsTimer) { clearTimeout(_lsTimer); _lsTimer = null; _lsPending = false; }

@@ -174,6 +174,10 @@ function stPersisted() {
   if (!navigator.storage || !navigator.storage.persisted) return Promise.resolve(null);
   return navigator.storage.persisted().catch(() => null);
 }
+// iOS 形态判定（本地自包一份，不依 app.js 那个 IIFE 里的私有 isIOS/standalone）：
+// iOS Safari 没有 persist 接口，防「7 天不用被系统整站清空」只剩一条路＝装成独立 PWA（从主屏幕打开）
+function _stIsIOS() { try { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); } catch (e) { return false; } }
+function _stStandalone() { try { return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); } catch (e) { return false; } }
 
 function storageScan() {
   if (_stBusy) return Promise.resolve(_stLast);
@@ -310,8 +314,15 @@ function storageRender() {
   }
 
   p.push('<div class="st-sec-t">持久存储</div>');
-  if (r.persisted === null) p.push(stNote('这台设备的浏览器没有这个接口。', true));
-  else p.push(stActRow({ name: r.persisted ? '已获得' : '未获得', sub: r.persisted ? '空间紧张时浏览器不会自动清掉本站数据' : '空间紧张时浏览器可能自己清掉本站数据', bytes: 0, text: '', act: r.persisted ? '' : 'persist', label: '申请' }));
+  const _ios = _stIsIOS(), _alone = _stStandalone();
+  if (r.persisted === true) p.push(stActRow({ name: '已获得', sub: '空间紧张时浏览器不会自动清掉本站数据', bytes: 0, text: '', act: '' }));
+  else if (r.persisted === false) p.push(stActRow({ name: '未获得', sub: '空间紧张时浏览器可能自己清掉本站数据', bytes: 0, text: '', act: 'persist', label: '申请' }));
+  else if (_ios) p.push(stNote('iPhone∕iPad 的浏览器没有「持久存储」这个接口。iOS 防「约 7 天不打开就被系统整站清空」只有一条路：Safari「分享 → 添加到主屏幕」，之后从桌面图标打开（独立应用形态豁免系统的定期清除）。', true));
+  else p.push(stNote('这台设备的浏览器没有这个接口。', true));
+  // iOS 形态那一行只说事实：独立与否都给一句（装过机的人要能看到「已豁免」，没装的人要看到那条风险）
+  if (_ios) p.push(stNote(_alone
+    ? '当前已从桌面图标打开（独立应用形态）——已豁免 iOS 对普通网页标签的 7 天整站清除。'
+    : '当前是 Safari 标签页形态：连续约 7 天不打开本站，iOS 会清掉包括设置在内的全部本地数据。请「分享 → 添加到主屏幕」后从桌面图标使用，并定期在「数据管理」导出备份。', true));
 
   p.push('<div class="st-foot"><button type="button" class="soft-btn" data-st-act="rescan">刷新读数</button>'
     + '<p class="data-note">' + escapeHTML('这里的清理删掉就回不来，动手前先去「数据管理」导出一次备份。') + '</p>'

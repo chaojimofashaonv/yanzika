@@ -37,15 +37,25 @@
 .ann-extra-days{flex:none;font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .ann-extra-days.count{color:var(--accent)}
 .ann-extra-days.today{background:var(--accent);color:#fff;padding:3px 10px;border-radius:999px;font-size:11px}
-.ann-extra-del{flex:none;width:26px;height:26px;border-radius:50%;color:var(--muted);display:grid;place-items:center;font-size:14px;line-height:1}
+.ann-extra-del{flex:none;width:34px;height:34px;border-radius:50%;color:var(--muted);display:grid;place-items:center;font-size:18px;line-height:1}
 .ann-extra-del:active{background:var(--press)}
+/* 行内星标＝一键设为主纪念日（同归属唯一，判据与编辑器那格一致）；行本身可点进编辑，故不额外垫大热区 */
+.ann-extra-star{flex:none;width:34px;height:34px;border-radius:50%;color:var(--muted);display:grid;place-items:center;font-size:16px;line-height:1;background:none;border:0;font-family:inherit}
+.ann-extra-star.on{color:var(--accent)}
+.ann-extra-star:active{background:var(--press)}
 .ann-empty{font-size:11px;color:var(--muted);text-align:center;padding:8px 0 14px}
+/* TA 页「给 TA 记个日子」那枚入口钮与下方勾选行留一道缝（宿主在 html/view-mate.html，样式就近挂这一族） */
+#mateAnnAdd{margin-bottom:6px}
 
 /* ===== 添加/编辑弹层 ===== */
 .ann-mask{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:15;display:flex;align-items:flex-end;justify-content:center;animation:annMaskIn .18s ease}
 @media(min-width:521px){.ann-mask{align-items:center}}
 .ann-mask[hidden]{display:none}
-.ann-panel{width:100%;max-width:400px;background:var(--surface);border-radius:var(--r-panel) var(--r-panel) 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));animation:annIn .28s cubic-bezier(.22,.6,.36,1)}
+/* FIX 2026-10-15 #433 弹层必须自封顶＋内滚：本件是贴底 sheet（.ann-mask align-items:flex-end），
+   旧写法无 max-height∶无 overflow，内容（一整个月历＋多枚字段）高过视口时顶部被 .app-shell{overflow:hidden} 裁掉——
+   iPhone15∶Safari 加到主屏 上「划不到上边·找不到起名框」＝名称框在最顶、被裁到视口外且没处滚，点保存只 focus 一个够不着的框。
+   与 css/base.css 的 .fs-sheet∶.bk-panel 同族：vh 兜底∶dvh 随视口（键盘∶地址栏）收放，整块面板自滚→顶部名称可滚进来。 */
+.ann-panel{width:100%;max-width:400px;background:var(--surface);border-radius:var(--r-panel) var(--r-panel) 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));animation:annIn .28s cubic-bezier(.22,.6,.36,1);max-height:calc(100vh - 34px);max-height:calc(100dvh - 34px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 @media(min-width:521px){.ann-panel{border-radius:var(--r-panel)}}
 @keyframes annMaskIn{from{opacity:0}to{opacity:1}}
 @keyframes annIn{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -54,14 +64,26 @@
 .ann-panel-close{width:28px;height:28px;border-radius:50%;color:var(--muted);font-size:16px;display:grid;place-items:center}
 .ann-panel-close:active{background:var(--press)}
 
-/* 名称与归属联系人选择字段（点击弹选择列表） */
+/* 名称输入（出厂预填「纪念日」，空名保存不再拦） */
 .ann-name-input{width:100%;box-sizing:border-box;border:0;outline:none;background:var(--bubble);color:var(--ink);border-radius:10px;padding:11px 12px;font-size:max(1em,16px);margin-bottom:10px;font-family:inherit}
 .ann-name-input::placeholder{color:var(--muted)}
-.ann-cid-pick{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;border:0;outline:none;font-family:inherit;background:var(--bubble);border-radius:10px;padding:11px 12px;margin-bottom:10px}
-.ann-cid-pick:active{background:color-mix(in srgb,var(--bubble) 78%,var(--accent))}
-.ann-cid-pick-label{font-size:12px;color:var(--muted);flex:none}
-.ann-cid-pick-val{flex:1;min-width:0;text-align:right;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.ann-cid-pick svg{width:14px;height:14px;flex:none;color:var(--muted)}
+/* 内联绑定 chips（编辑器里＋列表页筛选共用一族）：复用收藏/信箱/搜索那套 .fchips/.fchip＝零新组件；
+   上下各垫 12px＝.fchips 的 overflow-x:auto 会顺手裁纵向、base 把 chip 命中垫到 44 会探出，内距不够点下半落空（#091 同一族） */
+.ann-owners{padding:12px 0}
+.ann-owners[hidden]{display:none}
+.ann-owners .fchip{position:relative}
+.ann-owners .fchip::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:100%;min-width:44px;min-height:44px}
+/* 日期折叠：摘要一行点开才铺月历（默认收起＝表单短一截） */
+.ann-cal-sum{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;box-sizing:border-box;border:0;outline:none;font-family:inherit;background:var(--bubble);border-radius:10px;padding:11px 12px;margin-bottom:10px;color:var(--ink);font-size:13px;text-align:left}
+.ann-cal-sum:active{background:color-mix(in srgb,var(--bubble) 78%,var(--accent))}
+.ann-cal-sum::after{content:'\25BE';color:var(--muted);font-size:12px;flex:none}
+.ann-cal-sum[aria-expanded="true"]::after{content:'\25B4'}
+.ann-cal-fold[hidden]{display:none}
+/* 倒数日：填「还有几天」自动算日期（只对带年份的普通日期出现） */
+.ann-off-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.ann-off-row[hidden]{display:none}
+.ann-off-row input{width:64px;box-sizing:border-box;border:0;outline:none;background:var(--bubble);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:max(1em,16px);font-family:inherit;text-align:center}
+.ann-off-row em{font-style:normal;font-size:11px;opacity:.8}
 
 /* 类型（普通日期/每年重复）与提起概率 chips */
 .ann-type-row{display:flex;gap:6px;margin-bottom:10px}
@@ -75,12 +97,14 @@
 .ann-talk-when.off{background:none;color:var(--muted);padding-left:0;padding-right:0}
 .ann-talk-when.warn{background:color-mix(in srgb,var(--danger-ink) 8%,transparent);color:var(--danger-ink)}
 
-/* 绑定联系人选择列表 */
-.ann-bind-list{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto}
-.ann-bind-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;outline:none;font-family:inherit;padding:10px 12px;border-radius:12px;background:var(--bubble);color:var(--ink);font-size:13px;line-height:1.3}
-.ann-bind-opt i{font-style:normal;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.ann-bind-opt.on{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
-.ann-bind-opt.on i{color:var(--accent)}
+/* 删除后的撤销条：沉底浮层，坐在 .fab 之上不抑它（bottom 抬到 88px）；与 .wish-undo 同身法 */
+.ann-undo{position:fixed;left:max(16px,calc(50% - 224px));right:max(16px,calc(50% - 224px));bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 8px 10px 16px;border-radius:999px;background:var(--island-grad);border:1px solid var(--ctl-ring);box-shadow:var(--float-shadow);font-size:12px;color:var(--ink);animation:annUndoIn .22s cubic-bezier(.22,.6,.36,1)}
+.ann-undo[hidden]{display:none}
+.ann-undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ann-undo b{font-weight:700}
+.ann-undo button{flex:none;border:0;background:none;color:var(--ink);font-weight:700;font-size:12px;letter-spacing:2px;font-family:inherit;padding:6px 12px;border-radius:999px}
+.ann-undo button:active{background:var(--press)}
+@keyframes annUndoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* 月历 */
 .ann-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}

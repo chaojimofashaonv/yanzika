@@ -13,6 +13,22 @@
 .search-field input::placeholder{color:var(--muted);font-size:13px}
 .search-clear{flex:none;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:17px;line-height:1}
 .search-clear:active{opacity:.5}
+/* 按谁筛那一行（BUGS #438）：类名复用收藏页∶信箱∶字卡库那族 .fchips/.fchip＝全站只有一种筛选 chips、零新组件；
+   两条几何闸都带上，缺一条就长成屏上「看得见点不着」或「点得到看不见」：
+   ① flex:none ＝这一行是 .search-sheet（列 flex）的直接子块，而带 overflow-x:auto 的容器按规范拿不到自动
+      最小尺寸＝名单一长被压扁成一条缝（BUGS #080/#082 同一族）；
+   ② 上下内距各 12px ＝ .fchips 那条 overflow-x:auto 会顺手把纵向也裁（一轴非 visible 时另一轴的 visible 按
+      规范回落成 auto），而 css/base.css 把 chip 的命中区垫到 44px＝29px 的盒上下各探出 ~8px，内距不够时那半截
+      被这一行自己的盒子剪掉＝点 chip 下方落空（信箱 #mbOwners 那行的 F3 实测抓的，BUGS #091）。
+   写成 #id 而不是补一条 .search-who-row：collect.css 那条 .fchips 的上下内距不是 12px，谁在后面取决于
+   css_order＝不拿顺序当赌注（字卡库 #265／信箱 #091 同一手）。选中态那层观感由 css/mono.css 一处供，这里不再写一份。 */
+#searchWho{flex:none;padding:12px 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#searchWho::-webkit-scrollbar{display:none}
+#searchWho .fchip{display:flex;align-items:center;gap:5px}
+#searchWho .fchip .n{font-size:11px;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+/* 状态栏里「只看 某人」那一枚：整面 .search-who 是个没限定作用域的类（结果行自己的名字就用着它），
+   故这一条必须从 .search-status 往下问，不给它一个只属于状态栏的名字＝将来两处互相顶掉 */
+.search-status .search-filter-who{font-weight:600;color:var(--ink)}
 .search-status{flex:none;padding:10px 18px 0;font-size:11px;color:var(--muted);letter-spacing:.5px}
 .search-status .hl{font-weight:600;text-decoration:underline;text-underline-offset:2px}
 .search-body{flex:1;overflow:auto;overscroll-behavior:contain;padding:10px 0 18px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}

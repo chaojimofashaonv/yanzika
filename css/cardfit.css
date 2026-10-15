@@ -41,6 +41,11 @@
 .fit-voice{border-left:1px solid var(--hair);padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:5px}
 .fit-voice p{font-size:11px;line-height:1.7;color:var(--muted);margin:0;overflow-wrap:anywhere}
 .fit-voice p.fit-voice-gap{color:var(--ink)}
+/* 抽样预览：拿真池子摇出的句子，一行一条·靠左读成“TA 在说话”；媒体条用细签占位，不铺图（base64 可能很大） */
+.fit-samples{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.fit-sample{font-size:12px;line-height:1.6;color:var(--ink);background:var(--ctl-glass);border:1px solid var(--ctl-hair);border-radius:12px;padding:7px 11px;max-width:88%;overflow-wrap:anywhere}
+.fit-sample-media{color:var(--muted);font-style:normal;align-self:flex-start}
+.fit-sample-tag{font-size:11px}
 .fit-note{font-size:11px;line-height:1.65;color:var(--muted);margin-top:6px}
 .fit-knobs,.fit-facts,.fit-slots,.fit-gapwrap{display:flex;flex-direction:column}
 /* 「一整句话」不能也当 flex 行排：只有「标签 ∶ 值」那种两列读数才用 flex。

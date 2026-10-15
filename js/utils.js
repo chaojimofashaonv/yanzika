@@ -357,7 +357,10 @@ const defaults = {
     // 往库里加卡的人永不成立＝一整行设置永远不会生效。0＝从不；按联系人各一份，与 rnProb 同一格同一把尺。
     strayProb: 5,
     imageProb: 5, voiceProb: 10, kaomojiProb: 5, quoteProb: 30,
-    rcProb: 25, rcRefix: 35, recallEnabled: false,
+    rcProb: 25, rcRefix: 35,
+    // 「禁止联系人撤回消息」默认关闭（2026-10-15 用户定档）：recallEnabled=true＝联系人会按上面的撤回概率触发撤回；
+    // 界面上那枚复选框取 !recallEnabled，故此格为 true 时复选框处于未勾选（功能关）那一侧。
+    recallEnabled: true,
     pyEnabled: true, pyProb: 50, pyMin: 2, pyMax: 5,
     // 拼接随机标点（对齐 mochi py-punct-*）：总开关 + 八枚符号池，命中多字卡后每两条字卡中间随机抽一枚连接；
     // 总开关关或池全空=固定空格（原行为）。换行默认关（mochi #1198 口径）
@@ -484,6 +487,10 @@ const defaults = {
     deskBg: '',
     deskBgVeil: 44,
     deskBgZoom: 100,
+    // 背景模糊（0~40px，2026-10-15 重新启用）：旧的「虚化」杆 2026-10-05 被当作死杆删过（当时卡片实白、壁纸只从缝里露）。
+    // 现在「卡片毛玻璃」开时壁纸会透到磨砂卡片后面，这根杆重新有了宿主：糊的是壁纸**本体**（连缝隙与卡片后面一起变软），
+    // 与卡片那根「磨砂强度」（只采卡片背后那一层）各管一层、可叠加。0＝不糊＝与旧观感逐字节相同（只有 blur>0 才写 data-ap-deskblur）。
+    deskBgBlur: 0,
     deskBgSize: 'cover',
     // 底部导航条那层薄纱的浓淡（只在壁纸真透到屏底的那一面起作用，选择器见 css/base.css 那条同源条件）：
     // 0＝完全透出壁纸，100＝与不挂图时一样实；45 是按逐像素量具定的默认（细节保留 0.60、图标对比不退）
@@ -510,6 +517,14 @@ const defaults = {
     // 但上线以来没有任何界面能改它们＝零入口。现居 设置 → 外观 →「聊天外观」
     bubbleShape: 'round', density: 'cozy', showTime: true, sendBtn: true,
     fontFamily: 'system', glass: true, glassLite: false,   // glassLite＝省电磨砂：常驻三栏去实时 blur（耗电优化）
+    // 卡片毛玻璃（2026-10-15 重做「卡片通透」那一行）：开＝卡片/浮层变半透白＋背景模糊的真·毛玻璃，
+    // 关＝实心白面（默认）。四落点：defaults（这里）∶db.js 布尔回落∶settings.js AP_SETS＋applyAppearance 写 body∶
+    //   view-settings.html 那行 chips∶theme.css 末尾 body[data-ap-frost=on] 覆盖块。与旧 light 三档（描边浓淡）无关。
+    frost: false,
+    // 毛玻璃强度（0~24px 背景模糊，只给卡片那一套 frost 用）与「气泡毛玻璃」（frostBubble，聊天外观里那一枚，
+    // 住 TA 设置页）：两件事互不依赖。强度走 applyAppearance 写 body 内联 --frost-blur（连续数字）；
+    // frostBubble 也走 body 内联 data 属性但写的是全局 appearance（与 glass 同族）——观感在 css/theme.css 的 body[data-ap-frost-bubble=on] 段。
+    frostBlur: 14, frostBubble: false,
     // 三组排版新档（2026-10-15，居「TA 的设置 → 聊天外观」）：枚举校验在 db.js ensureData，
     // 写手在 settings.js applyAppearance，令牌在 css/theme.css 的 data-ap-align/-avat/-daypos 段
     alignMode: 'bottom',   // 头像与气泡对齐：bottom 底部对齐（默认）/ top 顶部对齐
@@ -524,7 +539,10 @@ const defaults = {
     bgKeepAlive: false,
     bgNotify: false,
     bgNotifyNoDedup: false,
-    uiFontScale: 'medium'
+    // 全站字号（设置→外观「字号」）：2026-10-15 由「标准/大」两枚 chip 改成一根 80~140 的连续滑杆，
+    // 存的是「放大百分比」数字（100＝出厂标准）。生效走 theme.css `.app-shell>*{zoom:var(--ui-zoom)}`，
+    // applyAppearance 把数字折成 --ui-zoom 写在 body 上＝拖到哪整站当场跟着变（所见即所得的实时预览）。
+    uiFontScale: 100
   },
   // 会话外观（气泡配色/背景图/自定义气泡 CSS）按联系人隔离：chatAppearance[contactId]；applyAppearance 取
   // chatAppearance[activeChat] 叠加全局 appearance 组成视图（皮肤选择已删，固定奶油白）。
@@ -764,8 +782,8 @@ const defaults = {
   // settings＝那份**全局默认权限**（所有没单独调过的人共用），名单与区间只住在 js/player.js 的 PL_PERMS 一处，
   // ⚠ 下面这几个数必须与 PL_PERMS 的 d 逐格相同（常驻门 tools/_smoke_player.js A1 现读两边比对）。
   player: {
-    // 2026-10-14：relay／ncmRelay 两格已删（QQ 音源与「中转」整条下线，用户定档）；老档里残留的同名值不再读。
-    tracks: [], playlists: [], favs: [], queue: [], current: '', mode: 'order', ncmCookie: '', invites: [], withCid: '',
+    // 2026-10-14：relay 与 QQ 那一档已删（用户定档）；ncmRelay 老值 js/player.js 的 _plNcmApi() 仍读一次当兜底（不重填）。
+    tracks: [], playlists: [], favs: [], queue: [], current: '', mode: 'order', ncmCookie: '', ncmApi: '', invites: [], withCid: '',
     settings: { reqProb: 5, cooldownMin: 12, taReserveProb: 6, taNextProb: 15, taRandProb: 10, taModeProb: 5, taFavProb: 20, taPauseEn: true, taChatNote: true }
   },
   playerBy: {},   // 只存被单独调过的那一位：PL_PERMS 那几格＋他那一本「TA 的收藏」favs（同 #066 播放器收藏、#074 印象簿那一族）
@@ -970,17 +988,16 @@ function fileData(file, maxEdge = 1024, quality = 0.82) {
 }
 
 function streamToBlob(stream) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const chunks = [];
     const reader = stream.getReader();
-    function loop() {
-      reader.read().then(({ done, value }) => {
-        if (done) { resolve(new Blob(chunks)); return; }
-        chunks.push(value);
-        loop();
-      });
+    // 预读那一发的 {done,value} 必须由 loop 自己收下：扔掉＝每个流的第一块（64KB）凭空消失
+    function loop({ done, value }) {
+      if (done) { resolve(new Blob(chunks)); return; }
+      chunks.push(value);
+      reader.read().then(loop).catch(reject);
     }
-    reader.read().then(loop);
+    reader.read().then(loop).catch(reject);
   });
 }
 
@@ -1088,6 +1105,20 @@ function updateProgress(pct, text) {
 }
 function hideProgress() {
   if (_pgEl) _pgEl.classList.remove('show');
+}
+
+// 让进度层真正上屏一帧再开干。整树 JSON.parse／序列化都是主线程长任务：不让这一手，
+// 屏上就钉在上一格的数字不动＝用户眼里的「卡住了」（#428 那批在字卡库导入里先用过同一手法，
+// 这里收进 utils 一份，不留两处各写一遍嵌套 rAF）。
+// 带一道收手：页面在后台时 rAF 压根不跑（手机挑完文件回来的那一瞬还可能没完全回前台），
+// 不能把整条导入锁死在这一步。
+function progressYield() {
+  return new Promise(res => {
+    let done = false;
+    const fin = () => { if (done) return; done = true; res(); };
+    try { requestAnimationFrame(() => requestAnimationFrame(fin)); } catch (e) { fin(); }
+    setTimeout(fin, 800);
+  });
 }
 
 // ===== 「这句说谁」：长按消息掷一枚指向签 =====

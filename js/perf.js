@@ -80,6 +80,39 @@
     } catch (e) {}
     if (lite) { try { root.classList.add('mo-lite'); } catch (e) {} }
 
+    // ── ②-b 运行时掉帧看门狗（补 iOS 缺口）──
+    // deviceMemory∶hardwareConcurrency 只有 Chrome 系有，iOS WKWebView 两个都不暴露 ⇒ 上面那档
+    // 在慢 iPhone 上永远判不出 lite，玻璃模糊全程付账。这里换成平台无关的**实测帧时**兜同一件事：
+    // 启动 3s 后开始量（躲开首屏解析∶字体∶图片解码的固有掉帧），约 1.5s 窗口内单帧 >34ms 的比例
+    // 过 1/4 就**一次性**挂上 mo-lite 并常驻（命中即停表，不来回抖）；命中后观感与静态判定逐字同源。
+    // 全程只切 root 上那一个类、出口与 ② 一致；?moperf=off 那段已提前 return，本段自然不注册。
+    (function frameWatchdog() {
+      try {
+        if (lite) return;                                     // 已静态判定降级，不必再看
+        if (typeof requestAnimationFrame !== 'function') return;
+        var prev = performance.now(), slowRun = 0, checked = 0;
+        setTimeout(function loop() {
+          var raf = requestAnimationFrame(function step() {
+            try {
+              var now = performance.now(), dt = now - prev; prev = now;
+              if (dt > 34) slowRun++;                         // 掉到 ~30fps 以下
+              checked++;
+              if (checked >= 90) {                            // 约 1.5s 一算
+                if (slowRun / checked > 0.25) {
+                  lite = true;
+                  try { root.classList.add('mo-lite'); } catch (e) {}
+                  try { if (window.__moPerf) window.__moPerf.liteByWatchdog = true; } catch (e) {}
+                  return;                                      // 命中即常驻，不再排下一帧
+                }
+                slowRun = 0; checked = 0;
+              }
+              raf = requestAnimationFrame(step);
+            } catch (e2) {}                                    // 看门狗自己出错绝不外溢
+          });
+        }, 3000);
+      } catch (e) {}
+    })();
+
     // ── ③ rAF 合帧 ──
     // 散在各处的「下一帧再做」如果各自 requestAnimationFrame，一帧里会排进好几个回调，
     // 每个回调里再各自读一次几何＝同一帧多次强制重排。共用一帧＝整帧只读一次。

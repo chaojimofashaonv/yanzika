@@ -748,6 +748,17 @@ function resumeActiveSend() {
   _activeSendTick();
   if (!_asInterval) _asInterval = setInterval(_activeSendTick, 30 * 1000);
 }
+// 线上主动发送那条形态链的唯一一份：语音→图片→表情包→主字卡（掷序与 _activeSendOne 一字不差）。
+// 字卡适应度检测（js/cardfit.js 的 _cfSim）也调它＝不留第二份实现（铁律①）；
+// roll 可注入（线上默认 _rand，检测页传写死种子看稳态、或现场真随机看抖动）。
+function _asShapeKind(bh, p, roll) {
+  roll = roll || _rand;
+  if (p.voices && roll(bh.voiceProb)) return 'voice';
+  if (p.images && roll(bh.imageProb)) return 'image';
+  if (p.stickers && roll(bh.stickerProb)) return 'sticker';
+  if (p.main) return 'text';
+  return 'none';
+}
 function _activeSendOne(cid) {
   // 主动消息管理（js/silent.js）：tick 上已经拦过，这里是直接调用路径的同一把尺。
   // 留这一道是给「不经 tick 的调用方」兜底——落到群那一句是这一份自己掷的，不拦就漏一句
@@ -776,20 +787,22 @@ function _activeSendOne(cid) {
     const _cLo = Math.max(1, Math.round(Number(bh.asCountMin) || defaults.behavior.asCountMin));
     const _cHi = Math.max(_cLo, Math.round(Number(bh.asCountMax) || defaults.behavior.asCountMax));
     const n = Math.max(1, Math.min(10, _ri(_cLo, _cHi)));
+    const _asShapes = { voices: voices.length, images: images.length, stickers: stickers.length, main: mainCards.length };
     const msgs = [];
     for (let i = 0; i < n; i++) {
       let msg = null;
-      // 与回复批同一条形态链（语音∶图片表情包∶文字），三枚概率各管一类、一条只带一种
-      if (voices.length && _rand(bh.voiceProb)) {
+      // 形态链走 _asShapeKind——线上与字卡适应度检测共用的唯一一份（掷序一字不差＝不留第二份实现）
+      const _kind = _asShapeKind(bh, _asShapes);
+      if (_kind === 'voice') {
         const v = voices[Math.floor(Math.random() * voices.length)];
         msg = { id: nextId(), from: 'partner', text: v.text || '', voice: v.data, unread: true };
-      } else if (images.length && _rand(bh.imageProb)) {
+      } else if (_kind === 'image') {
         msg = { id: nextId(), from: 'partner', text: '[表情包]', unread: true };
         _attachSticker(msg, images);
-      } else if (stickers.length && _rand(bh.stickerProb)) {
+      } else if (_kind === 'sticker') {
         msg = { id: nextId(), from: 'partner', text: '[表情包]', unread: true };
         _attachSticker(msg, stickers);
-      } else if (mainCards.length) {
+      } else if (_kind === 'text') {
         msg = { id: nextId(), from: 'partner', text: mainCards[Math.floor(Math.random() * mainCards.length)], unread: true };
         // 文字字卡附带一张图：两枚概率各管一类（先图片、没中再表情包）
         if (bh.tsEnabled && images.length && _rand(bh.imageProb)) _attachSticker(msg, images);

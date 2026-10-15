@@ -23,13 +23,17 @@
    借那个名字＝用户刚导进来的歌下次开机被自己清掉。
 
    音源三路＝本机文件∶音频直链∶网易云（2026-10-14 用户定档「把登录 QQ 音乐和中转相关的设置删掉」后收敛到这三路）。
-   网易云匿名走公开 meting 接口（api.injahow.cn/meting·实测在跑）：放歌走 type=url、贴歌单链接走 type=playlist、
+   网易云**匿名**走公开 meting 接口（api.injahow.cn/meting·实测在跑）：放歌走 type=url、贴歌单链接走 type=playlist、
    搜歌走 api.i-meto.com/meting/api 的 type=search（主用那台 injahow 只认 url/playlist/song，对 search 回 unknown type）。
-   登录（手填 MUSIC_U 进 data.player.ncmCookie）是**加成不是闸门**：填了就改走 NeteaseCloudMusicApi 那一路
-   /song/url/v1 带 cookie 问＝会员歌拿完整版，取不到（接口挂了∶断网∶cookie 过期）一律退回匿名 meting。
-   ⚠ 「中转」这一族（data.player.relay／ncmRelay、QQ 那一档、/cloudsearch、/playlist/detail、日推、我的歌单）
-   已于 2026-10-14 按用户要求整条下线：那套要用户自己在局域网里跑一台服务，用户不再维护它，
-   留着就是「填不了地址的死键」。老档里残留的 relay/ncmRelay 值与 src:'qq' 的歌一律不再读（歌留着，标「取不到」）。
+   网易云**账号**那一族（昵称∶日推∶我的歌单∶会员歌完整版）走 NeteaseCloudMusicApi 那一路的四个口
+   （/login/status∶/recommend/songs∶/user/playlist∶/song/url/v1），基地址解析只住 _plNcmBase() 一处＝
+   先试用户自己填过的那台（data.player.ncmApi，可以是局域网 http 地址），没有再挑列表里第一台答话的公开实例。
+   登录是**加成不是闸门**：取不到（接口没答上∶断网∶cookie 过期）一律退回匿名 meting 放免费歌，
+   但「没答上」与「cookie 过期」屏上分开说（#422 二批：混成一句「cookie 失效」＝用户照着换票据，白忙一轮）。
+   ⚠ 「QQ 那一档∶/cloudsearch∶/playlist/detail∶data.player.relay／ncmRelay」仍是下线状态（用户定档没变）：
+   老档里残留的 relay/ncmRelay 值与 src:'qq' 的歌一律不再读（歌留着，标「取不到」）。
+   2026-10-15 更正：#422 那一批把**日推与我的歌单也一并删了**，而用户当时选的是「中转＋QQ 下线·网易云登录保留」
+   ＝删过头了（他复报「功能不全」，本轮加回来）；这两样要的是**网易云账号**那一族，不是 QQ 也不是那台局域网服务。
    添加这一面是一枚搜索框＋一枚输入框贴链接＋一枚钮，两路从 _plGuess 一处认（一行一条），认不出∶取不到都写在同一栏里＝不悄悄丢。
 
    触发口径照 mochi（用户明文「需要和 mochi 项目的功能一样」）：TA 回完一批话 2 秒后掷一次，
@@ -173,10 +177,17 @@ function plById(id) { return plTracks().find(t => t.id === id) || null; }
 function plCur() { return plById(_plRoot().current); }
 // MUSIC_U 的值读侧也剥一次前缀（用户常把「MUSIC_U=xxx」整行抄进来＝多一层宽容，不另立一条格式规矩）
 function _plNcmCookie() { return String(_plRoot().ncmCookie || '').trim().replace(/^MUSIC_U=/i, ''); }
-// 网易云接口的基地址只有一处：2026-10-14 起「中转地址」这一格已下线，恒等于那台公开实例。
-// ⚠ 那台实测已连不上——所以「登录后取完整版」这半边现在多半取不到，_plNcmRealUrl 回空、
-//   调用方自动退回匿名 meting（登录是加成不是闸门，这条口径一字未动）。
-function _plNcmBase() { return PL_NCM_ACC_API; }
+// 网易云**账号**那一族的基地址只在这一处解析：自己填过的那台优先，没填才落回公开那台实例。
+// ⚠ 公开实例是别人共享的部署、且 `*.vercel.app` 在部分网络被 DNS 劫持（2026-10-15 本机实测：三条账号口
+//   全部 12 秒超时、同网络的 meting 两台各自 0.3∶1.8 秒返回 200）＝它随时可能答不上。答不上时
+//   _plNcmRealUrl 回空、播放退回匿名 meting（登录是加成不是闸门），但屏上必须说清是「接口没答上」还是
+//   「cookie 过期」＝两句话两件事，混成一句会让人白换票据（#422 二批用户复报的那一条）。
+function _plNcmApi() {
+  const p = _plRoot();
+  // ncmApi＝现名；老档里残留的 ncmRelay 值照收一次（那是他 2026-10-13 亲手填过的那台，别让他重填一遍）
+  return String(p.ncmApi || p.ncmRelay || '').trim().replace(/\/+$/, '');
+}
+function _plNcmBase() { return _plNcmApi() || PL_NCM_ACC_API; }
 // 网易云那一路：只存那位歌单/单曲的号，声音地址每次现算（接口换域名或换了线路时不必回头改库里几百条）
 function _plNcmUrl(nid) { return PL_NCM_API + '?server=netease&type=url&id=' + encodeURIComponent(String(nid)); }
 // 问网易云接口一句话：cookie 与 timestamp 只在这一处拼（不留第二份口径）。失败∶超时∶非 2xx 一律回空串，
@@ -188,9 +199,28 @@ function _plNcmAsk(path, ms) {
   return _plFetchText(base + path + sep + 'timestamp=' + Date.now() + (ck ? '&cookie=' + encodeURIComponent('MUSIC_U=' + ck) : ''), ms || 12000);
 }
 function _plNcmJSON(txt) { try { return JSON.parse(String(txt || '')); } catch (e) { return null; } }
+// 账号那一路取歌单/单曲的清单（比 meting 多两样：带时长、登录后私密歌单也取得到）。取不到回空数组
+async function _plNcmList(g) {
+  if (!g) return [];
+  if (g.as === 'list') {
+    const j = _plNcmJSON(await _plNcmAsk('/playlist/detail?id=' + encodeURIComponent(String(g.id)), 14000));
+    const pl = j && j.playlist ? j.playlist : null;
+    if (!pl || !Array.isArray(pl.tracks)) return [];
+    return pl.tracks.map(x => _plNcmRow(x)).filter(Boolean);
+  }
+  const j = _plNcmJSON(await _plNcmAsk('/song/detail?ids=' + encodeURIComponent(String(g.id)), 12000));
+  const arr = j && Array.isArray(j.songs) ? j.songs : [];
+  return arr.map(x => _plNcmRow(x)).filter(Boolean);
+}
+// 账号那一路的歌的形状（日推∶歌单∶单曲三种回包同一形状：id/name/ar[]/dt 毫秒）
+function _plNcmRow(s) {
+  if (!s || !s.id) return null;
+  const ar = Array.isArray(s.ar) ? s.ar : (Array.isArray(s.artists) ? s.artists : []);
+  return { nid: String(s.id), name: String(s.name || '').trim(), artist: ar.map(x => x && x.name).filter(Boolean).join(' / '),
+    dur: Math.round(Number(s.dt || s.duration || 0) / 1000) || 0 };
+}
 // 带 cookie 问真实播放地址（/song/url/v1 回 JSON，跟 meting 的「直接给声音」不一样，要先拆一层）：
-// 只有取到了才用；没取到回空串，调用方退回 meting。http→https：本站是 https 页，
-// http 的 src 会被浏览器当混合内容整条拦掉，而网易云那批音频域名的 https 都是开着的。
+// 只有取到了才用；没取到回空串，调用方退回 meting。
 async function _plNcmRealUrl(nid) {
   if (!nid || !_plNcmBase()) return '';
   const j = _plNcmJSON(await _plNcmAsk('/song/url/v1?id=' + encodeURIComponent(String(nid)) + '&level=standard', 9000));
@@ -198,27 +228,40 @@ async function _plNcmRealUrl(nid) {
   return u ? _plNcmFixUrl(u) : '';
 }
 // http→https：本站是 https 页，http 的 src 会被浏览器当混合内容整条拦掉，而网易云那批音频域名的 https 都是开着的。
-// （2026-10-14：原先还要豁免「用户自己那台中转」的裸 http 地址，中转下线后那段判断一并去掉。）
+// ⚠ 但**用户自己填那台给出的地址不能动**：那多半是局域网的裸 http（192.168.x.x:8711），
+//   一律升 https 等于把能放的那首改成放不出（2026-10-13 桩服务实测踩到）。按主机名判，不按整条串判。
 function _plNcmFixUrl(u) {
   const s = String(u || ''); if (!s) return '';
+  const api = _plNcmApi().toLowerCase();
+  if (api && s.toLowerCase().indexOf(api) === 0) return s;
   return s.replace(/^http:\/\//i, 'https://');
 }
 
-/* ===== 二·五、网易云账号（2026-10-13 二批；2026-10-14 按用户要求摘掉中转那一族）=====
+
+/* ===== 二·五、网易云账号（2026-10-13 二批；2026-10-14 摘掉 QQ 那一档；2026-10-15 二批把日推与我的歌单加回来）=====
    两条登录路写进同一格 data.player.ncmCookie —— ①扫码（/login/qr key→create→check）②手填 MUSIC_U（love-boat 同款）。
-   读侧只有 _plNcmCookie 一处＝两条路不是两套状态。
-   ⚠ 那条「必须先填中转地址才给点」的旧闸门随中转下线一起拆了：现在两枚键都点得动，取不到就当场说取不到
+   读侧只有 _plNcmCookie 一处＝两条路不是两套状态。三样账号读数（昵称∶日推∶我的歌单）都问 _plNcmAsk 一句话，
+   基地址解析只住 _plNcmBase() 一处。
+   ⚠ 那条「必须先填中转地址才给点」的旧闸门随中转下线一起拆了：现在每枚键都点得动，取不到就当场说取不到
    （#327 那句「点了没反应」的教训：宁可点了之后说实话，也不做一枚按下去没动静的键）。
-   ⚠ 日推（/recommend/songs）与我的歌单（/user/playlist）原先住这一族、且只有中转走得到＝随中转一并下线，
-   不再占「发现」那一面（零死键：不画一枚按下去只会转圈的入口）。
+   ⚠ 日推（/recommend/songs）与我的歌单（/user/playlist）2026-10-14 被 #422 那一批当成「中转那一族」连带删了，
+   而用户当时选的是「中转＋QQ 下线·网易云登录保留」＝删过头（他复报「功能不全」，本轮按他的定档加回来）：
+   这两样要的是**网易云账号**，与 QQ 与那台局域网服务无关，只是它们都得有一台答话的接口——故这一族补一格
+   「网易云接口地址」（data.player.ncmApi），不填走公开实例、答不上就在屏上写清楚是哪一种失败。
    票据与昵称都只存在这台设备上（ncmCookie 进 data＝跟着那份备份走，别处不发）。 */
 let plQrKey = '', plQrTimer = 0, plQrSay = '', plQrImg = '', plNcmProfile = null, plNcmSyncAt = 0,
-  plFindKw = '', plFindSay = '', plFindRows = null, plFindBad = false;
+  plFindKw = '', plFindSay = '', plFindRows = null, plFindBad = false,
+  plNcmDaily = [], plNcmDailySay = '', plNcmDailySeq = 0,
+  plNcmLists = [], plNcmListsSay = '', plNcmListsSeq = 0, plNcmSayWhy = '';
 function _plNcmLogged() { return !!_plNcmCookie(); }
+// 换号∶退出∶换接口＝那两把清单与昵称都作废（不清＝屏上还挂着上一个号推荐过的歌）
+function _plNcmResetMine() { plNcmProfile = null; plNcmSyncAt = 0; plNcmSayWhy = ''; plNcmDaily = []; plNcmDailySay = ''; plNcmLists = []; plNcmListsSay = ''; }
 function _plNcmName() { return (plNcmProfile && String(plNcmProfile.nickname || '')) || ''; }
 function _plNcmStopQr() { if (plQrTimer) { clearTimeout(plQrTimer); plQrTimer = 0; } }
 function _plCookieIn(s) { const m = String(s || '').match(/MUSIC_U=([^;]+)/); return m ? m[1] : ''; }
-// 问一次登录态拿昵称/头像；失败不编名字（屏上就写「已登录」），一分钟内不重复问
+// 问一次登录态拿昵称/头像；失败不编名字（屏上就写「已登录」），一分钟内不重复问。
+// 两种失败分开记在 plNcmSayWhy（#422 二批用户复报「一直显示 cookie 失效」的根＝旧版把「接口压根没答上」
+// 与「答了但里面没有 profile」混成一句话，让人照着换票据——换票救治不了连不上的接口）。
 function _plNcmSyncProfile(force) {
   if (!_plNcmLogged()) { plNcmProfile = null; return Promise.resolve(null); }
   if (!force && plNcmProfile && Date.now() - plNcmSyncAt < 60000) return Promise.resolve(plNcmProfile);
@@ -226,9 +269,11 @@ function _plNcmSyncProfile(force) {
     const j = _plNcmJSON(txt);
     const p = (j && j.data && j.data.profile) || (j && j.profile) || null;
     // uid 一起留着（#330：「我的歌单」要拿它问 /user/playlist；profile 不落库＝每次进面板现问现用）
-    if (p) { plNcmProfile = { uid: String(p.userId || ''), nickname: String(p.nickname || ''), avatar: String(p.avatarUrl || '') }; plNcmSyncAt = Date.now(); }
+    if (p) { plNcmProfile = { uid: String(p.userId || ''), nickname: String(p.nickname || ''), avatar: String(p.avatarUrl || '') }; plNcmSyncAt = Date.now(); plNcmSayWhy = ''; }
+    // 空串＝那一台压根没答（连不上∶超时∶非 2xx）；答了但里面没 profile＝票据取不到人（过期/填错）
+    else plNcmSayWhy = txt ? 'cookie' : 'down';
     return plNcmProfile;
-  }).catch(() => plNcmProfile);
+  }).catch(() => { plNcmSayWhy = plNcmSayWhy || 'down'; return plNcmProfile; });
 }
 function plNcmQrStart() {
   _plNcmStopQr();
@@ -258,7 +303,7 @@ function plQrPoll(n) {
       const ck = _plCookieIn(j && j.cookie);
       if (!ck) { plQrImg = ''; plQrSay = '手机上确认了，但没拿到票据·再点一次'; renderPlayerNcm(); return; }
       _plRoot().ncmCookie = ck; save();
-      plQrImg = ''; plQrSay = '登录成功';
+      plQrImg = ''; plQrSay = '登录成功'; plNcmSayWhy = ''; _plNcmResetMine();
       // 提示等问完登录态再念：带昵称的那句才是「登录成功」（#330：只念「已登录」＝用户不知道登的是谁）
       _plNcmSyncProfile(true).then(() => { renderPlayerNcm(); renderPlayerSettings(); renderPlayerAll(); showToast('网易云登录成功' + (_plNcmName() ? ' · ' + _plNcmName() : '')); });
       return;
@@ -269,7 +314,7 @@ function plQrPoll(n) {
 }
 function plNcmLogout() {
   _plNcmStopQr();
-  plQrKey = ''; plQrImg = ''; plQrSay = ''; plNcmProfile = null;
+  plQrKey = ''; plQrImg = ''; plQrSay = ''; _plNcmResetMine();
   _plRoot().ncmCookie = ''; save();
   renderPlayerNcm(); renderPlayerSettings(); renderPlayerAll();
   showToast('已退出网易云；免费歌照旧能放');
@@ -295,16 +340,39 @@ function renderPlayerNcm() {
         '<span class="pl-ar">会员歌取完整版 · 票据只在这台设备上</span></span></div>'
       : '<div class="pl-note">不登录照旧放免费歌。手填 MUSIC_U 不用装任何东西；二维码登录要用网易云 App 扫一下。</div>') +
     st +
+    '<div class="pl-set-row" data-pl-act="ncmapi"><span class="pl-tx"><b>网易云接口地址</b><small>' +
+    escapeHTML(_plNcmApi() || '没填·走公开那台实例（别人共享的机器，常不答；要日推∶歌单∶会员歌就填你自己那台）') +
+    '</small></span><span class="pl-chev">改</span></div>' +
+    (logged && plNcmSayWhy ? '<div class="pl-qr-st">' +
+      escapeHTML(plNcmSayWhy === 'down' ? '那台接口没答上＝昵称与日推都取不到（不是 cookie 失效，先改地址或过一会儿再试）'
+        : '接口答了，但取不到账号信息＝cookie 多半过期了，重新复制一份 MUSIC_U') + '</div>' : '') +
     '<div class="pl-acts">' +
     (logged
       ? '<button type="button" class="pl-btn" data-pl-act="ncmqr">换个号登</button><button type="button" class="pl-btn" data-pl-act="ncmout">退出登录</button>'
       : '<button type="button" class="pl-btn pri" data-pl-act="ncmcookie">手填 MUSIC_U</button>' +
         '<button type="button" class="pl-btn" data-pl-act="ncmqr">二维码登录</button>') +
     '</div>' +
-    '<div class="pl-note">搜歌不用登录：播放器第一格「发现」随时能搜（走公开接口）。登录只为了放会员歌的完整版。</div>';
+    '<div class="pl-note">搜歌不用登录：播放器第一格「发现」随时能搜（走公开接口）。登录与那两把清单（每日推荐∶我的歌单）用的是上面那一台接口。</div>';
 }
-// ===== 发现那一面（#335）：搜索搬出弹层进播放器第一格；2026-10-14 日推与我的歌单随中转下线 =====
-//   旧家＝搜索住在「添加」贴底面板（要三层深才点得到）。这一面现在就是一只搜索框＋结果栏＋一句怎么说。
+// 「接口地址」那一行：填与清空都当场问一次登录态（只存不问＝屏上永远「已登录」却不知道登的是谁，#330 那一课）
+function plNcmApiSet() {
+  window.openModal('网易云接口地址', _plNcmApi(), v => {
+    const s = String(v || '').trim().replace(/\/+$/, '');
+    if (s && !/^https?:\/\/\S+$/i.test(s)) { showToast('填一整条地址，如 http://192.168.1.5:8711 或 https://某台.vercel.app'); return; }
+    _plRoot().ncmApi = s; save();
+    plNcmProfile = null; plNcmSayWhy = ''; plNcmSyncAt = 0;
+    plNcmDaily = []; plNcmDailySay = ''; plNcmLists = []; plNcmListsSay = '';
+    renderPlayerNcm(); renderPlayerSettings();
+    if (!s) { renderPlayerAll(); showToast('清空了＝走公开那台实例'); return; }
+    // 换一台接口＝账号那三样全部重来，所以当场问一次：成功带昵称，失败说清是哪一种失败
+    _plNcmSyncProfile(true).then(pf => {
+      renderPlayerNcm(); renderPlayerAll();
+      showToast(pf && pf.nickname ? '接口已接上 · ' + pf.nickname : '地址存了·这台暂时没答上（它还在跑吗？手机与它同一网络吗？）');
+    });
+  }, { staticText: '留空＝用公开那台实例。要「每日推荐∶我的歌单∶会员歌完整版」就得有一台答话的接口——自己那台最稳：在同一网络里跑一台 NeteaseCloudMusicApi（例：http://192.168.1.5:8711），把它的地址填这里。本站不代存你的票据，也不把它发给第三台机器。' });
+}
+// ===== 发现那一面（#335）：搜索搬出弹层进播放器第一格；#422 二批把日推与我的歌单加回这一面 =====
+//   旧家＝搜索住在「添加」贴底面板（要三层深才点得到）。这一面＝一只搜索框＋结果栏＋账号那两把清单＋最近收的歌。
 //   ⚠ 左右内距由外层 .pl-find 一处给（站内 .pl-body 自己不垫边距，行件各有各的内距口径）——
 //     这一面里的件（set-lab/search/res/add-log）本来都是「贴左贴右」的画法，少了那一层就是
 //     「字画到屏幕外面去」（用户 2026-10-14 报的「字都飞出手机屏幕了」）。
@@ -325,8 +393,7 @@ function renderPlayerFind() {
   const kwEl = document.getElementById('plSearchKw');
   if (kwEl && kwEl.value) plFindKw = kwEl.value;
   // 2026-10-14 重排：整面套一层 .pl-find 拿左右内距（原先这一面直接挂在 .pl-body 上＝内容贴边被裁）。
-  // 日推与我的歌单随中转下线一并撤走，空出来的下半屏补一块「曲库里最近收的」——已有数据换处露脸，
-  // 不是新功能：默认落在这一格的人，开机就能看见自己的歌并直接点播。
+  // 下半屏那块「曲库里最近收的」不是新功能：默认落在这一格的人，开机就能看见自己的歌并直接点播。
   const latest = plTracks().slice().reverse().slice(0, 5);
   body.innerHTML = '<div class="pl-find">' +
     '<div class="pl-set-lab">搜一首<span>公开接口 · 不用登录</span></div>' +
@@ -337,8 +404,99 @@ function renderPlayerFind() {
     (logged ? '已登录' + (_plNcmName() ? ' · ' + escapeHTML(_plNcmName()) : '') + '·会员歌取完整版（点开可退出）'
       : '未登录·免费歌照旧能放（点开可登录）') +
     '</small></span><span class="pl-chev">' + (logged ? '›' : '登录') + '</span></div>' +
+    (logged ? _plNcmMineHTML() : '') +
     (latest.length ? '<div class="pl-set-lab">曲库里最近收的<span>点一行就播</span></div>' + latest.map(t => _plRowHTML(t, 0)).join('') : '') +
     '</div>';
+  // 登录了才取这两把清单；取过∶正在取（say 有字）∶取着（rows 非空而 say 空＝已到手）都不重发，
+  // 只有「一行没有也没说过」＝没发起过，才发第一趟。重画这一面（切 tab∶收歌）不该每次刷新一趟网络。
+  if (logged) {
+    if (!plNcmDaily.length && !plNcmDailySay) plNcmDailyLoad();
+    if (!plNcmLists.length && !plNcmListsSay) plNcmListsLoad();
+  }
+}
+// 账号那两把清单的 HTML（日推∶我的歌单）——「正在取…」∶一句实话∶行，三种都住同一格里。
+// 取不到时那行小字后面永远跟着两枚去处（重新取∶改接口地址），不留一句只能看着的抱怨（提醒要可执行）。
+function _plNcmMineHTML() {
+  const api = _plNcmApi();
+  const row = (s, say, kind) =>
+    '<div class="pl-set-lab">' + s + '<span>' + escapeHTML(api ? '走你填的那台接口' : '走公开接口·可能不答') +
+    '<button type="button" class="pl-link" data-pl-act="ncm' + kind + 'refresh">重新取</button>' +
+    '<button type="button" class="pl-link" data-pl-act="ncmapi">接口地址</button></span></div>' +
+    (say ? '<div class="pl-qr-st">' + escapeHTML(say) + '</div>' : '');
+  const daily = row('每日推荐', plNcmDailySay, 'daily') +
+    plNcmDaily.map(r =>
+      '<button type="button" class="pl-res" data-pl-act="ncmplay" data-nid="' + escapeHTML(r.nid) + '" data-nm="' + escapeHTML(r.name) +
+      '" data-ar="' + escapeHTML(r.artist) + '" data-du="' + (r.dur || 0) + '">' +
+      '<span class="pl-tx"><b>' + escapeHTML(r.name) + '</b><small>' + escapeHTML(r.artist || '未知歌手') +
+      (r.dur ? ' · ' + _plDur(r.dur) : '') + '</small></span><span class="pl-chev">播</span></button>').join('');
+  const lists = row('我的歌单', plNcmListsSay, 'lists') +
+    plNcmLists.map(r =>
+      '<button type="button" class="pl-res" data-pl-act="ncmimport" data-pid="' + escapeHTML(r.id) + '" data-pnm="' + escapeHTML(r.name) + '">' +
+      '<span class="pl-tx"><b>' + escapeHTML(r.name) + '</b><small>' + r.count + ' 首</small></span><span class="pl-chev">收</span></button>').join('');
+  return daily + lists;
+}
+// 日推∶我的歌单各走一句话（口径同 _plNcmSyncProfile：seq 只防「慢回包盖掉新一次」＝点两下不会出一份混着的账）
+function plNcmDailyLoad() {
+  const seq = ++plNcmDailySeq;
+  plNcmDaily = []; plNcmDailySay = '正在取每日推荐…'; renderPlayerFind();
+  _plNcmAsk('/recommend/songs', 14000).then(txt => {
+    if (seq !== plNcmDailySeq) return;
+    const j = _plNcmJSON(txt);
+    const arr = (j && j.data && Array.isArray(j.data.dailySongs)) ? j.data.dailySongs : [];
+    plNcmDaily = arr.slice(0, 30).map(x => _plNcmRow(x)).filter(Boolean);
+    plNcmDailySay = plNcmDaily.length ? '' : _plNcmWhyNoAnswer(txt);
+    renderPlayerFind();
+  }).catch(() => { if (seq !== plNcmDailySeq) return; plNcmDailySay = '这一趟没走通（过一会儿再重新取）'; renderPlayerFind(); });
+}
+function plNcmListsLoad() {
+  const seq = ++plNcmListsSeq;
+  plNcmLists = []; plNcmListsSay = '正在取你的歌单…'; renderPlayerFind();
+  const go = uid => {
+    _plNcmAsk('/user/playlist?uid=' + encodeURIComponent(uid) + '&limit=30&offset=0', 14000).then(txt => {
+      if (seq !== plNcmListsSeq) return;
+      const j = _plNcmJSON(txt);
+      const arr = (j && Array.isArray(j.playlist)) ? j.playlist : ((j && j.data && Array.isArray(j.data.playlist)) ? j.data.playlist : []);
+      plNcmLists = arr.filter(x => x && x.id).map(x => ({ id: String(x.id), name: String(x.name || '歌单'), count: Number(x.trackCount) || 0 }));
+      plNcmListsSay = plNcmLists.length ? '' : _plNcmWhyNoAnswer(txt);
+      renderPlayerFind();
+    }).catch(() => { if (seq !== plNcmListsSeq) return; plNcmListsSay = '这一趟没走通（过一会儿再重新取）'; renderPlayerFind(); });
+  };
+  const uid = plNcmProfile && plNcmProfile.uid;
+  if (uid) { go(uid); return; }
+  _plNcmSyncProfile(true).then(pf => {
+    if (seq !== plNcmListsSeq) return;
+    if (pf && pf.uid) go(pf.uid);
+    // 「答不上」那句话按有没有填地址说（填了还劝人「填你自己那台」＝一句对不上现状的话），
+    // 只有答了但里面没账号信息才是票据的事
+    else { plNcmListsSay = plNcmSayWhy === 'cookie' ? '票据取不到账号信息（cookie 过期了·重填一次 MUSIC_U）'
+      : plNcmSayWhy === 'down' ? _plNcmWhyNoAnswer('') : ''; renderPlayerFind(); }
+  });
+}
+// 一句「为什么没取到」：接口压根没答 ≠ 答了但这一趟没东西（后者往往是私密歌单＝不怪接口）
+function _plNcmWhyNoAnswer(txt) {
+  if (!txt) return _plNcmApi() ? '那台接口没答上（它还在跑吗？手机与它在同一个网络吗？）'
+    : '公开那台接口没答上（它常常抽风·过一会儿再重新取，或填你自己那台）';
+  return '没取到东西（这一趟要登录网易云才有·私密歌单也一样）';
+}
+// 整本歌单收进曲库：填了自己那台走账号口（私密歌单也取得到），没走通再退公开 meting 那一趟
+async function plNcmImport(pid, nm) {
+  nm = String(nm || '歌单');
+  plNcmListsSay = '《' + nm + '》正在取清单…'; renderPlayerFind();
+  let songs = [];
+  if (_plNcmApi()) songs = await _plNcmList({ as: 'list', id: pid });
+  if (!songs.length) songs = _plMetingList(await _plFetchText(PL_NCM_API + '?server=netease&type=playlist&id=' + encodeURIComponent(String(pid)), 14000));
+  songs = songs.filter(s => s && s.nid);
+  if (!songs.length) { plNcmListsSay = '《' + nm + '》没取到清单（要联网；私密歌单要填你自己那台接口）'; renderPlayerFind(); return; }
+  let got = 0;
+  songs.forEach(s => {
+    const id = 'ncm' + s.nid;
+    if (plById(id)) return;
+    got++;
+    _plPushTrack({ id, nid: s.nid, name: s.name || ('网易云 ' + s.nid), artist: s.artist, src: 'ncm', dur: Number(s.dur) || 0, added: Date.now() });
+  });
+  plNcmListsSay = '《' + nm + '》收了 ' + got + ' 首' + (got < songs.length ? '·其余 ' + (songs.length - got) + ' 首已经在库里' : '');
+  renderPlayerAll();
+  showToast(got ? '收了 ' + got + ' 首进曲库' : '这一单的歌都在曲库里了');
 }
 // 搜索一路（2026-10-14 中转下线后只剩这一路）：公开 meting 实例的 type=search（免登录、只有免费音质）。
 //   结果存进 plFindRows/plFindSay＝重画不丢（页面上的结果不再像面板里那样只活到下一次重画）。
@@ -1041,9 +1199,13 @@ async function plAddPaste(text) {
     const d = row(g && g.kind === 'ncm' ? (g.as === 'list' ? '网易云歌单 ' : '网易云单曲 ') + g.id + ' · 正在取清单' : '在看这一行…');
     if (!g || g.kind === 'no') { say(d, g && g.why ? g.why : '认不出这一行', true); continue; }
     if (g.kind === 'ncm') {
-      // 一路到底（2026-10-14 中转下线后）：公开 meting 实例的 playlist/song 两档；这一路要联网
-      const url = PL_NCM_API + '?server=netease&type=' + (g.as === 'list' ? 'playlist' : 'song') + '&id=' + encodeURIComponent(g.id);
-      const songs = _plMetingList(await _plFetchText(url, 14000));
+      // 两路：填了自己那台接口＝先问账号那一路（带时长、私密歌单也取得到），取不到或没填再退公开 meting。
+      // 两条都要联网；meting 那台 injahow 只认 url/playlist/song（同一形状，一个解析器就够）。
+      let songs = _plNcmApi() ? await _plNcmList(g) : [];
+      if (!songs.length) {
+        const url = PL_NCM_API + '?server=netease&type=' + (g.as === 'list' ? 'playlist' : 'song') + '&id=' + encodeURIComponent(g.id);
+        songs = _plMetingList(await _plFetchText(url, 14000));
+      }
       let got = 0, dup = 0;
       songs.forEach(s => {
         const id = 'ncm' + s.nid;
@@ -1092,10 +1254,15 @@ function renderPlayerSettings() {
     PL_PERMS.filter(p => p.sec === 'chat').map(p => _plPermRow(p, cfg[p.k], own)).join('') +
     // 2026-10-14：原先这一组叫「音源」、下面挂着网易云账号／网易云中转地址／QQ 音乐中转地址／QQ 音乐账号四行。
     // 用户「把登录 QQ 音乐和中转相关的设置删掉」＝那三行整行下线，只剩「网易云账号」一行。
+  //   #440 二批补回一格「网易云接口地址」（那是昵称∶日推∶我的歌单唯一的出口，与 QQ∶那台局域网服务无关）＝这一组两行。
     '<div class="pl-set-lab">账号<span>全局一份·与按人无关</span></div>' +
     '<div class="pl-set-row" data-pl-act="ncm"><span class="pl-tx"><b>网易云账号</b><small>' +
     (_plNcmLogged() ? '已登录' + (_plNcmName() ? ' · ' + escapeHTML(_plNcmName()) : '') + '（点开可退出）' : '未登录·只放免费音质（点开可登录）') +
     '</small></span><span class="pl-chev">' + (_plNcmLogged() ? '›' : '登录') + '</span></div>' +
+    // #440：接口地址这一格也在这组露一面（它原先只住在账号面板与「发现」那一节的行里＝找它要点两层）
+    '<div class="pl-set-row" data-pl-act="ncmapi"><span class="pl-tx"><b>网易云接口地址</b><small>' +
+    escapeHTML(_plNcmApi() || '没填·走公开那台实例（要日推与自己的歌单就得有一台答话的接口）') +
+    '</small></span><span class="pl-chev">填</span></div>' +
     '<div class="pl-set-lab">危险区<span>清了找不回</span></div>' +
     '<div class="pl-set-row danger" data-pl-act="wipe"><span class="pl-tx"><b>清空曲库</b><small>歌单与收藏一起清·正在播的会停下' +
     (plDelConfirm ? ' —— 再点一次就清' : '') + '</small></span><span class="pl-chev">' + (plDelConfirm ? '确认' : '›') + '</span></div>';
@@ -1320,6 +1487,9 @@ function _plAct(kind, el) {
   // 「中转地址」（relay／ncmrelay）与「QQ 音乐账号」（qqlogin）三个分支 2026-10-14 整条删掉：
   // 那三行设置连同它们的弹层一起下线（用户定档），不留一枚没有宿主的派发口。
   if (kind === 'ncm') { openPlayerNcm(); return; }
+  if (kind === 'ncmapi') { plNcmApiSet(); return; }
+  if (kind === 'ncmdailyrefresh') { plNcmDailyLoad(); return; }
+  if (kind === 'ncmlistsrefresh') { plNcmListsLoad(); return; }
   if (kind === 'ncmqr') { plNcmQrStart(); return; }
   if (kind === 'ncmout') { plNcmLogout(); return; }
   if (kind === 'gosearch') {
@@ -1338,6 +1508,10 @@ function _plAct(kind, el) {
     renderPlayerAll();
     return;
   }
+  if (kind === 'ncmimport') {
+    Promise.resolve(plNcmImport(String(el.dataset.pid || ''), String(el.dataset.pnm || ''))).catch(() => {});
+    return;
+  }
   if (kind === 'ncmsearch') {
     const kw = document.getElementById('plSearchKw');
     Promise.resolve(plNcmSearch(kw ? kw.value : '')).catch(() => {});
@@ -1351,10 +1525,13 @@ function _plAct(kind, el) {
       if (plState.ncm) renderPlayerNcm();
       // #330：手填这条路存完票据必须当场问一次登录态——成功带昵称念出来，失败也说实话（cookie 过期？接口没答上？），
       // 不许像旧版那样只存不问＝面板永远「已登录」却不知道登的是谁。
-      if (!s) { showToast('清空了＝已退出网易云'); return; }
+      if (!s) { _plNcmResetMine(); showToast('清空了＝已退出网易云'); return; }
+      _plNcmResetMine();
       _plNcmSyncProfile(true).then(pf => {
         renderPlayerNcm(); renderPlayerSettings(); renderPlayerAll();
-        showToast(pf && pf.nickname ? '网易云登录成功 · ' + pf.nickname : '票据存了·但没取到账号信息（cookie 过期了？接口没答上？）');
+        showToast(pf && pf.nickname ? '网易云登录成功 · ' + pf.nickname
+          : plNcmSayWhy === 'down' ? '票据存了·但那台接口没答上（不是 cookie 失效；点「网易云接口地址」换一台或过一会儿再试）'
+            : '票据存了·接口答了但取不到账号信息＝cookie 过期了，重新复制一份 MUSIC_U');
       });
     }, { staticText: '拿法：电脑浏览器登录 music.163.com → F12（右键·检查）→ 应用 / Application → Cookies → music.163.com → 复制 MUSIC_U 那一行的值。只填值本身；填了会员歌放完整版，不填也能放免费歌；想退出登录就把这里清空按确定。' });
     return;
