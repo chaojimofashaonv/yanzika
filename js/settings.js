@@ -22,6 +22,10 @@ function _apSh() {
 // 主题侧我方气泡的底色写在 `.mine .bubble`（0,2,0）、对方配色档在 body 属性选择器上——
 // 用户照直觉写 `.bubble{background:...}`（0,1,0）＝我方那半永远打不过，看起来就是「整段没生效」。
 // 这里给每条规则的选择器统一加一层 `body[data-ap-bubcss] ` 前缀（＝每条 +1 个类级权重），
+// ⚠ #448：上一版把「已处理完的块」与「待处理的选择器」混在同一个 out 累加器里没有翻清——
+//   从第二条规则起 `_sel` 收到的是一整段先前输出：已带前缀的选择器被再包一层（body 的后代 body＝永不匹配），
+//   声明值里的逗号（rgba(0,0,0,.18) 那种）被当逗号分隔选择器逐段乱挂前缀＝整段 CSS 变垃圾＝照样「全没生效」，
+//   连输入框 placeholder 自己教的两行示例都中弹。这版分两个账：res 装成品、out 只当条选择器，过一块翻一次清。
 // 写错也不会弄坏页面：引号字符串与注释整段原样搬，@media 块整体下钻一层继续加，括号不配对就放弃加权、原文照用。
 function _scopeBubbleCss(css) {
   const _sel = s => s.split(',').map(p => {
@@ -30,7 +34,7 @@ function _scopeBubbleCss(css) {
     return 'body[data-ap-bubcss] ' + t;
   }).join(', ');
   const _scan = s => {
-    let out = '', i = 0;
+    let res = '', out = '', i = 0;
     while (i < s.length) {
       const c = s[i];
       if (c === '"' || c === "'") {   // 字符串整段搬（转义的闭引号不算）
@@ -51,17 +55,22 @@ function _scopeBubbleCss(css) {
           if (s[j] === '{') dep++; else if (s[j] === '}') dep--;
           j++;
         }
-        if (dep !== 0) return s;   // 括号不配对＝不折腾，原文照用（老行为）
+        if (dep !== 0) return null;   // 括号不配对＝整段放弃加权（调用方原文照用；只回「剩下半截」会丢掉已扫出的前半）
         const inner = s.slice(i + 1, j - 1);
-        if (out.trim().charAt(0) === '@') out += '{' + _scan(inner) + '}';
-        else out = _sel(out) + '{' + inner + '}';
+        if (out.trim().charAt(0) === '@') {
+          const sub = _scan(inner);
+          res += out + '{' + (sub === null ? inner : sub) + '}';
+        } else {
+          res += _sel(out) + '{' + inner + '}';
+        }
+        out = '';   // ★#448 的分水岭：成品进了 res，out 每过一块翻清——下一条规则拿到的选择器是干净的
         s = s.slice(j); i = 0; continue;
       }
       out += c; i++;
     }
-    return out;
+    return res + out;
   };
-  try { return _scan(css); } catch (e) { return css; }
+  try { const r = _scan(css); return r === null ? css : r; } catch (e) { return css; }
 }
 function applyAppearance() {
   const a = _apView();
@@ -79,7 +88,9 @@ function applyAppearance() {
   // 毛玻璃强度（--frost-blur）与「气泡也吃」（data-ap-frost-bubble）：只在 frost 开时被 theme.css 消费，值一直写不会错
   const _fb = Math.min(24, Math.max(0, Math.round(Number(a.frostBlur)) || 14));
   b.style.setProperty('--frost-blur', _fb + 'px');
-  b.dataset.apFrostBubble = a.frostBubble ? 'on' : 'off';
+  b.dataset.apFrostBubble = a.frostBubble ? 'on' : 'off';   // 气泡磨砂是聊天页的独立开关，强度也自成一根（--frost-bubble-blur，不跟卡片强度）
+  const _fbb = Math.min(24, Math.max(0, Math.round(Number(a.frostBubbleBlur)) || 12));
+  b.style.setProperty('--frost-bubble-blur', _fbb + 'px');
   b.dataset.apDensity = a.density;
   b.dataset.apTime = a.showTime ? 'on' : 'off';
   b.dataset.apSendbtn = a.sendBtn === false ? 'off' : 'on';
@@ -586,6 +597,9 @@ function renderPyPunctChips() {
     grid.querySelectorAll('.ap-dot').forEach(c => c.classList.toggle('active', c === chip));
     echoApDotNames();
     applyAppearance();
+    // 美化那几排的卡拆成多张后（2026-10-15），每张折头的摘要各报各节：点完当场重算，
+    // 不然折起卡读到的是上一次的旧话（与全局 chips 那条委托同一口径）
+    if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
     await flushSave();
   });
 });
@@ -634,6 +648,7 @@ function echoApDotNames() {
     const out = $(outSel);
     if (out) out.textContent = v + '%';
     applyAppearance();
+    if (typeof renderFoldSummaries === 'function') renderFoldSummaries();   // 「聊天背景」折头的压暗/透明度读数跟着杆走（拆卡后它不在当场可见的卡体里，纯字符串重算不费什么）
   });
   el.addEventListener('change', () => save());
 });
@@ -647,10 +662,14 @@ $('#chatBgInput').onchange = async e => {
   const img = await fileData(e.target.files[0], 1440, 0.8);
   if (!img) return;
   _caSh().chatBg = img;
+  // 自动压暗：按图片亮度给这一本定一个压暗默认（亮图压得多、暗图压得少），之后仍可在“压暗”杆上改。
+  const sug = _bgVeilSuggest(await _imgLuma(img), 100);
+  if (sug !== null) _caSh().bgVeil = sug;
   applyAppearance();
   renderApSettings();
   await flushSave();
-  showToast('背景已更新');
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
+  showToast(sug !== null ? ('背景已更新·压暗自动设 ' + sug + '%') : '背景已更新');
   e.target.value = '';
 };
 $('#apBgClear').onclick = async () => {
@@ -658,6 +677,7 @@ $('#apBgClear').onclick = async () => {
   applyAppearance();
   renderApSettings();
   await flushSave();
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
 };
 
 // 「恢复本会话默认外观」（2026-10-14）：这一位 TA 的外观档此前没有一键回头路。
@@ -725,6 +745,16 @@ function _echoDeskPopRows() {
   const rows = data.appearance.deskPopRows === 1 ? '1' : '2';
   row.querySelectorAll('.contact-chip').forEach(ch => ch.classList.toggle('active', ch.dataset.rows === rows));
 }
+// 横幅最右那枚 × 关闭钮：即点即存（判据只有一处 js/deskpop.js 的 deskPopCloseBtnOn，出厂关＝不画）。
+// 关着不是「关不掉」：横幅本来就靠右滑／拖拽收起（js/deskpop.js 那一族），屏上提示里把这一句写明。
+const _deskPopCloseToggle = $('#deskPopCloseToggle');
+if (_deskPopCloseToggle) _deskPopCloseToggle.addEventListener('change', async e => {
+  data.appearance.deskPopCloseBtn = e.target.checked;
+  await flushSave();
+  // 已经挂在屏上的那几条当场跟上（不等到那 6 秒自动收起）
+  if (typeof deskPopSyncCloseBtn === 'function') deskPopSyncCloseBtn();
+  showToast(e.target.checked ? '已显示 × 关闭钮' : '已收起 × 关闭钮，桌面前台弹窗可以右滑关闭');
+});
 // 夜间免打扰三档 chips（每晚问我／到点自动开／不用了）：即点即存，读写与生效都在 js/night.js（BUGS #306）。
 // 只有 setNightMode 一个写手——「不用了」连同 on 一起清，那一条判据不在这里再写一遍（两处写必漂）
 const _nightModeRow = $('#nightModeRow');
@@ -810,6 +840,65 @@ function renderFrost() {
   if (rng) rng.value = v;
   const out = $('#frostBlurOut');
   if (out) out.textContent = v + 'px';
+}
+// 气泡磨砂强度滑杆（0~24px，聊天外观那枚气泡毛玻璃专用，与卡片强度各一根）：同 frost 口径——拖到哪当场生效
+// （applyAppearance 写 --frost-bubble-blur），不弹 toast；只在气泡开关开着时画（关上整节收起，不留死杆）。松手 change 落盘一次。
+const _frostBubbleRange = $('#frostBubbleBlurRange');
+if (_frostBubbleRange) {
+  _frostBubbleRange.addEventListener('input', () => {
+    const v = Math.min(24, Math.max(0, Math.round(Number(_frostBubbleRange.value)) || 12));
+    data.appearance = data.appearance || {};
+    data.appearance.frostBubbleBlur = v;
+    applyAppearance();
+    renderFrostBubble();
+  });
+  _frostBubbleRange.addEventListener('change', () => save());
+}
+// 气泡那一行的回显：开关开着才亮「强度」那一节并回填滑杆（由 echoApSets 搭便车，与 renderFrost 同一入口）。
+function renderFrostBubble() {
+  const on = !!((data.appearance || {}).frostBubble);
+  const opts = $('#frostBubbleOpts');
+  if (opts) opts.hidden = !on;
+  if (!on) return;
+  const v = Math.min(24, Math.max(0, Math.round(Number((data.appearance || {}).frostBubbleBlur)) || 12));
+  const rng = $('#frostBubbleBlurRange');
+  if (rng) rng.value = v;
+  const out = $('#frostBubbleBlurOut');
+  if (out) out.textContent = v + 'px';
+}
+// ===== 主题预设（外观页顶部那排 chips，2026-10-15）=====
+// 纯宏：把几个已有 appearance 键一次写好，走同一套 save＋applyAppearance＋回显，不新增字段、不做第二套实现。
+// 不碰 deskBg（不覆盖用户上传的壁纸）与气泡颜色（各归各的控件）。套完仍可单独微调；手改后 _echoTheme 认不出成套→都不高亮（如实）。
+const AP_THEMES = {
+  fresh:   { frost: false, frostBubble: false, frostBlur: 14, corner: 'medium', deskBgBlur: 0 },
+  soft:    { frost: false, frostBubble: false, frostBlur: 14, corner: 'large',  deskBgBlur: 0 },
+  glass:   { frost: true,  frostBubble: false, frostBlur: 18, corner: 'large',  deskBgBlur: 0 },
+  immerse: { frost: true,  frostBubble: true,  frostBlur: 18, corner: 'large',  deskBgBlur: 8 }
+};
+const _themeRow = $('#themePresetRow');
+if (_themeRow) _themeRow.addEventListener('click', async e => {
+  const chip = e.target.closest('.contact-chip');
+  if (!chip) return;
+  const t = AP_THEMES[chip.dataset.theme];
+  if (!t) return;
+  data.appearance = data.appearance || {};
+  Object.assign(data.appearance, t);
+  await save();
+  applyAppearance();
+  if (typeof applyDeskVars === 'function') applyDeskVars();   // 背景模糊那根在桌面背景卡里，随套一并生效与回显
+  renderApSettings();                                          // 刷新外观页所有 chip/滑杆回显（含主题高亮）
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
+  showToast('已套用「' + (chip.textContent || '') + '」');
+});
+function _echoTheme() {
+  const row = $('#themePresetRow');
+  if (!row) return;
+  const a = data.appearance || {};
+  const keys = ['frost', 'frostBubble', 'frostBlur', 'corner', 'deskBgBlur'];
+  row.querySelectorAll('.contact-chip').forEach(ch => {
+    const t = AP_THEMES[ch.dataset.theme];
+    ch.classList.toggle('active', !!(t && keys.every(k => a[k] === t[k])));
+  });
 }
 // 外观档位 chips 的白名单——与 js/db.js 的 ensureData 必须同口径，两处不一致就会出现
 // 「点了屏上不动、刷新又回落」那种两头都对不上的状态。
@@ -902,6 +991,7 @@ function echoApSets() {
     if (sum) sum.textContent = hit ? hit.textContent : '';
   });
   renderFrost();   // frost 开了才亮「强度＋气泡」那一节；搭这一趟便车，不在每处 chip 处理器里各写一遍
+  renderFrostBubble();   // 气泡毛玻璃开了才亮它自己那根强度滑杆（聊天外观卡里，与卡片 frost 各走各的）
 }
 // 底色档：soft 暖光玻璃（默认）∕ frost 霜白 ∕ flat 纯白 ∕ warm 暖米。旧的「雪原高差／素白／冷白」与
 // 「素白／冷白」两批档位实现（body[data-ap-tier]／[data-ap-snow]）已整族撤除；现在这一族只有
@@ -966,6 +1056,7 @@ $('#customBubbleCssRemove').onclick = async () => {
   applyAppearance();
   renderApSettings();
   await flushSave();
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
   showToast('已移除自定义气泡样式');
 };
 // 自定义气泡CSS：输入框应用/清空
@@ -975,6 +1066,7 @@ $('#customBubbleCssApply').onclick = async () => {
   applyAppearance();
   renderApSettings();
   await flushSave();
+  if (typeof renderFoldSummaries === 'function') renderFoldSummaries();
   showToast(v ? '气泡样式已更新' : '已移除自定义气泡样式');
 };
 $('#customBubbleCssClear').onclick = () => { $('#customBubbleCssText').value = ''; };
@@ -1039,11 +1131,13 @@ function renderApSettings() {
   }
   _chk('#deskPopupToggle', a.deskPopup !== false);
   _echoDeskPopRows();
+  _chk('#deskPopCloseToggle', a.deskPopCloseBtn === true);   // 出厂关＝不画那枚 ×（不跟着 a.xxx !== false 那一档写）
   renderNightSettings();
   if (typeof renderSilentEntry === 'function') renderSilentEntry();   // 主动消息入口行那句小字（读数在 js/silent.js 一处）
   if (typeof renderDeskStation === 'function') renderDeskStation();     // 桌面背景已内联进这一页：预设缩略/三杆读数随本 tab 回显
   _echoUiFontScale();
   echoApSets();
+  _echoTheme();   // 主题预设那排 chip：当前各项与哪套逐字吻合就高亮那一枚
   // 字体状态
   const fs = $('#customFontStatus');
   if (fs) fs.textContent = a.customFontName || '未加载';

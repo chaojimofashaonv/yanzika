@@ -1,4 +1,4 @@
-const CACHE_PREFIX = 'ordinal-v982';
+const CACHE_PREFIX = 'ordinal-v995';
 const STATIC_CACHE = CACHE_PREFIX + '-static';
 const DATA_CACHE = CACHE_PREFIX + '-data';
 

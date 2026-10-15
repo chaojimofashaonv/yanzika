@@ -16,11 +16,20 @@ function _soundCtx() {
 // iOS 适配：AudioContext 只能在用户手势内创建/恢复。用户进页面后第一件事若是收信/TA 回复
 //（非手势时刻触发播放），此前 AudioContext 才第一次创建＝永久 suspended，之后所有音效全哑。
 // 在首个手势里提前创建并 resume，把「解锁」从第一次播放挪到第一次触摸。
+// #432 二批：补 pointerdown＝解锁再早半拍（按下即锁，不必等抬起），首次「点进入/点字卡」
+// 当场就能出声；_soundCtx 是幂等单例，多绑一枚事件不会多建 context。
 (function () {
   const unlock = () => { try { _soundCtx(); } catch (e) {} };
-  ['pointerup', 'touchend', 'keydown'].forEach(ev =>
+  ['pointerdown', 'pointerup', 'touchend', 'keydown'].forEach(ev =>
     window.addEventListener(ev, unlock, { once: true, capture: true }));
 })();
+
+// iOS 中断再配置：通话/后台会把已解锁的 context 重新 suspend。回前台时补一次 resume——
+// 对「已解锁过」的 context，iOS 允许非手势时刻的 resume（解锁信用跨 suspension 保留）。
+// 从未解锁过时这里拿着 null 什么都不做，不破坏上面的首次手势链。
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && _actx && _actx.state === 'suspended') { try { _actx.resume(); } catch (e) {} }
+});
 
 // 播放一段内置音效（Web Audio 合成）
 function playTone(preset) {

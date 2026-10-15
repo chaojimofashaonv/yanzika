@@ -125,9 +125,9 @@ body[data-view="games"] .topbar-title-text{display:none}
 /* ---------- 2048（瓷砖带身份：bg 层垫底，tile 层 transform 过渡滑动；G2048_PAD/G2048_GAP 与 js 侧常量一致） ---------- */
 .g2048-wrap{padding:14px 20px 0}
 .g2048-grid{position:relative;aspect-ratio:1;border-radius:18px;background:var(--island-grad,var(--surface));border:1px solid var(--ctl-ring);box-shadow:var(--glass-shadow));touch-action:none;overflow:hidden}
-.g2048-bg{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:9px}
+.g2048-bg{position:absolute;inset:var(--pad,10px);display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:var(--gap,9px)}
 .g2048-bg i{border-radius:11px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
-.g2048-tile{position:absolute;top:10px;left:10px;width:var(--c,70px);height:var(--c,70px);border-radius:11px;display:grid;place-items:center;font-family:Georgia,serif;font-weight:700;overflow:hidden;box-shadow:0 3px 10px rgba(var(--shadow-rgb),.12);transition:transform .17s cubic-bezier(.25,.46,.45,.94);will-change:transform}
+.g2048-tile{position:absolute;top:var(--pad,10px);left:var(--pad,10px);width:var(--cw,var(--c,70px));height:var(--ch,var(--c,70px));border-radius:11px;display:grid;place-items:center;font-family:Georgia,serif;font-weight:700;overflow:hidden;box-shadow:0 3px 10px rgba(var(--shadow-rgb),.12);transition:transform .17s cubic-bezier(.25,.46,.45,.94);will-change:transform}
 .g2048-tile b{position:relative;z-index:1;letter-spacing:.5px}
 .g2048-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}
 .g2048-tile .g2048-num{position:absolute;right:0;bottom:0;z-index:2;font-style:normal;font-size:11px;line-height:1;padding:3px 7px;border-radius:10px 0 11px 0;background:rgba(255,255,255,.86);color:var(--ink);font-family:Georgia,serif;font-weight:700;letter-spacing:.3px}
@@ -143,7 +143,7 @@ body[data-view="games"] .topbar-title-text{display:none}
 .pop-tile.no,.link-tile.no{animation:popno .3s ease-in-out}
 @keyframes popno{0%,100%{translate:0}25%{translate:-3px}75%{translate:3px}}
 @media (prefers-reduced-motion:reduce){.g2048-tile,.g2048-tile.spawn,.g2048-tile.merged,#g2048Score.bump,.g2048-float,.g2048-burst{transition:none;animation:none!important}}
-.g2048-burst{position:absolute;top:10px;left:10px;z-index:4;border-radius:12px;pointer-events:none;border:2px solid color-mix(in srgb,var(--ink) 30%,transparent);animation:g2048burst .5s cubic-bezier(.25,.46,.45,.94) both}
+.g2048-burst{position:absolute;top:var(--pad,10px);left:var(--pad,10px);z-index:4;border-radius:12px;pointer-events:none;border:2px solid color-mix(in srgb,var(--ink) 30%,transparent);animation:g2048burst .5s cubic-bezier(.25,.46,.45,.94) both}
 .g2048-burst.gold{border-color:color-mix(in srgb,#c9a227 65%,transparent);box-shadow:0 0 14px rgba(201,162,39,.35)}
 @keyframes g2048burst{0%{opacity:.9;scale:.7}100%{opacity:0;scale:1.45}}
 .g2048-over{margin:12px 20px 0;padding:12px 16px;border-radius:14px;border:1px solid var(--ctl-ring);background:var(--ctl-glass,var(--surface));font-size:12.5px;color:var(--ink);display:flex;align-items:center;gap:8px}
@@ -164,9 +164,9 @@ body[data-view="games"] .topbar-title-text{display:none}
 /* ---------- 消灭星星（10×10 连片消除：瓷砖带身份 transform 过渡＝Q弹回落；POP_N/POP_PAD/POP_GAP 与 js 侧常量一致） ---------- */
 .pop-wrap{padding:14px 20px 0;display:flex;justify-content:center}
 .pop-grid{position:relative;width:100%;max-width:none;aspect-ratio:1;border-radius:18px;background:var(--island-grad,var(--surface));border:1px solid var(--ctl-ring);box-shadow:var(--glass-shadow));overflow:hidden}
-.pop-bg{position:absolute;inset:8px;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:4px}
+.pop-bg{position:absolute;inset:var(--pad,8px);display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:var(--gap,4px)}
 .pop-bg i{border-radius:7px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
-.pop-tile{position:absolute;top:8px;left:8px;width:var(--c,29px);height:var(--c,29px);border-radius:8px;box-shadow:inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(var(--shadow-rgb),.15);transition:transform .26s cubic-bezier(.3,1.45,.5,1);will-change:transform}
+.pop-tile{position:absolute;top:var(--pad,8px);left:var(--pad,8px);width:var(--cw,var(--c,29px));height:var(--ch,var(--c,29px));border-radius:8px;box-shadow:inset 0 2px 3px rgba(255,255,255,.45),0 2px 5px rgba(var(--shadow-rgb),.15);transition:transform .26s cubic-bezier(.3,1.45,.5,1);will-change:transform}
 .pop-tile.in{animation:popin .34s cubic-bezier(.3,1.55,.55,1) both}
 @keyframes popin{0%{scale:.2;opacity:0}100%{scale:1;opacity:1}}
 .pop-tile.bye{animation:popbye .3s cubic-bezier(.3,1.6,.55,1) both;pointer-events:none}
@@ -183,9 +183,9 @@ body[data-view="games"] .topbar-title-text{display:none}
 /* ---------- 连连看（8×10 同牌 ≤2 折相连成对消除；牌面=表情包库的图或内置线稿图腾；LINK_ROWS/LINK_COLS/LINK_PAD/LINK_GAP 与 js 侧一致） ---------- */
 .link-wrap{padding:14px 20px 0;display:flex;justify-content:center}
 .link-grid{position:relative;width:100%;max-width:none;aspect-ratio:10/8;border-radius:18px;background:var(--island-grad,var(--surface));border:1px solid var(--ctl-ring);box-shadow:var(--glass-shadow));overflow:hidden}
-.link-bg{position:absolute;inset:8px;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(8,1fr);gap:4px}
+.link-bg{position:absolute;inset:var(--pad,8px);display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(8,1fr);gap:var(--gap,4px)}
 .link-bg i{border-radius:7px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
-.link-tile{position:absolute;top:8px;left:8px;width:var(--c,29px);height:var(--c,29px);border-radius:9px;display:grid;place-items:center;padding:3px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);background:var(--surface);color:var(--ink);box-shadow:0 2px 5px rgba(var(--shadow-rgb),.12);font-family:inherit;transition:transform .3s cubic-bezier(.3,1.45,.5,1),border-color .15s,box-shadow .15s;will-change:transform}
+.link-tile{position:absolute;top:var(--pad,8px);left:var(--pad,8px);width:var(--cw,var(--c,29px));height:var(--ch,var(--c,29px));border-radius:9px;display:grid;place-items:center;padding:3px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);background:var(--surface);color:var(--ink);box-shadow:0 2px 5px rgba(var(--shadow-rgb),.12);font-family:inherit;transition:transform .3s cubic-bezier(.3,1.45,.5,1),border-color .15s,box-shadow .15s;will-change:transform}
 .link-tile.in{animation:popin .34s cubic-bezier(.3,1.55,.55,1) both}
 .link-tile img{width:100%;height:100%;object-fit:cover;border-radius:6px;pointer-events:none;-webkit-user-drag:none;user-select:none}
 .link-tile .link-ic{width:100%;height:100%;border-radius:7px;display:grid;place-items:center;box-shadow:inset 0 5px 7px rgba(255,255,255,.42),inset 0 -4px 6px rgba(var(--ink-rgb),.12)}
@@ -213,9 +213,9 @@ body[data-view="games"] .topbar-title-text{display:none}
 /* ---------- 滑块拼图（4×4 滑块归位：瓷砖带身份 transform 过渡＝Q弹滑动；图面按家位切 background-position；PUZZLE_N/PUZZLE_PAD/PUZZLE_GAP 与 js 侧一致） ---------- */
 .puzzle-wrap{padding:14px 20px 0;display:flex;justify-content:center}
 .puzzle-grid{position:relative;width:100%;max-width:none;aspect-ratio:1;border-radius:18px;background:var(--island-grad,var(--surface));border:1px solid var(--ctl-ring);box-shadow:var(--glass-shadow));overflow:hidden}
-.puzzle-bg{position:absolute;inset:8px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:4px}
+.puzzle-bg{position:absolute;inset:var(--pad,8px);display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:var(--gap,4px)}
 .puzzle-bg i{border-radius:8px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
-.puzzle-tile{position:absolute;top:8px;left:8px;width:var(--c,74px);height:var(--c,74px);border-radius:9px;background-color:var(--surface);background-repeat:no-repeat;box-shadow:0 3px 9px rgba(var(--shadow-rgb),.16);cursor:pointer;transition:transform .22s cubic-bezier(.3,1.45,.5,1);will-change:transform}
+.puzzle-tile{position:absolute;top:var(--pad,8px);left:var(--pad,8px);width:var(--cw,var(--c,74px));height:var(--ch,var(--c,74px));border-radius:9px;background-color:var(--surface);background-repeat:no-repeat;box-shadow:0 3px 9px rgba(var(--shadow-rgb),.16);cursor:pointer;transition:transform .22s cubic-bezier(.3,1.45,.5,1);will-change:transform}
 .puzzle-tile.in{animation:popin .34s cubic-bezier(.3,1.55,.55,1) both}
 .puzzle-tile.bump{animation:popfl2 .3s cubic-bezier(.3,1.6,.55,1)}
 #puzzleMoves{font-family:Georgia,serif;font-size:13px;color:var(--ink);display:inline-block;font-variant-numeric:tabular-nums}
@@ -282,7 +282,7 @@ body[data-view=games][data-game-full=on] .g2048-wrap,
 body[data-view=games][data-game-full=on] .pop-wrap,
 body[data-view=games][data-game-full=on] .link-wrap,
 body[data-view=games][data-game-full=on] .puzzle-wrap,
-body[data-view=games][data-game-full=on] .tet-wrap{padding-left:8px;padding-right:8px}
+body[data-view=games][data-game-full=on] .tet-wrap{padding-left:2px;padding-right:2px}
 body[data-view=games][data-game-full=on] .game-pane{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
 body[data-view=games][data-game-full=on] .games-ready{margin-top:calc(env(safe-area-inset-top,0px) + 10px)}
 /* 竖向分配：摘掉页面壳之后棋盘并没有变大——它唯一的天花板是屏宽。

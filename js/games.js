@@ -138,6 +138,19 @@ function _gBoxInner(el, w) {
   const cs = getComputedStyle(el);
   return Math.max(40, w - (parseFloat(cs.borderLeftWidth) || 0) - (parseFloat(cs.borderRightWidth) || 0));
 }
+/* 全屏档「极限贴边」：把盘面内距与格间距各收 4px（地板 2px），让每一格在同一可用宽里更大＝真放大、不是拉长。
+   普通档与横屏用各盘自己那组常量（与 games.css 内距/间距一致）；改这一处即整族生效。 */
+function _gEffPG(pad, gap) {
+  if (_gFull) return [Math.max(2, pad - 4), Math.max(2, gap - 4)];
+  return [pad, gap];
+}
+/* 一格只写一处：把算好的内距/间距/格宽同时写进 CSS 变量，背景格·瓷砖·爆点全引它＝JS 与 CSS 不会各算各的 */
+function _gSetCellVars(box, pad, gap, cw, ch) {
+  box.style.setProperty('--pad', pad + 'px');
+  box.style.setProperty('--gap', gap + 'px');
+  box.style.setProperty('--cw', cw.toFixed(2) + 'px');
+  box.style.setProperty('--ch', ch.toFixed(2) + 'px');
+}
 /* 把一块棋盘装进它的可用盒：只按可用空间算，不设魔法下限（窄屏 320 上量到的 280 就该是 280） */
 function _gFitGrid(sel, ar) {
   const el = $(sel);
@@ -145,6 +158,8 @@ function _gFitGrid(sel, ar) {
   const box = _gBoardBox(el.parentElement);
   if (box.w < 40) return;                                   // 还没排版（视图刚点亮／面板藏着）：别拿 0 当读数
   const avail = _gBoxInner(el, box.w);
+  // 正方口径：四款方盘的边长＝min(可用宽·可用高×ar)。**不拉非正方**（竖屏把格子拉高＝ pieces 只是变长、
+  // 不是变大＝用户判定的「比例莫名其妙拉长·而不是真的放大」）。竖屏上宽是天花板·方盘本就吃满屏宽＝已尽量大。
   const w = Math.min(avail, box.h > 0 ? box.h * ar : avail);
   el.style.width = Math.round(w) + 'px';
   el.style.height = Math.round(w / ar) + 'px';
@@ -636,10 +651,12 @@ function g2048Render() {
     bg.innerHTML = '<i></i>'.repeat(16);
     box.appendChild(bg);
   }
-  const W = box.clientWidth || 320;
-  const cell = (W - G2048_PAD * 2 - G2048_GAP * 3) / 4;
-  box.style.setProperty('--c', cell.toFixed(2) + 'px');
-  const posOf = t => `translate(${Math.round(t.c * (cell + G2048_GAP))}px,${Math.round(t.r * (cell + G2048_GAP))}px)`;
+  const W = box.clientWidth || 320, H = box.clientHeight || W;
+  const pg = _gEffPG(G2048_PAD, G2048_GAP), PAD = pg[0], GAP = pg[1];
+  const cw = (W - PAD * 2 - GAP * 3) / 4;
+  const ch = (H - PAD * 2 - GAP * 3) / 4;
+  _gSetCellVars(box, PAD, GAP, cw, ch);   // 同一组读数写进 --pad/--gap/--cw/--ch，背景与瓷砖都引它
+  const posOf = t => `translate(${Math.round(t.c * (cw + GAP))}px,${Math.round(t.r * (ch + GAP))}px)`;
   const els = _g2048._els;
   const alive = new Set();
   for (const t of _g2048.tiles) {
@@ -687,9 +704,8 @@ function _g2048FloatScore(n, r, c) {   // 飘在合并发生的那一格（不�
   if (r != null) {
     const g = _g2048Geom();
     if (g) {
-      const half = (g.step - G2048_GAP) / 2;
-      f.style.left = (c * g.step + half) + 'px';
-      f.style.top = (r * g.step + half) + 'px';
+      f.style.left = (c * g.sx + g.cw / 2) + 'px';
+      f.style.top = (r * g.sy + g.ch / 2) + 'px';
     }
   }
   box.appendChild(f);
@@ -946,19 +962,23 @@ function _g2048Finish() {
   else _gGameEnd('g2048', _g2048.score, mode === 'solo' ? { noTa: true } : undefined);
   _g2048OverView();
 }
-function _g2048Geom() {   // 棋盘几何（瓷砖定位与爆点共用）：PAD/GAP 改动须与 games.css 同步
+function _g2048Geom() {   // 棋盘几何（瓷砖定位与爆点共用）：PAD/GAP 改动须与 games.css 同步；内距随全屏档现算（见 _gEffPG）
   const box = $('#g2048Grid');
   if (!box) return null;
-  const cell = ((box.clientWidth || 320) - G2048_PAD * 2 - G2048_GAP * 3) / 4;
-  return { box, step: cell + G2048_GAP };
+  const W = box.clientWidth || 320, H = box.clientHeight || W;
+  const pg = _gEffPG(G2048_PAD, G2048_GAP), PAD = pg[0], GAP = pg[1];
+  const cw = (W - PAD * 2 - GAP * 3) / 4;
+  const ch = (H - PAD * 2 - GAP * 3) / 4;
+  return { box, pad: PAD, gap: GAP, cw, ch, sx: cw + GAP, sy: ch + GAP };
 }
 function _g2048Burst(t) {   // 合并处的扩散光环（纯 CSS 动画，一瞬即逝）
   const g = _g2048Geom();
   if (!g) return;
   const b = document.createElement('i');
   b.className = 'g2048-burst' + (t.v >= 128 ? ' gold' : '');
-  b.style.width = b.style.height = g.step - G2048_GAP + 'px';
-  b.style.transform = `translate(${Math.round(t.c * g.step)}px,${Math.round(t.r * g.step)}px)`;
+  b.style.width = g.cw + 'px';
+  b.style.height = g.ch + 'px';
+  b.style.transform = `translate(${Math.round(t.c * g.sx)}px,${Math.round(t.r * g.sy)}px)`;
   g.box.appendChild(b);
   setTimeout(() => b.remove(), 520);
 }
@@ -1651,16 +1671,19 @@ function _popSettle() {   // 整列下落＋空列左移（块对象保持身份
   _pop.cells = new Array(POP_N * POP_N).fill(null);
   live.forEach((col, nc) => col.forEach((b, i) => { _pop.cells[(POP_N - 1 - i) * POP_N + nc] = b; }));
 }
-function _popGeom() {   // 棋盘几何（块定位共用）：POP_PAD/POP_GAP 改动须与 games.css 同步
+function _popGeom() {   // 棋盘几何（块定位共用）：POP_PAD/POP_GAP 改动须与 games.css 同步；内距随全屏档现算
   const box = $('#popGrid');
   if (!box) return null;
-  const cell = ((box.clientWidth || 320) - POP_PAD * 2 - POP_GAP * (POP_N - 1)) / POP_N;
-  return { box, step: cell + POP_GAP, cell };
+  const W = box.clientWidth || 320, H = box.clientHeight || W;
+  const pg = _gEffPG(POP_PAD, POP_GAP), PAD = pg[0], GAP = pg[1];
+  const cw = (W - PAD * 2 - GAP * (POP_N - 1)) / POP_N;
+  const ch = (H - PAD * 2 - GAP * (POP_N - 1)) / POP_N;
+  return { box, pad: PAD, gap: GAP, cw, ch, sx: cw + GAP, sy: ch + GAP };
 }
 function _popRender() {
   const g = _popGeom();
   if (!g) return;
-  g.box.style.setProperty('--c', g.cell.toFixed(2) + 'px');
+  _gSetCellVars(g.box, g.pad, g.gap, g.cw, g.ch);
   let bg = g.box.querySelector('.pop-bg');
   if (!bg) {
     bg = document.createElement('div');
@@ -1693,7 +1716,7 @@ function _popRender() {
     }
     el.style.transitionDelay = delay ? delay + 'ms' : '';
     _pop._pos.set(b.id, i);
-    el.style.transform = `translate(${Math.round((i % POP_N) * g.step)}px,${Math.round(Math.floor(i / POP_N) * g.step)}px)`;
+    el.style.transform = `translate(${Math.round((i % POP_N) * g.sx)}px,${Math.round(Math.floor(i / POP_N) * g.sy)}px)`;
   }
 }
 function _popBurst(x, y, size) {   // 消除组的扩散光环（纯 CSS 一瞬即逝）
@@ -1727,8 +1750,8 @@ function _popDoPop(grp, opts) {
   const g0 = _popGeom();   // 消除前抓质心（浮字与光环的落点）
   let cx = 0, cy = 0;
   if (g0) {
-    cx = (grp.reduce((s, i) => s + (i % POP_N), 0) / n) * g0.step + g0.cell / 2;
-    cy = (grp.reduce((s, i) => s + Math.floor(i / POP_N), 0) / n) * g0.step + g0.cell / 2;
+    cx = (grp.reduce((s, i) => s + (i % POP_N), 0) / n) * g0.sx + g0.cw / 2;
+    cy = (grp.reduce((s, i) => s + Math.floor(i / POP_N), 0) / n) * g0.sy + g0.ch / 2;
   }
   grp.forEach((i, k) => {
     const b = _pop.cells[i];
@@ -1749,7 +1772,7 @@ function _popDoPop(grp, opts) {
   _popSettle();
   if (_gPopMode() === 'vs' && !opts.ta) _gTaLiveStart('pop');   // 对战：你消第一片 TA 才开始实时玩
   if (g0) {
-    _popBurst(cx, cy, Math.min(120, g0.cell * 1.4 + n * 4));
+    _popBurst(cx, cy, Math.min(120, ((g0.cw + g0.ch) / 2) * 1.4 + n * 4));
     _popFloatScore('+' + gain, cx, cy);
   } else _popFloatScore('+' + gain);
   _popScoreView(true);
@@ -2121,11 +2144,14 @@ function gLinkRestart() {
   gLinkRefreshStat();
   _gLinkApplyMode();
 }
-function _linkGeom() {   // 牌面几何（定位与连线共用）：LINK_PAD/LINK_GAP 改动须与 games.css 同步
+function _linkGeom() {   // 牌面几何（定位与连线共用）：LINK_PAD/LINK_GAP 改动须与 games.css 同步；内距随全屏档现算
   const box = $('#linkGrid');
   if (!box) return null;
-  const cell = ((box.clientWidth || 320) - LINK_PAD * 2 - LINK_GAP * (LINK_COLS - 1)) / LINK_COLS;
-  return { box, step: cell + LINK_GAP, cell };
+  const W = box.clientWidth || 320, H = box.clientHeight || W;
+  const pg = _gEffPG(LINK_PAD, LINK_GAP), PAD = pg[0], GAP = pg[1];
+  const cw = (W - PAD * 2 - GAP * (LINK_COLS - 1)) / LINK_COLS;
+  const ch = (H - PAD * 2 - GAP * (LINK_ROWS - 1)) / LINK_ROWS;
+  return { box, pad: PAD, gap: GAP, cw, ch, sx: cw + GAP, sy: ch + GAP };
 }
 function _linkFaceHTML(k) {
   const f = _link.faces[k];
@@ -2137,7 +2163,7 @@ function _linkFaceHTML(k) {
 function _linkRender() {
   const g = _linkGeom();
   if (!g) return;
-  g.box.style.setProperty('--c', g.cell.toFixed(2) + 'px');
+  _gSetCellVars(g.box, g.pad, g.gap, g.cw, g.ch);
   let bg = g.box.querySelector('.link-bg');
   if (!bg) {
     bg = document.createElement('div');
@@ -2164,7 +2190,7 @@ function _linkRender() {
     }
     el.dataset.lidx = i;
     el.classList.toggle('sel', _link.sel === i);
-    el.style.transform = `translate(${Math.round((i % LINK_COLS) * g.step)}px,${Math.round(Math.floor(i / LINK_COLS) * g.step)}px)` + (_link.sel === i ? ' scale(1.08)' : '');
+    el.style.transform = `translate(${Math.round((i % LINK_COLS) * g.sx)}px,${Math.round(Math.floor(i / LINK_COLS) * g.sy)}px)` + (_link.sel === i ? ' scale(1.08)' : '');
   }
   _link._els.forEach((el, id) => { if (!alive.has(id)) { el.remove(); _link._els.delete(id); } });   // 换局/清场：不在盘上的旧牌退场
 }
@@ -2218,8 +2244,8 @@ function _linkDrawLine(pts, color) {   // 连线跟随所连牌的专属深色�
   }
   const W = g.box.clientWidth, H = g.box.clientHeight;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const cx = p => Math.max(2, Math.min(W - 2, (p[1] - 1) * g.step + g.cell / 2));   // 外圈坐标压回边框内画
-  const cy = p => Math.max(2, Math.min(H - 2, (p[0] - 1) * g.step + g.cell / 2));
+  const cx = p => Math.max(2, Math.min(W - 2, (p[1] - 1) * g.sx + g.cw / 2));   // 外圈坐标压回边框内画
+  const cy = p => Math.max(2, Math.min(H - 2, (p[0] - 1) * g.sy + g.ch / 2));
   const d = pts.map((p, i) => (i ? 'L' : 'M') + cx(p).toFixed(1) + ' ' + cy(p).toFixed(1)).join(' ');
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   el.setAttribute('d', d);
@@ -2275,8 +2301,8 @@ function _linkDoMatch(a, b, path, opts) {
     if (!data.games) return;
     const g = _linkGeom();
     if (g) {   // 分数在两牌中点飘出（连对换个叫法）
-      const mx = ((a % LINK_COLS) + (b % LINK_COLS)) / 2 * g.step + g.cell / 2;
-      const my = (Math.floor(a / LINK_COLS) + Math.floor(b / LINK_COLS)) / 2 * g.step + g.cell / 2;
+      const mx = ((a % LINK_COLS) + (b % LINK_COLS)) / 2 * g.sx + g.cw / 2;
+      const my = (Math.floor(a / LINK_COLS) + Math.floor(b / LINK_COLS)) / 2 * g.sy + g.ch / 2;
       _linkFloat((chained ? '连对 +' : '+') + gain, mx, my);
     }
     _linkRender();
@@ -2578,18 +2604,21 @@ function gPuzzleRestart(newImg) {
   gPuzzleRefreshStat();
   _gPzApplyMode();
 }
-function _pzGeom() {
+function _pzGeom() {   // 内距随全屏档现算（见 _gEffPG）
   const box = $('#puzzleGrid');
   if (!box) return null;
-  const cell = ((box.clientWidth || 320) - PUZZLE_PAD * 2 - PUZZLE_GAP * (PUZZLE_N - 1)) / PUZZLE_N;
-  return { box, step: cell + PUZZLE_GAP, cell };
+  const W = box.clientWidth || 320, H = box.clientHeight || W;
+  const pg = _gEffPG(PUZZLE_PAD, PUZZLE_GAP), PAD = pg[0], GAP = pg[1];
+  const cw = (W - PAD * 2 - GAP * (PUZZLE_N - 1)) / PUZZLE_N;
+  const ch = (H - PAD * 2 - GAP * (PUZZLE_N - 1)) / PUZZLE_N;
+  return { box, pad: PAD, gap: GAP, cw, ch, sx: cw + GAP, sy: ch + GAP };
 }
 function _puzzleRender(rebuild) {
   const g = _pzGeom();
   if (!g) return;
   _puzzleOwnView();   // 「撤掉我的图 N」随池子现写（这一面唯一一处刷新它的地方）
   if (!_puzzle.cells) return;   // 没有图就没开局（cells 仍为 null）：这一屏交给准备画面那句实话，不在这里画半块棋盘
-  g.box.style.setProperty('--c', g.cell.toFixed(2) + 'px');
+  _gSetCellVars(g.box, g.pad, g.gap, g.cw, g.ch);
   let bg = g.box.querySelector('.puzzle-bg');
   if (!bg) {
     bg = document.createElement('div');
@@ -2618,7 +2647,7 @@ function _puzzleRender(rebuild) {
       setTimeout(() => el.classList.remove('in'), 500);
     }
     el.dataset.zidx = i;
-    el.style.transform = `translate(${Math.round((i % PUZZLE_N) * g.step)}px,${Math.round(Math.floor(i / PUZZLE_N) * g.step)}px)`;
+    el.style.transform = `translate(${Math.round((i % PUZZLE_N) * g.sx)}px,${Math.round(Math.floor(i / PUZZLE_N) * g.sy)}px)`;
   }
 }
 function _pzSlideLegal(idx) {
@@ -3252,7 +3281,26 @@ function _tetCell(ctx, x, y, color, ghost) {
 /* ---------- 局终播报：整轮唯一一处往聊天发游戏消息的地方 ----------
    FIX 2026-10-08#050 局中沿途的里程碑消息（合出 2048 / 倒一座塔 / 八连消 / 四行消 / 全清）
    已全部摘掉，这里补回一次性的收尾：**局终一条**（成绩 + 结果），破纪录再补一条。
-   solo 也发一条——自己玩也是玩完了跟 TA 说一声，只是不打扰过程。 */
+   solo 也发一条——自己玩也是玩完了跟 TA 说一声，只是不打扰过程。
+   2026-10-15 BUGS #454：这一处同时落**那张成绩单卡**（以前只有 TA 那句点评，卡要用户自己按「告诉 TA」才发得出去）。 */
+/* 局终那张卡的载荷＝唯一构造处：对战读那位名下那本、合作读「我们」那本（两本同一把尺 _gBook∶_gCoopBook）。
+   beaten 按挑战分的本义**现算**（ta>0 且这一局够得上），不取 _gLast.beaten——那一格里还混进「超过旧最高」，
+   拿去写「挑战 N · 已打破」就是说谎；newBest 用调用方在写账之前算好的那一枚（同一件事不重算第二遍）。
+   卡上没有量不到的读数：分数∶最高∶TA 的实时终局分∶胜负全部来自刚结算完的那一本账。 */
+function _gRoundCard(game, score, o) {
+  if (o.coop) {
+    const co = _gCoopBook(game);
+    return { kind: 'score', game, score, best: co.best, ta: 0, beaten: false, newBest: score >= co.best && score > 0 };
+  }
+  const sc = _gBook(game);
+  const last = _gLast[game] || {};
+  return {
+    kind: 'score', game, score, best: sc.best, ta: sc.ta,
+    beaten: sc.ta > 0 && score >= sc.ta, newBest: !!o.newBest,
+    taScore: last.taScore == null ? null : last.taScore,
+    win: last.win == null ? undefined : !!last.win
+  };
+}
 function _gEndReport(game, score, o) {
   o = o || {};
   // 自己玩不惊动任何人（BUGS #302）：屏上那条「局终 · N 分」由各款结算行自己写，聊天里不再落一句 TA 的点评。
@@ -3274,6 +3322,10 @@ function _gEndReport(game, score, o) {
       .replace('{n}', score).replace('{m}', o.moves == null ? 0 : o.moves).replace('{l}', o.lines == null ? 0 : o.lines);
     if (o.cleared && G_END_CLEAR[game]) text = _gPick(G_END_CLEAR[game], Math.random());
   }
+  // 卡先落（局终那一刻就是它），TA 那句点评随后到；合作那张额外带一句「是我们俩的」，
+  // 因为 kind:'score' 那一张的头写的是「· 战绩」＝一个人玩的读法（与 _g*CoopShare 同一口径）
+  const card = _gRoundCard(game, score, o);
+  _deliverToChat({ id: nextId(), from: 'me', game: card, text: o.coop ? '这局是我们俩的' : '' }, cid);
   setTimeout(() => {
     if (!data.games || !data.contacts) return;
     _deliverToChat({ id: nextId(), from: 'partner', text }, cid);

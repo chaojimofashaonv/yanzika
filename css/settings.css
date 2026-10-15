@@ -39,11 +39,12 @@ body[data-settings-tab=about] .setting-card[data-tab=about]{display:block}
    屏上看就是七行糊成一片＝用户报的「分类读不出」。本轮按本仓「组内小标」的既有形制作对齐（同
    .setting-subhead／.punct-label／#storageBody .st-sec-t 那一族：11px／600／--muted／字距 .5px），
    上一轮自造的 3px 强调竖条（.ap-sec-t::before）一并撤下——全站没有第二处这么画分节标题。
-   节奏交给每节顶上的一道发丝线（同 #storageBody .st-row、.mate-mem-fields label 的画法）；
-   第一条 .ap-sec 顶着说明条不画线。
+   节奏交给每节顶上的一道发丝线（同 #storageBody .st-row、.mate-mem-fields label 的画法）。
+   同日二批（#449）：那张巨型折叠卡拆成行式折叠卡阵列＝.ap-sec 搬进各张 fold-bd 的第一节，
+   顶上那条发丝线没了邻居可分（卡壳自己就是分隔），首子不画线；旧的 .ap-preview+.ap-sec 邻接选择器没了宿主一并换掉。
    ⚠ .ap-knob 的 grid 那行被 tools/_smoke_beauty_veil.js A10 钉死，别动。 */
 .ap-sec{margin:0;padding:12px 0 2px;border-top:1px solid var(--hair)}
-.ap-preview+.ap-scope+.ap-sec,.ap-preview+.ap-sec{border-top:0;padding-top:8px}
+.fold-bd>.ap-sec:first-child{border-top:0;padding-top:2px}
 .ap-sec-t{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin:0 0 10px}
 /* 作用域说明条（2026-10-15）：预览正下方一句「这张卡只对当前 TA 生效」，把「美化设置」与下方
    全站一份的「聊天外观」卡划清——用户「分类逻辑混乱」的根子就是两张卡名字近、作用域没说清。
@@ -197,7 +198,12 @@ label{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:13.5px
 .check-row .check-item:last-child{border-bottom:0}
 .setting-card textarea{display:block;width:100%;max-width:100%;text-align:left;flex:none;background:var(--page);border-radius:10px;padding:10px 12px;font-size:12px}
 .setting-subhead{margin:16px 0 4px}
-input[type="range"]{max-width:100%;text-align:left}
+/* 2026-10-15 游戏音效音量条「滑不动」修复：
+   上面那条 :where(#settingsView,...) :is(input,select) 把文本框的 padding/background/border
+   也漏进了 range（glass.css 不在 css_order，没人来重置它），导致滑条外面套了一层灰色胶囊、
+   轨道区域被 padding 压缩；这里按 input[type=range] 权 (0,1,1) 把那些声明覆掉。
+   flex/min-width 靠 HTML 内联，不在这里统一加，避免与已显式写 flex 的其它 range 冲突。 */
+input[type="range"]{max-width:100%;text-align:left;padding:0;background:transparent;border:0;border-radius:0}
 
 /* ===== 导入差异预览 ===== */
 .imp-sheet{position:relative;width:100%;max-width:420px;max-height:80vh;overflow-y:auto}

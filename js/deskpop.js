@@ -4,8 +4,16 @@
 // 页面在后台不弹（系统通知走 bgNotifyCheck 通道）；全屏弹层在位时让路；用户走进某会话时该会话的横幅立即收起。
 
 // 行数可在设置-提醒切换（appearance.deskPopRows：1=单行后来的顶掉先来的，2=两行并行）；开关默认开
+// 最右那枚 × 也可在设置-提醒切换（appearance.deskPopCloseBtn）；**默认关＝不画**（用户 2026-10-15 定档）：
+// 横幅本来就能右滑关闭（见下面那族拖拽），340px 那一条里再占一枚钮＝从正文那一截抢点击。
 function _deskPopMax() {
   try { return (data.appearance && data.appearance.deskPopRows === 1) ? 1 : 2; } catch (e) { return 2; }
+}
+// × 那一枚的唯一形态与唯一判据：构建（showDeskPopup）与就地同步（deskPopSyncCloseBtn）都引这一处，
+// 不在 settings.js 里再抄一份按钮串（两处各写一份必漂，#051 那一族）
+const _DESK_POP_CLOSE_HTML = '<button type="button" class="desk-pop-close" aria-label="关闭"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2.7 2.7l6.6 6.6M9.3 2.7l-6.6 6.6"/></svg></button>';
+function deskPopCloseBtnOn() {
+  try { return data.appearance.deskPopCloseBtn === true; } catch (e) { return false; }
 }
 let _deskPopItems = [];        // 可见横幅状态：[{ el, uid, action, timer, suppressClick, suppressTimer, drag }]，最新在前
 let _deskPopDragging = null;   // 当前拖拽中的横幅（窗口级 touchmove/mousemove 路由用）
@@ -90,7 +98,7 @@ function showDeskPopup(opts) {
     if (_deskPopItems.length >= _deskPopMax()) _deskPopDismiss(_deskPopItems[_deskPopItems.length - 1], true);
     rec = { el: document.createElement('div'), uid, action: null, timer: null, suppressClick: false, suppressTimer: null, drag: null };
     rec.el.className = 'desk-pop';
-    rec.el.innerHTML = '<div class="desk-pop-av"></div><div class="desk-pop-main"><div class="desk-pop-name"></div><div class="desk-pop-text"></div><img class="desk-pop-img" alt="" hidden></div><button type="button" class="desk-pop-close" aria-label="关闭"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2.7 2.7l6.6 6.6M9.3 2.7l-6.6 6.6"/></svg></button>';
+    rec.el.innerHTML = '<div class="desk-pop-av"></div><div class="desk-pop-main"><div class="desk-pop-name"></div><div class="desk-pop-text"></div><img class="desk-pop-img" alt="" hidden></div>' + (deskPopCloseBtnOn() ? _DESK_POP_CLOSE_HTML : '');
     _deskPopFill(rec, opts);
     wrap.prepend(rec.el);
     _deskPopItems.unshift(rec);
@@ -109,6 +117,18 @@ function deskPopEnforceMax() {
   while (_deskPopItems.length > _deskPopMax()) _deskPopDismiss(_deskPopItems[_deskPopItems.length - 1], true);
 }
 window.deskPopEnforceMax = deskPopEnforceMax;
+
+// × 开关切换时把已经挂在屏上的横幅一起跟上（不等到那 6 秒自动收起）：多一枚／少一枚都只就地改这一行，
+// 不重画整条——重画会把正在拖拽的那一条的 transform 与拖拽态一起抹掉（#121 那一族）
+function deskPopSyncCloseBtn() {
+  const on = deskPopCloseBtnOn();
+  _deskPopItems.forEach(r => {
+    const btn = r.el.querySelector('.desk-pop-close');
+    if (on && !btn) r.el.insertAdjacentHTML('beforeend', _DESK_POP_CLOSE_HTML);
+    else if (!on && btn) btn.remove();
+  });
+}
+window.deskPopSyncCloseBtn = deskPopSyncCloseBtn;
 
 // 用户走进某个会话＝这个会话的消息已经看得见了，属于它的横幅当场收起（BUGS #028）：
 // 否则横幅会压在刚打开的对话上继续挂满 6 秒。只收这一条来源，别的会话/来信横幅不动。
@@ -165,12 +185,12 @@ function _deskPopDragEnd(x) {
   if (Math.abs(dx) > 30 || Math.abs(speed) > 0.6) {
     rec.suppressClick = false;
     clearTimeout(rec.suppressTimer);
-    el.style.transition = 'transform .18s ease, opacity .18s ease';
+    el.style.transition = 'transform .18s var(--mo-ease,ease), opacity .18s ease';   // 曲线引 css/motion.css ①，不留第二个数
     el.style.transform = 'translateX(' + (dx >= 0 ? 160 : -160) + 'px)';
     el.style.opacity = '0';
     setTimeout(() => _deskPopDismiss(rec, true), 180);
   } else {
-    el.style.transition = 'transform .25s cubic-bezier(.25,.8,.35,1), opacity .25s ease';
+    el.style.transition = 'transform .25s var(--mo-ease,cubic-bezier(.25,.8,.35,1)), opacity .25s ease';   // 弹回与整页入场同一条曲线（motion.css ①；内联 var 有兜底＝那一件下架不塌）
     el.style.transform = ''; el.style.opacity = '';
     setTimeout(() => { el.style.transition = ''; }, 260);
   }

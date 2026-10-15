@@ -38,10 +38,14 @@
 }
 @keyframes deskPopIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 .desk-pop.desk-pop-out{transition:opacity .18s ease,transform .18s ease;opacity:0;transform:translateY(-8px)}
-/* 底盘原来引 --page（冷灰 #eef0f4），在纯白体系里是一块灰砖，改引 --bubble（白玻璃），
-   边界由 --line 那道发丝圈交代；无头像时那一层浅底由全站同一枚 --well 供（#318 第七轮，
-   唯一写手在 css/theme.css），这里不写第二份。 */
-.desk-pop-av{width:38px;height:38px;border-radius:50%;overflow:hidden;flex:none;background:var(--bubble);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--muted)}
+/* 底盘引 --bubble（白玻璃），无头像时那一层浅底与盘缘那一圈 --line 发丝边都由全站同一枚
+   .initial-person 供（#318 第七/八轮，唯一写手在 css/theme.css），这里不写第二份。
+   ⚠ 与 .avatar／.call-avatar 同一口径：容器自己 NOT 画 border——占位盘（.initial）铺满整盘
+   （position:absolute;inset:0），盘缘由 .initial-person 那圈 inset --line 交代，只此一道。
+   原来本件在容器上补了一道 border:1px --line，与 .initial-person 第八轮新加的内描边叠成
+   「同心两圈」（用户 2026-10-15 报「默认头像外圈莫名其妙两层圆圈」＝这一发）。 */
+.desk-pop-av{position:relative;width:38px;height:38px;border-radius:50%;overflow:hidden;flex:none;background:var(--bubble);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--muted)}
+.desk-pop-av .initial{position:absolute;inset:0;display:grid;place-items:center}
 .desk-pop-av img{width:100%;height:100%;object-fit:cover;display:block}
 .desk-pop-av svg{width:20px;height:20px}
 .desk-pop-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}

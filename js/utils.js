@@ -497,6 +497,9 @@ const defaults = {
     deskTabVeil: 45,
     deskPopup: true,
     deskPopRows: 2,
+    // 横幅最右那枚 × 关闭钮：出厂关（用户 2026-10-15 定档）。关着也能收起横幅＝右滑，
+    // 设置那一行把这句写在提示里；判据只有一处 js/deskpop.js 的 deskPopCloseBtnOn()
+    deskPopCloseBtn: false,
     // 壁纸默认只透在首页；开了这一枚才铺到功能页与聊天页（选择器见 css/theme.css 的 data-ap-deskall）
     deskBgAll: false,
     // 底色与层次档（四落点之一）：soft＝默认＝暖光玻璃（暖奶油画布 ∶ 半透白面，台阶 Δ≈11）
@@ -524,7 +527,7 @@ const defaults = {
     // 毛玻璃强度（0~24px 背景模糊，只给卡片那一套 frost 用）与「气泡毛玻璃」（frostBubble，聊天外观里那一枚，
     // 住 TA 设置页）：两件事互不依赖。强度走 applyAppearance 写 body 内联 --frost-blur（连续数字）；
     // frostBubble 也走 body 内联 data 属性但写的是全局 appearance（与 glass 同族）——观感在 css/theme.css 的 body[data-ap-frost-bubble=on] 段。
-    frostBlur: 14, frostBubble: false,
+    frostBlur: 14, frostBubble: false, frostBubbleBlur: 12,
     // 三组排版新档（2026-10-15，居「TA 的设置 → 聊天外观」）：枚举校验在 db.js ensureData，
     // 写手在 settings.js applyAppearance，令牌在 css/theme.css 的 data-ap-align/-avat/-daypos 段
     alignMode: 'bottom',   // 头像与气泡对齐：bottom 底部对齐（默认）/ top 顶部对齐
@@ -536,9 +539,10 @@ const defaults = {
     // 清洗在 js/db.js ensureData，旧档那一份的搬法也在那里，控件在 html/view-settings.html 的「全站字体」那张卡。
     customFontName: '', customFontCss: '',
     customGlobalFontName: '', customGlobalFontCss: '',
-    bgKeepAlive: false,
+    bgKeepAlive: true,        // 2026-10-15 #457 后台保活改为默认开（装好/清档即常驻，切后台也收消息）；默认走静音通道不抢其他 App 声音
     bgNotify: false,
     bgNotifyNoDedup: false,
+    plNoDuck: true,           // 2026-10-15 #457 播放器「不抢其他 App 的声音」默认开：本机上传的歌走 WebAudio 混音不抢占；在线音源受浏览器限制做不到（界面上写清）
     // 全站字号（设置→外观「字号」）：2026-10-15 由「标准/大」两枚 chip 改成一根 80~140 的连续滑杆，
     // 存的是「放大百分比」数字（100＝出厂标准）。生效走 theme.css `.app-shell>*{zoom:var(--ui-zoom)}`，
     // applyAppearance 把数字折成 --ui-zoom 写在 body 上＝拖到哪整站当场跟着变（所见即所得的实时预览）。
@@ -985,6 +989,32 @@ function fileData(file, maxEdge = 1024, quality = 0.82) {
     r.onerror = () => { showToast('图片读取失败'); resolve(null); };
     r.readAsDataURL(file);
   });
+}
+// 图片平均亮度（0~1）：把 dataURL 缩到 16×16 采一采，取亮度均值。只用于「上传时给压暗定个默认」，
+// 量不到就回 null（调用处保留原值、不拦上传）。dataURL 进 canvas 不跨源、不会 tainted。
+function _imgLuma(dataUrl) {
+  return new Promise(resolve => {
+    if (!dataUrl || typeof dataUrl !== 'string') { resolve(null); return; }
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const s = 16, c = document.createElement('canvas'); c.width = s; c.height = s;
+        const x = c.getContext('2d'); if (!x) { resolve(null); return; }
+        x.drawImage(im, 0, 0, s, s);
+        const d = x.getImageData(0, 0, s, s).data;
+        let sum = 0, n = 0;
+        for (let i = 0; i < d.length; i += 4) { sum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * (d[i + 3] / 255); n++; }
+        resolve(n ? sum / n / 255 : null);
+      } catch (e) { resolve(null); }
+    };
+    im.onerror = () => resolve(null);
+    im.src = dataUrl;
+  });
+}
+// 由亮度推一个压暗值（0~上限）：图越亮压得越多（亮照片抢字）、越暗越少。推不出（luma 为空）回 null。
+function _bgVeilSuggest(luma, max) {
+  if (typeof luma !== 'number' || !isFinite(luma)) return null;
+  return Math.max(0, Math.min(Math.round(max * 0.7), Math.round((luma - 0.35) * 120)));
 }
 
 function streamToBlob(stream) {

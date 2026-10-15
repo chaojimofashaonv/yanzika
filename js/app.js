@@ -1,10 +1,10 @@
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.8.2';
+window.APP_VER = 'v9.9.5';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.8.2' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.9.5' + s; }
 
 (async function init() {
   try {
@@ -107,6 +107,7 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
         if (document.body.dataset.kbFix === 'off') {
           if (_vvApplied !== '') { _appShell.style.height = ''; _appShell.style.marginTop = ''; _vvApplied = ''; }
           _vvPollSet(false);   // 逃生阀开着＝轮询也一并停（开着白转）
+          if (document.body.dataset.kb) delete document.body.dataset.kb;   // #456：同一把闸——逃生阀开着就别留 data-kb（css/motion.css ⑩-d 跟着静默，人工退路里不藏第二层 JS 干预）
           return;
         }
         const h = _vv.height;
@@ -130,6 +131,12 @@ function markStep(s) { const e = document.getElementById('splashStep'); if (e) e
         const key = next + '@' + dy + '@' + sc;
         if (key === _vvApplied) return;          // 值没变 → 不写 style，一次重排都不付
         _vvApplied = key;
+        // #456：把「键盘开/关」与这一帧的四枚读数递给只读下游（CSS 与诊断）——两行都挂在这条**已去重**的分支里，
+        // 值没变时一次都不进＝不新增重排、不新开定时器、不新装 vv 监听（键盘沿只有 _vvFix 这一个宿主，
+        // 两处各写一份＝以后必漂；js/perf.js 头段那条「不碰 visualViewport」的纪律同源）。
+        const kbFlag = kb ? 'on' : 'off';
+        if (document.body.dataset.kb !== kbFlag) document.body.dataset.kb = kbFlag;   // 消费方＝css/motion.css ⑩-d
+        if (window.__iosFit) window.__iosFit.stamp(kb, Math.round(h), dy, sc);
         // 「壳没加补偿时的天然上沿」按**这一帧实测的矩形**倒推（扣掉上一次已经加过的 margin），
         // 不缓存一个静态值：2026-10-14 起产物改外链加载，app-shell 前面那批浮层万一占地方就不能想当然写 0；
         // vv.offsetTop 是「相对布局口」的量，故目标位置还要加上文档已经滚过的那段。
@@ -278,7 +285,10 @@ function _bkGoBackup() {
   const formText = () => {
     if (standalone()) return '当前形态：已从桌面图标打开（无浏览器工具栏）——这已经是手机上能拿到的最满形态。';
     if (isIOS()) return '当前形态：Safari 标签页（带地址栏与工具栏）。iPhone 上想更满只有一条路：Safari 底部「分享」→「添加到主屏幕」，之后从桌面图标打开。';
-    if (window._deferredInstall) return '当前形态：浏览器标签页。点下面那枚钮即可安装到桌面（安装后无工具栏，也可在系统设置里开全屏）。';
+    // ⚠ 走裸名 _deferredInstall（BUGS #445）：它在 js/settings.js 是顶层 let＝全局词法绑定，
+    //    不挂 window。旧写法读 window._deferredInstall 恒 undefined＝这一支永远走不到，
+    //    「添加到主屏幕」按钮只剩降级 toast、原生 prompt() 从不触发（同 #184 的裸名写、同 settings.js 的裸名读）。
+    if (_deferredInstall) return '当前形态：浏览器标签页。点下面那枚钮即可安装到桌面（安装后无工具栏，也可在系统设置里开全屏）。';
     return '当前形态：浏览器标签页。用浏览器菜单里的「安装应用 / 添加到主屏幕」即可装到桌面（安装后无工具栏）。';
   };
   const sumText = () => {
@@ -304,8 +314,10 @@ function _bkGoBackup() {
     else if (typeof showToast === 'function') showToast('iPhone 全屏说明：用 Safari「分享 → 添加到主屏幕」');
   }
   function install() {
-    if (window._deferredInstall) {
-      try { window._deferredInstall.prompt(); } catch (e) {}
+    // 同上：裸名读那枚 beforeinstallprompt 事件（BUGS #445）——用 window. 前缀永远取不到，
+    // 装了入口的浏览器点这枚钮也不会弹原生安装框。
+    if (_deferredInstall) {
+      try { _deferredInstall.prompt(); } catch (e) {}
       return;
     }
     if (isIOS()) { iosGuide(); return; }
@@ -356,4 +368,132 @@ function _bkGoBackup() {
     }
   } catch (e) {}
   sync();
+})();
+
+// ===== iOS 视口与键盘适配硬化（BUGS #456）=====
+// 用户报的四件事是同一条链：①整页能被拖到屏幕外面 ②比例不对（页面被放大） ③输入法把正在打字的框完全挡住
+// ④交互时抖／闪。样式那半在 css/motion.css ⑩（本件只负责往 <html> 上挂那枚闸门类），这里补的是
+// init() 里那段 _vvFix 没覆盖的**唯一一件事**：把正在打字的那一枚框捞回「真实可视带」。
+//
+// 为什么必须自己算、不用 scrollIntoView（三处都是坑）：
+//   · 它按**布局视口**对齐——键盘遮住的那一段在它眼里仍然「在视口内」，滚完照样看不见（iOS 老账）；
+//   · 它会把滚动一路做到 document 上，而⑩-a 钉住 body 之后那半条路是死的；没钉住时它恰好造出 offsetTop 漂移，
+//     与 #430 那套「壳跟着视觉口平移」对冲＝④；
+//   · behavior:'smooth' 那 300ms 与键盘动画（≈250ms）同拍抢同一个滚动容器，中间每一帧都在给 _vvApply 换读数＝④的另一半。
+// 故：按 visualViewport 现算带 [offsetTop, offsetTop+height]，只滚**最近那一个滚动祖先**，瞬移不缓动。
+// scale≠1（#435 那档罢工）时 rect 与 vv 同在 CSS px 坐标系里、判式照样成立＝这一件同时是那一档的兜底。
+//
+// ⚠ 三条纪律（与 js/perf.js∶js/night.js 同一家风）：
+//   · 不新开定时器、不新装 visualViewport 监听——键盘沿由 _vvApply 经 __iosFit.stamp 递过来（唯一宿主）。
+//   · 聊天那一面不碰：#messageInput 是壳的 flex 子层（不在任何滚动容器里），它贴回键盘上沿靠 _vvApply 压壳、
+//     列表贴底靠 render.js 的 _stickLoop（#050）＝两处都有主，这里再插一脚必漂。
+//   · 两枚逃生阀都认：?iosfit=off（整批不启用，含样式闸门）∶body[data-kbFix=off]（#361 那把人工退路，见 focusin 那道判）。
+//   量具走第三条路：?iosfit=force——headless 没有 iPhone UA，靠它在同一条代码路上量（tools/_smoke_ios_viewport_pin.js）。
+(function iosFitHarden() {
+  try {
+    const root = document.documentElement, body = document.body, vv = window.visualViewport;
+    if (!root || !body) return;
+    const ua = String(navigator.userAgent || '');
+    // iOS 判定自包一份（站内 __bgIsIOS∶_stIsIOS∶上面那枚全屏的 isIOS 同一口径的先例：不跟别的 IIFE 借私有件）
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+    const q = String(location.search || '');
+    if (/[?&]iosfit=off\b/.test(q)) return;                 // 排障：整批摘掉（闸门类与捞框都不做）
+    const forced = /[?&]iosfit=force\b/.test(q);
+    if (!isIOS && !forced) return;                          // 桌面／安卓走到这一行就收＝本件零参零输出
+    root.classList.add('ios-pin');                          // css/motion.css ⑩ 的总闸（摘掉它＝⑩-a∶b∶c 整层失效）
+
+    const EDITABLE = 'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=button]):not([type=submit]):not([type=reset]):not([type=image]),textarea';
+    const isEditable = el => {
+      try { return !!el && !!(el.matches && el.matches(EDITABLE)); } catch (e) { return false; }
+    };
+
+    // 只读镜像：诊断页（js/diagnostic.js）与量具都念这一份，不允许第二处自己装 vv 监听
+    const FIT = window.__iosFit = {
+      on: true, ios: isIOS, forced: forced, pinned: true,
+      kb: false, kbH: 0, dy: 0, sc: 0, scale: 1, foci: 0,
+      log: [],        // 键盘沿（≤12 条）：{t,kb,h,dy}——「什么时候开的、压到多高、平移多少」的唯一现场
+      last: null,     // 最近一次「焦点框 vs 可视带」判定＝诊断里那条遮挡预警的读数
+      band() {
+        const h = vv ? vv.height : window.innerHeight;
+        const top = vv ? (vv.offsetTop || 0) : 0;
+        return { top: top, h: h, bottom: top + h };
+      },
+      inBand(el, pad) {
+        const r = el.getBoundingClientRect(), b = FIT.band(), p = pad == null ? 10 : pad;
+        return r.top >= b.top + p && r.bottom <= b.bottom - p;
+      },
+      // 由 _vvApply 在**已去重**那条分支上叫：值没变不进＝零额外开销；顺手记沿与 scale，只在开/关沿上动捞框与还原
+      stamp(kb, h, dy, sc) {
+        FIT.kb = kb; FIT.kbH = kb ? h : 0; FIT.dy = dy; FIT.sc = sc;
+        try { FIT.scale = vv ? (vv.scale || 1) : 1; } catch (e) {}
+        if (kb === FIT._prev) return;
+        FIT._prev = kb;
+        FIT.log.push({ t: Date.now(), kb: kb, h: h, dy: dy });
+        if (FIT.log.length > 12) FIT.log.shift();
+        if (kb) relive(); else restore();
+      }
+    };
+
+    let saved = null;   // 唯一一份还原账：{el, sc, before, after}
+    // 最近的那一个滚动祖先（文档那一级在⑩-a 之后压根不可滚，不认它；.app-shell 是 overflow:hidden 也不会命中）
+    function scrollerOf(el) {
+      for (let n = el.parentElement; n && n !== body; n = n.parentElement) {
+        let oy = '';
+        try { oy = getComputedStyle(n).overflowY; } catch (e) { return null; }
+        if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight - n.clientHeight > 2) return n;
+      }
+      return null;
+    }
+    function reveal(el) {
+      if (!isEditable(el)) return;
+      if (body.dataset.kbFix === 'off') return;              // #361 那把人工退路＝这一族全停
+      const b = FIT.band(), r = el.getBoundingClientRect(), PAD = 10;
+      const above = b.top + PAD - r.top, below = r.bottom - (b.bottom - PAD);   // 正数＝被挤出带外多少
+      // moved 从**还原账**上算（不是只在本轮真动手那一下才写）：一次聚焦里这一发会被叫两拍（rAF ＋落定复核），
+      // 复核那一拍看到的是「已经在带内」，旧写法会把上一拍的移动量盖成 0＝诊断上读出「没动过」的假话。
+      const movedPrev = saved && saved.el === el ? Math.round(saved.after - saved.before) : 0;
+      FIT.last = {
+        at: Date.now(), id: el.id || '', cls: String((el.className || '')).split(' ')[0] || '',
+        kb: FIT.kb, scale: FIT.scale, band: [Math.round(b.top), Math.round(b.bottom)],
+        box: [Math.round(r.top), Math.round(r.bottom)], out: Math.round(Math.max(above, below)),
+        inside: above <= 0 && below <= 0, moved: movedPrev
+      };
+      if (FIT.last.inside) return;
+      const sc = scrollerOf(el);
+      if (!sc) { FIT.last.noScroller = true; return; }        // 不在滚动容器里＝这一枚的位置归 _vvApply 压壳管（聊天输入栏正是这一类）
+      if (!saved || saved.el !== el) saved = { el: el, sc: sc, before: sc.scrollTop, after: sc.scrollTop };
+      // 对齐到带的**纵向中点**：只推到带上沿，输入法候选条／工具条那一截照样压在它身上（对岸 mochi 同一条经验）
+      const delta = r.top - (b.top + (b.h - r.height) / 2);
+      const max = sc.scrollHeight - sc.clientHeight;
+      sc.scrollTop = Math.max(0, Math.min(max, sc.scrollTop + delta));
+      saved.after = sc.scrollTop;
+      FIT.last.moved = Math.round(saved.after - saved.before);
+    }
+    // 键盘刚起来那一拍（含那些不发 resize 的输入法，#442 同族）：谁还拿着焦点就按新的带再捞一次
+    function relive() {
+      try {
+        const el = document.activeElement;
+        if (!isEditable(el) || el.id === 'messageInput') return;
+        requestAnimationFrame(() => reveal(el));
+        setTimeout(() => { if (document.activeElement === el) reveal(el); }, 320);
+      } catch (e) {}
+    }
+    // 键盘收起＝位置还给用户：只有我们那次滚动还在原位时才回滚（用户自己翻过就不动他的阅读位置）
+    function restore() {
+      const s = saved; saved = null;
+      if (!s || !s.sc || s.after === s.before) return;
+      try { if (Math.abs(s.sc.scrollTop - s.after) <= 2) s.sc.scrollTop = s.before; } catch (e) {}
+    }
+
+    // focusin 捕获：全站只这一枚（与 #442 那枚 focusin 同宿主、不同职责，两条互不覆盖）
+    document.addEventListener('focusin', e => {
+      const el = e.target;
+      if (!isEditable(el)) return;
+      FIT.foci++;                                            // 只读计数：诊断与量具拿它分「本件根本没收到焦点事件」与「收到了但没动手」
+      saved = null;                                          // 换框＝上一笔还原账作废（不许把 A 的位置扣到 B 上）
+      if (el.id === 'messageInput') return;                   // 聊天那一面有主（见头段第二条纪律）
+      requestAnimationFrame(() => requestAnimationFrame(() => reveal(el)));
+      setTimeout(() => { if (document.activeElement === el) reveal(el); }, 320);   // 键盘动画 ≈250ms，320 那一拍是落定后的复核
+    }, true);
+  } catch (e) { /* 硬化件是增强不是依赖：出错就不硬化（闸门类没挂上＝回到今天的形状），主流程一律不受影响 */ }
 })();

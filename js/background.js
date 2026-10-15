@@ -995,12 +995,11 @@ kaApplyNoduckPref(!!(e.target && e.target.checked));
 });
 syncKaNoduckUI();
 __bgWhenData(function () {
+// 单一口径：data.appearance.bgKeepAlive 是权威设置（设置页开关/使用大全/导入都写它）
+// 不再让遗留的 ordinal-bg-__ka-user-off 覆盖它——否则「设置=开、标记=关」时把保活误判为关，
+// 还会顺手把设置抹成 '0'（回前台反复误弹「后台保活已关闭」的根因，BUGS #451）
 const saved = gGet('bg-keepalive');
 keepEnabled = saved === '1';
-if (gGet('__ka-user-off') === '1') {
-keepEnabled = false;
-if (saved === '1') gSet('bg-keepalive', '0');
-}
 syncKeepUI();
 if (keepEnabled) startKeepAlive(false);
 });
@@ -1604,7 +1603,9 @@ if (notifyEnabled) nbArmWatch(nbAttempt);
 function reheatBgSwitches() {
 try { if (!ndUserTouched) syncNoDedupUI(); } catch (e) {}
 if (!keepUserTouched) {
-const wantKeep = gGet('bg-keepalive') === '1' && gGet('__ka-user-off') !== '1';
+// 权威设置为准：bgKeepAlive=开 即应开；遗留 __ka-user-off 只反映「上次经开关关过」，
+// 而经开关关时设置已同步为 '0'，无需再拿它否决（否决反而误伤 使用大全/导入 把设置改回开的情况，BUGS #451）
+const wantKeep = gGet('bg-keepalive') === '1';
 if (wantKeep !== keepEnabled) {
 keepEnabled = wantKeep;
 syncKeepUI();
@@ -1994,7 +1995,9 @@ nbPermRecheck();
 try { if (kaPermNoticeArmed) kaNoticeAfterSplash(nbPermPendingNotice); } catch (e) {}
 const saved = gGet('bg-notify');
 if (saved === '1') {
-const keepOn = keepEnabled;
+// 判据走权威设置 data.appearance.bgKeepAlive（gGet('bg-keepalive')），不用内存镜像 keepEnabled——
+// 后者会被遗留标记摁成 false，导致「保活其实开着」却每次回前台误弹这条（BUGS #451）
+const keepOn = gGet('bg-keepalive') === '1';
 if (!keepOn) {
 toast('提醒：后台保活已关闭，后台消息到不了，通知不会弹（设置里开启）');
 }

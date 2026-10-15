@@ -200,7 +200,7 @@
   --glass-grad:#FFFFFF;
   /* 描边：卡是实白、底是冷灰，边用**白亮描边**（0.9 白）而不是墨线 ——
      墨线在冷灰底上会画出一道灰痕（纯白档用 7% 墨线，正是因为当时卡与底同色，现在不同了）。 */
-  --glass-border:1px solid rgba(28,25,23,.09);
+  --glass-border:1px solid rgba(var(--ink-rgb),.09);
   /* 四层柔影（此前只有两层，少了 ③④）：
      ① 紧贴暗影（把面从底上托起来）② 浮起影（体积量）③ **顶部内高光**（光从上方来）
      ④ **卡底反射光** `inset 0 -1px 0`（卡下缘被下方表面反光）—— 前四版缺这层，面就少一半体积感。
@@ -252,7 +252,7 @@ body{
   --panel-solid:color-mix(in srgb,#fff 100%,transparent);
   --topbar-veil:#FFFFFF;
   --glass-grad:#FFFFFF;
-  --glass-border:1px solid rgba(28,25,23,.09);
+  --glass-border:1px solid rgba(var(--ink-rgb),.09);
   --glass-shadow:0 1px 2px rgba(var(--shadow-rgb),.04);
   --island-shadow:none;
   --float-shadow:0 8px 24px rgba(var(--shadow-rgb),.10);
@@ -266,6 +266,12 @@ body{
   --knob-edge:color-mix(in srgb,var(--ink) 12%,transparent);
   --bar-ink:color-mix(in srgb,var(--ink) 80%,transparent);
   --scrim:color-mix(in srgb,var(--ink) 26%,transparent);
+  /* 气泡描边浓度（mono ⑥ 那条「白面一圈浅边」的浓度）：旧写法把 rgba(ink,.08) 字面量直接写在
+     css/mono.css 里——它与 --line(.10)∶--glass-border(.09) 同属「浅边」一族却自成一档，
+     光影档换线时它不动＝同一屏的线一半随档呼吸一半不呼吸。收成一枚令牌，值与旧字面量逐字节相同。 */
+  --bubble-edge:rgba(var(--ink-rgb),.08);
+  /* 金＝用户自选色板（我方字∶对方字∶时间戳三档共用），不再三处字面量 */
+  --gold-ink:#d4af37;
 }
 
 *{box-sizing:border-box}
@@ -281,6 +287,11 @@ html,body{margin:0;min-height:100%;background:var(--page);color:var(--ink);font-
 }
 button,input,select{font:inherit;color:inherit}
 button{border:0;cursor:pointer;background:none}
+/* 焦点环（2026-10-15 统一批）：全站此前没有任何焦点表达——聊天输入框的 focus 内描边被
+   css/chat.css「雾灰绒感」那段抹成 box-shadow:none，其余控件 outline:none 无替代；触屏吃不到键盘不显形，
+   外接键盘∶Tab 导航的用户按下去却什么都不亮。特异度 (0,1,1) 与 `.composer input`∶`.poke-input`
+   那些 outline:none 同档∶本件排在 chat.css 之后＝后写胜，不用第二层 !important（本仓禁用）。 */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid rgba(var(--ink-rgb),.78);outline-offset:2px}
 [hidden]{display:none !important}
 /* 全局隐藏滚动条（2026-10-04）：所有滚动容器（消息/会话/设置/弹层/免责页等）一律不显灰条；
    触屏/滚轮/拖拽滚动不受影响，全仓无 JS 依赖滚动条宽度；各组件内零散 scrollbar 规则冗余但无害 */
@@ -328,14 +339,15 @@ body[data-view=chat] .topbar-title{padding-left:34px}
 /* 切页入场（BUGS #348，用户「滑动和点击都不够丝滑」）：只给底部导航那五枚**主视图**——首页↔聊天↔字卡库↔
    世界感知↔更多。下钻页（信箱/设置/收藏/统计…）刻意不加：那些面本来就是「从屏底升起来的贴底面板」或
    整页带自己的动效，再叠一层淡入＝同一件事两处动（「读数别重复」那族）。
-   只做 opacity＋4px 上浮两件事，全部走合成器属性（不碰 layout/paint），180ms 比一次点击的辨识阈略长、
+   只做 opacity＋上浮两件事（幅度引 --mo-far，与 css/motion.css ①⑤ 同源，#432 二批归一：
+   旧这里写 4px、motion 给 6px，两套数各写各的＝同一件事两处分叉），全部走合成器属性（不碰 layout/paint），180ms 比一次点击的辨识阈略长、
    比翻页手感略快，曲线沿用本站气泡入场那条 cubic-bezier(.22,1,.36,1)（chat.css 的 cardBounce 同一条）。
    ⚠ 刻意**不写 animation-fill-mode**：动画一结束 computed transform 就回 none。若给 fill:both，`.view`
    会长期带着 transform＝成为屏上那 15 枚 position:fixed 件（.fab／.call-window／#deskPopWrap／
    body[data-toast] 那层…数法：grep -rn "position:fixed" css/*.css 剔掉未登记的 glass∶frost∶editorial
    ＝15 处）的包含块，它们从此不再相对视口定位＝一颗常驻陷阱换 180ms 的观感，不值。
-   代价因此是明确的：这 180ms 内 fixed 件跟着上浮 4px，肉眼读作「整页一起进来」，正是想要的。 */
-@keyframes viewIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+   代价因此是明确的：这 180ms 内 fixed 件跟着上浮（幅度即上面那枚 --mo-far），肉眼读作「整页一起进来」，正是想要的。 */
+@keyframes viewIn{from{opacity:0;transform:translateY(var(--mo-far,4px))}to{opacity:1;transform:translateY(0)}}
 /* #432：原来硬钉五个 id（chats∶chat∶cards∶cjian∶more），其余页（朋友圈∶播放器∶信箱∶
    收藏∶纪念日∶设置∶聊天设置…）切进去是**硬闪**＝观感两套。改成通配 .view.active，
    时长与曲线引 css/motion.css ① 那两枚（带兜底＝那一件不在时这里也不塌）。 */
@@ -457,7 +469,7 @@ body[data-ap-mine=mint]   {--mine:#bfe0cc;--mine-text:#20362a}
 /* 我方文字颜色覆盖：auto(随色板)/白/黑/金 */
 body[data-ap-mine-text=white]{--mine-text:#fff !important}
 body[data-ap-mine-text=black]{--mine-text:#111 !important}
-body[data-ap-mine-text=gold] {--mine-text:#d4af37 !important}
+body[data-ap-mine-text=gold] {--mine-text:var(--gold-ink) !important}
 
 /* 对方气泡颜色：data-ap-partner = auto(跟随主题,JS不设属性)/ink/gray/wine/plum/forest/coffee/white */
 body[data-ap-partner=ink]   {--partner-bubble:#4a4038;--partner-text:#fff}
@@ -473,7 +485,7 @@ body[data-ap-partner=mint]   {--partner-bubble:#bfe0cc;--partner-text:#20362a}
 /* 对方文字颜色覆盖：auto(随气泡)/白/黑/金 */
 body[data-ap-partner-text=white]{--partner-text:#fff !important}
 body[data-ap-partner-text=black]{--partner-text:#111 !important}
-body[data-ap-partner-text=gold] {--partner-text:#d4af37 !important}
+body[data-ap-partner-text=gold] {--partner-text:var(--gold-ink) !important}
 /* 对方气泡只改对方的 .bubble，我方气泡不受影响 */
 body[data-ap-partner] .message:not(.mine) .bubble{background:var(--partner-bubble);color:var(--partner-text)}
 body[data-ap-partner-text] .message:not(.mine) .bubble{color:var(--partner-text)}
@@ -548,7 +560,7 @@ body[data-ap-day=ink] .chat-area .day-label,body[data-ap-day=ink] .ap-preview .a
 body[data-ap-day=none] .chat-area .day-label,body[data-ap-day=none] .ap-preview .ap-prev-day{background:transparent;color:var(--muted)}
 body[data-ap-meta=black] .chat-area .message-meta,body[data-ap-meta=black] .ap-preview .ap-prev-meta{color:rgba(20,22,28,.92)}
 body[data-ap-meta=white] .chat-area .message-meta,body[data-ap-meta=white] .ap-preview .ap-prev-meta{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45)}
-body[data-ap-meta=gold] .chat-area .message-meta,body[data-ap-meta=gold] .ap-preview .ap-prev-meta{color:#d4af37;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+body[data-ap-meta=gold] .chat-area .message-meta,body[data-ap-meta=gold] .ap-preview .ap-prev-meta{color:var(--gold-ink);text-shadow:0 1px 3px rgba(0,0,0,.4)}
 body[data-ap-sys=white] .chat-area .sys-msg,body[data-ap-sys=white] .ap-preview .ap-prev-sys{background:rgba(255,255,255,.86);color:rgba(20,22,28,.78)}
 body[data-ap-sys=ink] .chat-area .sys-msg,body[data-ap-sys=ink] .ap-preview .ap-prev-sys{background:rgba(var(--ink-rgb),.82);color:#fff}
 body[data-ap-sys=none] .chat-area .sys-msg,body[data-ap-sys=none] .ap-preview .ap-prev-sys{background:transparent;color:var(--muted)}
@@ -693,31 +705,34 @@ body[data-ap-glass=on][data-ap-glasslite=on] .composer{
      （层数是「玻璃受光面」的实现，加减层会连体积感一起变掉，那不是档位该动的东西）。 */
 
 /* 通透：alpha 压到 .70，影与描边同步减薄 —— 卡片读起来最「透」，代价是台阶偏平 */
-body[data-ap-light=airy]{--line:rgba(var(--ink-rgb),.06);--hair:rgba(var(--ink-rgb),.06);--edge-light:rgba(var(--ink-rgb),.06);--ctl-hair:rgba(var(--ink-rgb),.14);--well:rgba(var(--shadow-rgb),.05);--press:rgba(var(--ink-rgb),.05)}
+body[data-ap-light=airy]{--line:rgba(var(--ink-rgb),.06);--hair:rgba(var(--ink-rgb),.06);--edge-light:rgba(var(--ink-rgb),.06);--ctl-hair:rgba(var(--ink-rgb),.14);--well:rgba(var(--shadow-rgb),.05);--press:rgba(var(--ink-rgb),.05);--bubble-edge:rgba(var(--ink-rgb),.06);--glass-border:1px solid rgba(var(--ink-rgb),.06)}
 
 /* 厚重：alpha 升到 .86，影与描边同步加厚 —— 层次最强、通透感最弱（接近 #107 那版的观感） */
-body[data-ap-light=deep]{--line:rgba(var(--ink-rgb),.16);--hair:rgba(var(--ink-rgb),.16);--edge-light:rgba(var(--ink-rgb),.16);--ctl-hair:rgba(var(--ink-rgb),.26);--well:rgba(var(--shadow-rgb),.10);--press:rgba(var(--ink-rgb),.10)}
+body[data-ap-light=deep]{--line:rgba(var(--ink-rgb),.16);--hair:rgba(var(--ink-rgb),.16);--edge-light:rgba(var(--ink-rgb),.16);--ctl-hair:rgba(var(--ink-rgb),.26);--well:rgba(var(--shadow-rgb),.10);--press:rgba(var(--ink-rgb),.10);--bubble-edge:rgba(var(--ink-rgb),.13);--glass-border:1px solid rgba(var(--ink-rgb),.14)}
 
 /* ===== 卡片毛玻璃（设置 → 外观 →「卡片通透」的开/关；字段 appearance.frost，2026-10-15 重做）=====
    旧那一行是「通透/均衡/厚重」三档（只改发丝线浓淡，屏上几乎看不出＝用户报「没作用」），现换成一个开/关。
-   ⚠ glass.css∶frost.css 两件玻璃覆盖层并未登记进 css_order（留底），故本站现在是「实心白」——这一档就地重建磨砂：
-   开＝给画布铺一层冷调浅渐变（供「后面有东西可糊」），再把卡片面的实心白折成半透白＋backdrop-filter 模糊＝真·毛玻璃；
+   ⚠ glass.css∶frost.css 两件玻璃覆盖层并未登记进 css_order（留底），故本站现在是「实心白」——这一档就地重建磨砂。
+   开＝画布铺一层**中性无彩**（不发蓝）柔光底（base 略比卡面暗一档＝半透白卡才有台阶，两枚柔光池给 blur 一点起伏），
+     再把 --glass-grad 折成半透白（一次覆盖 关于TA/统计/信箱/播放器/通话 那批玻璃面）＋卡片族就地换半透白＋白顶高光＋backdrop-filter 模糊＝真·磨砂玻璃。
    关＝什么都不写，回到现在的实心白（基础令牌本身）。
-   ⚠ 不改全局 --surface∶--panel：那两枚会漏进底部弹层、把底下的聊天字透上来压住正文（BUGS #107）；
-     只挑「身后只有画布」的卡片面就地改。配「桌面美化」自传壁纸时磨砂感最明显。 */
-body[data-ap-frost=on]{--glass-blur:var(--frost-blur,14px);--glass-grad:rgba(255,255,255,.60)}
-body[data-ap-frost=on] .app-shell{background:linear-gradient(165deg,#e9eef6 0%,#f3f5f9 42%,#e6ecf5 100%)}
+   ⚠ 不改全局 --surface∶--panel（那两枚会漏进底部弹层压住正文，BUGS #107），也不碰气泡（气泡有聊天页自己的独立开关）。
+     配「桌面背景」自传壁纸时磨砂最立体（backdrop-filter 糊的是真图，不只是渐变）。 */
+body[data-ap-frost=on]{--glass-blur:var(--frost-blur,16px);--glass-grad:rgba(255,255,255,.66)}
+/* 中性磨砂底（无彩、不发蓝）：base 略暗于卡面以造出台阶；两枚无彩柔光池让 backdrop-filter 有可采样的起伏 */
+body[data-ap-frost=on] .app-shell{background:radial-gradient(135% 85% at 16% 0%,#ffffff 0%,rgba(255,255,255,0) 48%),radial-gradient(135% 95% at 86% 100%,#d8d8d8 0%,rgba(216,216,216,0) 56%),#ebebeb}
+/* 卡片族（用 --surface 的那批，就地改、不动全局 --surface 以避开气泡耦合）：半透白＋白顶高光＋柔外影＝磨砂玻璃边 */
 body[data-ap-frost=on] .setting-card,
 body[data-ap-frost=on] .chat-row,
 body[data-ap-frost=on] .card-item,
-body[data-ap-frost=on] .fav-card{background:rgba(255,255,255,.60)}
+body[data-ap-frost=on] .fav-card{background:rgba(255,255,255,.66);box-shadow:inset 0 1px 0 rgba(255,255,255,.72),0 2px 14px rgba(0,0,0,.07)}
 @supports (backdrop-filter:blur(10px)) or (-webkit-backdrop-filter:blur(10px)){
   body[data-ap-frost=on] .setting-card,
   body[data-ap-frost=on] .chat-row,
   body[data-ap-frost=on] .card-item,
   body[data-ap-frost=on] .fav-card{
-    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(150%);
-    backdrop-filter:blur(var(--glass-blur)) saturate(150%);
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter:blur(var(--glass-blur)) saturate(160%);
   }
 }
 /* 气泡毛玻璃（frostBubble）：聊天外观里的独立一枚开关（住 TA 设置页），与上面「卡片通透」那套**互不依赖**。
@@ -728,8 +743,8 @@ body[data-ap-frost-bubble=on] .chat-area .message.mine .bubble{background:color-
 body[data-ap-partner][data-ap-frost-bubble=on] .chat-area .message:not(.mine) .bubble{background:color-mix(in srgb,var(--partner-bubble) 82%,transparent)}
 @supports (backdrop-filter:blur(8px)) or (-webkit-backdrop-filter:blur(8px)){
   body[data-ap-frost-bubble=on] .chat-area .bubble{
-    -webkit-backdrop-filter:blur(12px) saturate(150%);
-    backdrop-filter:blur(12px) saturate(150%);
+    -webkit-backdrop-filter:blur(var(--frost-bubble-blur,12px)) saturate(150%);
+    backdrop-filter:blur(var(--frost-bubble-blur,12px)) saturate(150%);
   }
 }
 

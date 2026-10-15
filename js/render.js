@@ -7,7 +7,10 @@ let _lastMsgCount = 0;
 let _msgRebuild = true;
 let _animateNextRender = false;   // 业务侧(发消息/收投递)置 true：下次渲染完成后给最新气泡加入场动画(空会话首条等重建路径也要播)
 let _searchQuery = '';
-function resetMessageRender() { _msgRebuild = true; _lastMsgCount = 0; _msgStart = 0; }
+// 作废在途分片：置 _msgRebuild 的同时把 _msgChunkToken++（BUGS #446）——任何「下一次要整列表重建」的意图
+// 都意味着此刻正在 setTimeout 逐片跑的那批不该再往 DOM 里塞东西（它们绑的是旧数组/旧窗口）。
+// 下方 let _msgChunkToken 在首次调用（init／事件）时早已初始化，函数体取的是调用那一刻的值，不受定义先后影响。
+function resetMessageRender() { _msgRebuild = true; _lastMsgCount = 0; _msgStart = 0; _msgChunkToken++; }
 let _cachedMiniImg = '';
 let _cachedMiniPartner = '';
 let _cachedMiniMine = '';
@@ -73,8 +76,14 @@ function initLazyImages(root) {
 // 问问TA 那张卡是一个例外（BUGS #213）：发卡时整条记在我方名下（js/ask.js 的 from:'me'），可 TA 的答复
 // 是抽字卡抽出来塞进同一张卡里的（m.ask.parts／pick／picks）＝正是这一族要说的那件事。只给已回答的那一发：
 // 等待态里还没有答案，掷一档＝签指着一件没发生过的事。
+// ⚠ 2026-10-15（BUGS #459）这一把尺不再只管本意：它现在是【那两枚问签共用的唯一资格】——
+// 「这句说谁」旧写法只看挂不挂得出锚点，于是同一条气泡上长成一枚有一枚没有（我方∶功能生成的∶撤回的∶补发的），
+// 而 TA 不等你问就自己标那一路（js/chat.js 的 _askBadgeSelf）本来就两位一起挡这三类＝同一个字段两处各一套资格
+// （#350 立的「两层实现必漂」）。现在两枚钮同引这一处：要么一起给，要么一起不给。
 function _meantEligible(m) {
   if (!m || m.recalled || m.src) return false;
+  // FIX 2026-10-15 #459 补发那条与撤回同族：屏上只有「重新发送了一条消息」那行占位小字，没有可问的句子
+  if (m.sentAgain) return false;
   if (m.ask) return m.ask.status === 'answered';
   return m.from === 'partner';
 }
@@ -286,8 +295,14 @@ function _buildMessageHTML(m, miniImg, miniMine, miniPartner) {
   // 两枚问签的钮只对「挂得出的那条气泡」给：游戏卡那类没有 .bubble 宿主（.gcard 还带 overflow:hidden），
   // 给了钮也掷不出一枚看得见的签＝「看着能点实则无反应」那一族（BUGS #138 二批，用户报「有的消息点击后无反应」）
   const askBadge = _badgeAnchorOK(body);
-  const referBtn = (data.referOn !== false && askBadge) ? '<button type="button" data-act="refer">这句说谁</button>' : '';
-  const meantBtn = (data.meantOn !== false && askBadge && _meantEligible(m)) ? '<button type="button" data-act="meant">这句本意</button>' : '';
+  // FIX 2026-10-15 #459 两枚钮共用同一道资格，判据只此一处（_meantEligible＝TA 那一侧抽出来的话 ∶ 非撤回 ∶ 非补发 ∶
+  // 非功能生成的那条；已回答的问问TA 卡算 TA 的话＝#213 那一支例外）。
+  // 屏上从此没有「一枚有一枚没有」那种模糊态：给就两枚都给，不给就两枚都不给。
+  // 不挡「这句话短」——纯图片∶无字幕语音那条照旧给（TA 自标那一路对带图气泡也从不排除，多挡一道＝两处各一套尺，
+  // 见 tools/_smoke_ask_self_badge.js 的 B4b）。
+  const askOk = askBadge && _meantEligible(m);
+  const referBtn = (data.referOn !== false && askOk) ? '<button type="button" data-act="refer">这句说谁</button>' : '';
+  const meantBtn = (data.meantOn !== false && askOk) ? '<button type="button" data-act="meant">这句本意</button>' : '';
   // 「删除消息」总闸（delMsgOn，出厂关）：关着时这一行**不画**那枚钮，不是画了再藏——
   // 藏起来的钮仍能被长按命中、也会在无障碍树里留一个假入口，等于「关了还能删」。
   // 撤回（recall）不受它管：撤回是「说错了」，删除是「不想留」，两件事分开。
@@ -665,6 +680,11 @@ function renderMessages() {
   if (pending > 0) {
     _msgChunkToken++;
     const token = _msgChunkToken;
+    // 分片闭包对消息数组取**快照**（BUGS #446）：switchChat 会同步把 data.messages 重绑成另一本、
+    // 却把 renderMessages 推迟到下一帧——那半帧里上一位会话仍在途的分片会拿本闭包捕获的旧 end/total
+    // 去读被换短的 data.messages[i]，越界得到 undefined → _buildMessageHTML 里 m.from 抛 TypeError。
+    // 与 total/end 同源快照，闭包永远只画它起飞那一刻那一本，绝不跟着重绑漂移。
+    const msgs = data.messages;
     const BUDGET = 12;   // 每片毫秒预算
     const STEP = 200;    // 每片最大条数
     // FIX 2026-10-14 #405 重建路径的接缝日期不许从窗外播种：_lastMsgCount 刚被重建分支改写成窗口起点，
@@ -672,7 +692,7 @@ function renderMessages() {
     // （首屏页 [300,500) 的首组标签就是这样消失的），进而把 loadEarlierMessages 的插入锚
     //（全列表第一个标签）挤离列表顶＝历史页插进中段、锚定补偿算 0、scrollTop 停 0 不再触发分页。
     // 只有增量大批量（!needRebuild，接缝那条真在 DOM 尾上）才播种窗外那条。
-    let _lastDate = needRebuild ? '' : (_lastMsgCount > 0 ? (data.messages[_lastMsgCount - 1].date || '') : '');
+    let _lastDate = needRebuild ? '' : (_lastMsgCount > 0 ? (msgs[_lastMsgCount - 1].date || '') : '');
     const next = () => {
       if (token !== _msgChunkToken) return;   // 期间又触发了新渲染，放弃过时任务
       const remaining = end - _lastMsgCount;
@@ -682,7 +702,8 @@ function renderMessages() {
       let i = _lastMsgCount;
       while (i < end && (i - _lastMsgCount) < STEP && (Date.now() - t0) < BUDGET) {
         if (searchIdxs !== null && !searchIdxs.includes(i)) { i++; continue; }
-        const m = data.messages[i];
+        const m = msgs[i];
+        if (!m) { i = end; break; }   // 快照长度与 end 不符（不该发生）：收手到窗口尾，绝不把 undefined 递进渲染器
         const md = m.date || '';
         if (md !== _lastDate) { frag.appendChild(_buildDaySeparator(md)); _lastDate = md; }
         frag.appendChild(_buildMessageHTML(m, miniImg, miniMine, miniPartner));
@@ -1075,30 +1096,6 @@ const _ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 // #411 使用权开关的两枚眼睛（停用＝闭眼）：mochi 同款形制，开／停共用一个位
 const _ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
 const _ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>';
-function _cardItemHTML(gi, ci, entry, selKey, batch, badge) {
-  const img = cardImage(entry);
-  const voice = img ? null : voiceCardParts(entry);
-  const body = img
-    ? `<span class="card-img"><img data-src="${escapeHTML(img)}" alt="表情包" data-lazy-img="true"></span>`
-    : voice
-      ? `<span class="card-text card-voice">${_ICON_VOICE}<span class="voice-name">${escapeHTML(voice.name)}</span></span>`
-      : `<span class="card-text">${escapeHTML(entry)}</span>`;
-  const badgeHtml = badge ? `<span class="card-badge">${escapeHTML(badge)}</span>` : '';
-  const actions = img
-    ? `<div class="card-actions"><button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`
-    : `<div class="card-actions"><button class="card-edit" data-card-edit data-group="${gi}" data-card="${ci}" title="编辑">${_ICON_EDIT}</button><button class="card-delete" data-card-delete data-group="${gi}" data-card="${ci}" title="删除">${_ICON_TRASH}</button></div>`;
-  const selAttr = batch && cardsBatchSel.has(selKey) ? ' data-sel="1"' : '';
-  const itemCls = img ? 'card-item card-img-item' : 'card-item';
-  if (batch) {
-    const check = '<span class="card-check"></span>';
-    return badge
-      ? `<div class="${itemCls}" data-sel-key="${selKey}"${selAttr}>${check}<div class="card-main">${body}${badgeHtml}</div></div>`
-      : `<div class="${itemCls}" data-sel-key="${selKey}"${selAttr}>${check}${body}</div>`;
-  }
-  return badge
-    ? `<div class="${itemCls}" data-sel-key="${selKey}"><div class="card-main">${body}${badgeHtml}</div>${actions}</div>`
-    : `<div class="${itemCls}" data-sel-key="${selKey}">${body}${actions}</div>`;
-}
 // 分组绑定徽标：own 作用域显示（@名字 / 未绑定·TA用不到），点击弹绑定层改整组归属
 // 名字走 chatNameOf（与首页会话行同一把尺，BUGS #246）：读 c.name 会让绑定名单里的人
 // 与你在聊天列表里看到的人对不上号，看着像「名单里没有我在聊的那位」（BUGS #259）

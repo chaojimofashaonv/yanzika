@@ -21,11 +21,11 @@
   // 而是「有没有自动化门预置的跳过标记」——真实确认路径从不写这个键，只有测试夹具写。
   var AGE_GATE_KEY_EARLY = 'ordinal-age-test-skip';
   var AGE_GATE_VER_EARLY = '2026-10-09';
-  // #431（薄入口化）：js 外置成 <script defer> 之后，DOMContentLoaded 要等**全部**外置件
-  // 下载并执行完才触发——它就是新架构下「主脚本到了没有」的权威信号（旧架构信号＝文档流
-  // 式下载到位，#346 的 readyState 闸管的是那一种）。这里先置 false，监听器一触即翻真。
-  window.__domJs = false;
-  document.addEventListener('DOMContentLoaded', function () { window.__domJs = true; });
+  // #431（薄入口化）：js 外置成 <script defer> 后，「脚本死没死」不能再拿 DOMContentLoaded／__domJs 当读数——
+  // 那是**最晚**的信号（要等全部 defer 件执行完才翻真），慢网上整个下载阶段它都是 false，旧判据据此在 3 秒
+  // 误放人＝公告先摘、露出桌面、JS 到齐后又盖回来＝用户报的 GitHub 手机端那一闪。改回用 document.readyState
+  // === 'complete'（load 事件后＝全部资源含 defer 件都已尝试过、成功或失败）作「网络到齐了没有」的唯一权威读数：
+  // 还在下载＝没到 complete＝只是慢，绝不摘公告页；已到 complete 而 __jsAlive 仍不在＝整块真死，照旧放人。
   (function () {
     try {
       if (localStorage.getItem(AGE_GATE_KEY_EARLY) !== null) return;
@@ -43,20 +43,21 @@
       // ② 跑起来了只是慢 → 不摘类，只留一条宽松绝对上限兜「跑到中段就卡死」这种没见过的形状（那把尺子读到 20027ms 摘类），
       //    上限取 20 秒不取 12 秒：12 秒这条线会被 20 倍节流自己撞穿（bound 实测最迟 12028ms），一撞穿就又回到上面那一闪。
       // 公告一旦接管（bound）兜底当场下岗，绝不摘已经在看的那一页。
-      // ⚠ #363 再补一刀：「标记不在」≠「整块死了」。__jsAlive 要等那块三万行的内联脚本**开始执行**才出现，而这份 2.1MB
-      // 的文档在真机上要先走网络——弱网下 3 秒时文档还在流式下载，标记当然不在，旧判据却照摘类＝公告先盖上、
-      // 露出桌面、下完执行完又盖回来＝用户报的那一闪在 #346 之后仍复发（本地探针复现不了：本地伺服没有「文档还在流」
-      // 这个形状）。所以摘类再加一道 readyState 闸：文档还在 'loading'（流式下载／解析中，含那块脚本自己同步执行的
-      // 那一段）＝只是「还没到」，绝不放人走；解析已收尾（interactive/complete）而标记仍不在＝整块真死，照旧放人。
-      // ⚠ #431 改判据（薄入口化）：js 外置成 <script defer> 后，文档（~0.4MB）先下完、readyState 到 interactive，
-      // 而**外置件还在路上**——readyState 闸会在这时放人＝公告先摘、白屏等脚本（慢网上长达数分钟）。换信号：
-      // __domJs（DOMContentLoaded，等全部 defer 件执行完才触发）＝「脚本到了」的权威读数；js 全 404 / 离线时
-      // DCL 照样触发且 __jsAlive 不在＝真死照旧 ~3s 放人，语义与 #346/#363 逐字对应，只是尺子换了新架构的量法。
+      // ⚠ #363·#431 合并口径（薄入口／外置 defer 世界下的唯一正确尺法）：「__jsAlive 不在」≠「整块死了」。
+      // js/data.js 是 45 个 <script defer> 里的第一件，__jsAlive 要等它**下完并开始执行**才落 1；GitHub Pages
+      // 手机端弱网下这一发常 >3 秒，而那段时间里文档虽解析完、外置件仍在路上。旧 #431 判据错拿 __domJs
+      // （DOMContentLoaded，等全部 defer 执行完才翻真）当「脚本到了」的读数——它比 __jsAlive 更晚，整个慢加载
+      // 阶段都为 false，于是 `!__jsAlive && !__domJs` 在「慢但活着」时也成立＝3 秒摘类、露出桌面、JS 到齐后再盖回＝
+      // 用户报的「加载中途跳桌面、进不去开屏」正是这一闪（本地伺服秒回，复现不出「外置件还在流」这个形状）。
+      // 尺子换成 document.readyState === 'complete'：load 事件（全部资源含 defer 件尝试完毕，成功或失败）后
+      // 才为真。慢加载途中它停在 'loading'／'interactive'＝还没到齐＝只是慢，绝不放人走；已到 complete 而
+      // __jsAlive 仍不在＝离线／404／data.js 顶层抛错那种真死，照旧 ~3s 放人（#021·#111 那族「不锁死人」的原意不变）。
+      // CEIL_MS 那条绝对上限继续兜「连接卡死、load 永不来」这种没见过的形状。
       var DEAD_MS = 3000, CEIL_MS = 20000, STEP_MS = 200, waited = 0;
       var timer = setInterval(function () {
         waited += STEP_MS;
         if (window.__ageGateBound) { clearInterval(timer); return; }
-        if (waited >= DEAD_MS && !window.__jsAlive && !window.__domJs) { clearInterval(timer); document.documentElement.classList.remove('gate-early'); return; }
+        if (waited >= DEAD_MS && !window.__jsAlive && document.readyState === 'complete') { clearInterval(timer); document.documentElement.classList.remove('gate-early'); return; }
         if (waited >= CEIL_MS) { clearInterval(timer); document.documentElement.classList.remove('gate-early'); }
       }, STEP_MS);
     } catch (e) {}
@@ -340,7 +341,7 @@
            行形照 .message 那套（头像盘＋气泡、我方靠右）＝用户看到的是「同一种行正在长出来」，不是另一块东西。 -->
       <div class="msg-skel" id="msgSkel" hidden aria-hidden="true"><div class="sk-row"><i class="sk-av"></i><i class="sk-m"></i></div><div class="sk-row mine"><i class="sk-s"></i></div><div class="sk-row"><i class="sk-av"></i><i class="sk-l"></i></div><div class="sk-row mine"><i class="sk-m"></i></div><div class="sk-row"><i class="sk-av"></i><i class="sk-s"></i></div></div>
       <div class="chat-area" id="messageList" aria-live="polite"></div>
-      <button type="button" class="scroll-bottom-btn" id="scrollBottomBtn" hidden aria-label="回到底部">↓</button>
+      <button type="button" class="scroll-bottom-btn" id="scrollBottomBtn" hidden aria-label="回到底部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m5 12 7 7 7-7"/></svg></button>
       <div class="sticker-drawer" id="stickerDrawer"><div class="sticker-top"><div class="sticker-tabs" id="stickerTabs" role="tablist"><button type="button" class="sticker-tab" data-sticker-tab="public" role="tab"></button><button type="button" class="sticker-tab" data-sticker-tab="partner" role="tab"></button><button type="button" class="sticker-tab" data-sticker-tab="mine" role="tab"></button></div><button type="button" class="icon-btn" id="closeStickers" aria-label="关闭">×</button></div><div class="sticker-cats" id="stickerCats"><button type="button" class="sticker-cat-chip on" data-scat="sticker">表情包</button><button type="button" class="sticker-cat-chip" data-scat="kaomoji">颜文字</button><button type="button" class="sticker-cat-chip" data-scat="emoji">emoji</button></div><div class="sticker-tools" id="stickerTools" hidden><button type="button" class="sticker-tool" id="myeAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>添加</button><button type="button" class="sticker-tool" id="myeAddLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"/></svg>链接导入</button><button type="button" class="sticker-tool" id="myeBatch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>批量管理</button><button type="button" class="sticker-tool" id="myeManage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg>管理分组</button></div><div class="sticker-groups" id="stickerGroups" hidden></div><div class="sticker-body" id="stickerBody"></div><div class="sticker-batch" id="stickerBatch" hidden><span class="sticker-batch-count" id="stickerBatchCount">已选 0 张</span><span class="sticker-batch-btns"><button type="button" class="sticker-batch-btn" id="stickerBatchAll">全选</button><button type="button" class="sticker-batch-btn del" id="stickerBatchDel">删除</button><button type="button" class="sticker-batch-btn" id="stickerBatchExit">退出</button></span></div></div>
 <div class="sticker-drawer" id="pokeMask" hidden>
       <div class="poke-sheet" role="dialog" aria-label="拍一拍">
@@ -366,7 +367,7 @@
               </div>
             </div>
       </div>
-      <div class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><img class="attach-thumb" id="attachThumb" alt="待发送图片"><span class="attach-info">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" style="display:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button class="send-btn" type="button" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div></div>
+      <div class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><img class="attach-thumb" id="attachThumb" alt="待发送图片"><span class="attach-info">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button class="send-btn" type="button" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div></div>
       <!-- 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x 同名功能）：TA 的设置「批量发送」开关打开后
            输入栏显示那枚钮；面板里逐项添加文字 / 表情包 / 图片（每一项就是一条消息，清单可删可清空），
            点「发送全部」按顺序逐条入账、整批只发起一次回复。壳用全站 .fs-sheet-* 贴底面板族；
@@ -730,7 +731,7 @@
 
         <div class="setting-card fold" data-tab="notify" data-fold="bg">
           <button type="button" class="fold-hd"><span class="fold-ti">新消息提醒</span><span class="fold-sum" id="sumBg"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="setting-subhead">后台保活</div><div class="ap-row"><span>开启后台保活<span style="display:block;font-size:11px;color:var(--muted)">切后台时持续播放近无声音频防冻结，消息即时到达；回前台自动补跑错过的调度</span></span><input type="checkbox" id="bgKeepAlive" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>不抢其他 App 的声音<span style="display:block;font-size:11px;color:var(--muted)">保活音频走静音通道，不压低你在听的音乐/视频音量</span></span><input type="checkbox" id="bg-keep-noduck" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>保活音频<span style="display:block;font-size:11px;color:var(--muted)">点击可换成自定义音频（白噪音/助眠声，会按原音量出声）</span></span><button class="soft-btn" id="bg-keep-audio-btn" style="flex:none;width:auto;padding:5px 10px">默认静音音频</button></div><button class="soft-btn" id="testKeepAlive">保活测试</button><div class="setting-subhead">系统通知（切后台）</div><div class="ap-row"><span>开启系统通知<span style="display:block;font-size:11px;color:var(--muted)">切后台后收到新消息·来信·来电，弹系统通知（装在手机上＝手机 设置 → 应用 → 言字卡 → 通知 里允许；用浏览器打开＝浏览器问你要网站通知权限）</span></span><input type="checkbox" id="bgNotify" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>每条消息单独通知<span style="display:block;font-size:11px;color:var(--muted)">关闭时同一会话连发多条只弹一条</span></span><input type="checkbox" id="bgNotifyNoDedup" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div id="bgNotifyPermWarn"></div><button class="soft-btn" id="testNotify">通知测试</button><div class="setting-subhead">桌面前台弹窗</div><div class="ap-row"><span>显示横幅<span style="display:block;font-size:11px;color:var(--muted)">前台收到新消息/来信时，顶部弹出横幅提醒，点击直达</span></span><input type="checkbox" id="deskPopupToggle" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>弹窗行数<span style="display:block;font-size:11px;color:var(--muted)">同时最多显示几条横幅；1 行时新弹窗顶掉旧弹窗，2 行时不同来源并行各占一行</span></span><div class="contact-chip-row" style="margin:0" id="deskPopRowsRow"><button type="button" class="contact-chip" data-rows="1">1 行</button><button type="button" class="contact-chip" data-rows="2">2 行并行</button></div></div><div id="bgTestResult" style="font-size:11px;line-height:1.7;color:var(--muted);white-space:pre-wrap;margin-top:8px"></div></div>
+          <div class="fold-bd"><div class="setting-subhead">后台保活</div><div class="ap-row"><span>开启后台保活<span style="display:block;font-size:11px;color:var(--muted)">默认已开启。切后台时持续播放近无声音频防冻结，消息即时到达；默认走静音通道，不压低你在听的其他 App 声音（上传自定义有声音频或极个别设备回落到媒体元素时才会占声道）；回前台自动补跑错过的调度</span></span><input type="checkbox" id="bgKeepAlive" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>不抢其他 App 的声音<span style="display:block;font-size:11px;color:var(--muted)">保活音频走静音通道，不压低你在听的音乐/视频音量</span></span><input type="checkbox" id="bg-keep-noduck" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>保活音频<span style="display:block;font-size:11px;color:var(--muted)">点击可换成自定义音频（白噪音/助眠声，会按原音量出声）</span></span><button class="soft-btn" id="bg-keep-audio-btn" style="flex:none;width:auto;padding:5px 10px">默认静音音频</button></div><button class="soft-btn" id="testKeepAlive">保活测试</button><div class="setting-subhead">系统通知（切后台）</div><div class="ap-row"><span>开启系统通知<span style="display:block;font-size:11px;color:var(--muted)">切后台后收到新消息·来信·来电，弹系统通知（装在手机上＝手机 设置 → 应用 → 言字卡 → 通知 里允许；用浏览器打开＝浏览器问你要网站通知权限）</span></span><input type="checkbox" id="bgNotify" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>每条消息单独通知<span style="display:block;font-size:11px;color:var(--muted)">关闭时同一会话连发多条只弹一条</span></span><input type="checkbox" id="bgNotifyNoDedup" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div id="bgNotifyPermWarn"></div><button class="soft-btn" id="testNotify">通知测试</button><div class="setting-subhead">桌面前台弹窗</div><div class="ap-row"><span>显示横幅<span style="display:block;font-size:11px;color:var(--muted)">前台收到新消息/来信时，顶部弹出横幅提醒，点击直达</span></span><input type="checkbox" id="deskPopupToggle" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>弹窗行数<span style="display:block;font-size:11px;color:var(--muted)">同时最多显示几条横幅；1 行时新弹窗顶掉旧弹窗，2 行时不同来源并行各占一行</span></span><div class="contact-chip-row" style="margin:0" id="deskPopRowsRow"><button type="button" class="contact-chip" data-rows="1">1 行</button><button type="button" class="contact-chip" data-rows="2">2 行并行</button></div></div><div class="ap-row"><span>显示 × 关闭钮<span style="display:block;font-size:11px;color:var(--muted)">横幅最右那枚 ×，默认不画。不画也收得掉——桌面前台弹窗可以右滑关闭</span></span><input type="checkbox" id="deskPopCloseToggle" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div id="bgTestResult" style="font-size:11px;line-height:1.7;color:var(--muted);white-space:pre-wrap;margin-top:8px"></div></div>
         </div>
 
         <div class="setting-card fold" data-tab="notify" data-fold="night">
@@ -754,7 +755,7 @@
 
         <div class="setting-card fold" data-tab="notify" data-fold="gamesfx">
           <button type="button" class="fold-hd"><span class="fold-ti">游戏音效</span><span class="fold-sum" id="sumGameSfx"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>游戏中出声<span style="display:block;font-size:11px;color:var(--muted)">只在有结果的一刻响：合上了、消掉了、推倒了、这一局结束了。滑动、点选、落子这些「每一下」不出声</span></span><input type="checkbox" id="gameSfxOn" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span>音量<span style="display:block;font-size:11px;color:var(--muted)">拖到 0 就彻底无声。这一格只记在这台设备上，不随备份导出带到别的手机里</span></span><input type="range" id="gameSfxVol" min="0" max="100" step="5"></div><button class="soft-btn" id="gameSfxTest" style="flex:none;width:auto;padding:5px 10px">试听三声</button></div>
+          <div class="fold-bd"><div class="ap-row"><span>游戏中出声<span style="display:block;font-size:11px;color:var(--muted)">只在有结果的一刻响：合上了、消掉了、推倒了、这一局结束了。滑动、点选、落子这些「每一下」不出声</span></span><input type="checkbox" id="gameSfxOn" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span style="flex:1;min-width:0">音量<span style="display:block;font-size:11px;color:var(--muted)">拖到 0 就彻底无声。这一格只记在这台设备上，不随备份导出带到别的手机里</span></span><input type="range" id="gameSfxVol" min="0" max="100" step="5" style="flex:none;width:130px"></div><button class="soft-btn" id="gameSfxTest" style="flex:none;width:auto;padding:5px 10px">试听三声</button></div>
         </div>
 
 
@@ -783,6 +784,14 @@
              ＋节标全摘（tag 上已写着名字＝同一件事说两遍，同 BUGS #334 统计页那条）；卡按格显隐，
              切格时 settings.js 把列表滚回顶。 -->
 
+        <!-- 主题预设（2026-10-15）：一键把卡片通透/圆角/气泡磨砂/背景模糊成套调好。它不新增任何字段、也不是第二套实现——
+             只是宏：一枚 chip 点下去＝往 data.appearance 同时写几个已有键，存盘后走同一套 applyAppearance＋回显；
+             套完仍能手改每一根。不碰气泡颜色/上传的壁纸（不拄用户的东西）。 -->
+        <div class="setting-card fold" data-tab="desk" data-fold="theme">
+          <button type="button" class="fold-hd"><span class="fold-ti">主题预设</span><i class="fold-ar">›</i></button>
+          <div class="fold-bd"><div class="contact-chip-row" style="margin:0" id="themePresetRow"><button type="button" class="contact-chip" data-theme="fresh">清爽</button><button type="button" class="contact-chip" data-theme="soft">柔和</button><button type="button" class="contact-chip" data-theme="glass">磨砂</button><button type="button" class="contact-chip" data-theme="immerse">沉浸</button></div><p class="data-note">一键把卡片通透·圆角·气泡磨砂·背景模糊成套调好，之后仍可去各卡单独微调。<b>清爽</b>＝回到实心白的出厂观感；<b>柔和</b>＝不开磨砂只把卡片调圆；<b>磨砂</b>＝全站卡片半透磨砂玻璃；<b>沉浸</b>＝再连聊天气泡一起磨砂、背景糊一档（配一张桌面壁纸最出效果）。当前各项与哪套逐字吻合，那一枚就高亮；手改过则都不高亮。</p></div>
+        </div>
+
         <!-- 桌面背景（原「桌面美化台」浮层面板 2026-10-15 按用户「把背景图入口放进外观页」改成内联一张折叠卡）：
              控件 id 与 js/desk.js 既有一切绑定逐字不改（背暗/缩放/取景/铺到/导航薄纱/上传/预设/还原），只是宿主
              从浮层面板搬到外观这一页；样式沿用 css/desk.css 那批 .ds-*（已登记在册）。预览：选「所有页面」时壁纸会直接
@@ -809,7 +818,7 @@
 
         <div class="setting-card fold" data-tab="desk" data-fold="light">
           <button type="button" class="fold-hd"><span class="fold-ti">卡片通透</span><span class="fold-sum" id="sumLight"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>卡片毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frost" data-sum="sumLight"><button type="button" class="contact-chip" data-v="off">关</button><button type="button" class="contact-chip" data-v="on">开</button></div></div><div id="frostOpts" hidden><div class="ap-row"><span>磨砂强度</span><input type="range" id="frostBlurRange" min="0" max="24" step="1" value="14" style="flex:1;min-width:0"><span id="frostBlurOut" style="flex:none;min-width:40px;text-align:right;font-variant-numeric:tabular-nums">14px</span></div></div><p class="data-note">开＝卡片、列表行与弹层变成半透白＋背景<b>模糊</b>的真·毛玻璃（顶栏/输入栏一并跟上）；关＝现在的实心白面。这一档配<b>桌面美化</b>里自传的壁纸最出效果——磨砂感来自「后面的图被糊透上来」，纯色底上主要读作卡片变淡变软。点一下当场生效、重启仍记得；默认关。</p></div>
+          <div class="fold-bd"><div class="ap-row"><span>卡片毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frost" data-sum="sumLight"><button type="button" class="contact-chip" data-v="off">关</button><button type="button" class="contact-chip" data-v="on">开</button></div></div><div id="frostOpts" hidden><div class="ap-row"><span>磨砂强度</span><input type="range" id="frostBlurRange" min="0" max="24" step="1" value="14" style="flex:1;min-width:0"><span id="frostBlurOut" style="flex:none;min-width:40px;text-align:right;font-variant-numeric:tabular-nums">14px</span></div></div><p class="data-note">开＝全站卡片面（设置卡∶首页会话行∶字卡库∶关于TA∶统计∶信箱∶播放器…）变半透白＋磨砂玻璃边；关＝实心白。这是**中性无彩**的磨砂（不发蓝）。磨砂感来自「后面的东西被糊透上来」，所以配<b>桌面背景</b>里自传的壁纸最立体（可在壁纸那一卡把图“铺到→所有页面”）；纯色底上则读作卡片浮在一层柔光上。点一下当场生效、重启仍记得；默认关。聊天气泡的磨砂不在这管，在【TA 设置 → 外观 → 聊天外观】里单开。</p></div>
         </div>
 
         <div class="setting-card fold" data-tab="desk" data-fold="corner">
@@ -922,6 +931,15 @@
           <button type="button" class="mate-go" id="mateGoChat">去聊天</button>
         </div>
         <p class="data-note mate-fixed-note">上面「名字」是聊天里用的，之后在「头像昵称」里还能换（可能换得勤）；「固定昵称」给字卡库、信箱、世界感知等其他功能用，不随聊天昵称变。两处各改各的，留空＝跟随名字。</p>
+        <!-- 切换 TA（2026-10-15 用户「设置里【关于某个 TA 的设置】无法切换联系人」）：从设置页那行／聊天右上角
+             进入本页，编辑对象恒＝当前会话那一位；旧写法单聊态没有任何切换入口（#mateScope 那排 chips 只在群态
+             出成员），想改另一位只能退回首页点别的会话再进来。这枚钮补一个整页可见的「切哪一位 TA」入口＝点它
+             开通讯录全名单的底部面板，选中＝switchChat(id, true) 就地换编辑对象（同下面「所在群聊」那几行既有
+             走法：不跳转、不动草稿与未读），换会话时把群态的成员分段 _mateScope 归零。行式复用「头像昵称库」
+             那一族（.mate-jump 裸排在 .mate-group 白卡内）＝零新样式、零新组件；面板由 js/mate.js 运行时现搭。 -->
+        <div class="mate-group">
+          <button type="button" class="mate-jump" id="mateSwitchBtn"><span class="fold-tx"><span class="fold-ti">切换 TA</span><small class="fold-sum" id="mateSwitchSum"></small></span><i class="fold-ar">›</i></button>
+        </div>
         <!-- 群态才出现的一条成员分段：「本群」＝这一群共用的那份，点某一位＝整页换成他（他在本群那五格＋他自己的形象与声音）。
              导航只有这一处：下面「群成员」那张卡里的行是读数，不再兼作入口。 -->
         <div class="fchips" id="mateScope" hidden></div>
@@ -979,22 +997,30 @@
 
         <div class="mate-grp" data-mate-grp="look" hidden>
           <div class="mate-group">
+        <!-- 「外观」档重排（2026-10-15 #449，用户「美化设置分类太杂太长不好操作」）：
+             旧形制＝一张 11px 灰字小标硬分七节的巨型折叠卡＋一张十一行的「聊天外观」卡，
+             翻开任意一节都要在一条长 scroll 里找。现拆成行式折叠卡阵列（本页其余组的既有形制：
+             每张折起∶卡头一行摘要现算现写∶想改哪张开哪张）。读写链一字未动：全部 id∶写手∶
+             委托原样搬家；唯一新增是几枚 fold-sum（写手仍只 mate.js renderFoldSummaries 一处）。
+             预览不进任何折叠：下面几张美化卡共用它＝拖哪根杆「当场变」这件事还在。 -->
+        <div class="setting-card">
+          <!-- 预览（2026-10-14 升级形制原样保留）：顶栏条＋时间轴小签＋系统消息行＋每条气泡下的时间小字＋输入栏条
+               一并画进来，与聊天页读同一份档（选档样式在 theme.css，.ap-preview 镜像并进同一批选择器；
+               两根条的浓淡直接引 --head-trans／--comp-row-trans＝透明度两根滑杆拖到哪预览当场变）；
+               传了背景图连图带「压暗」纱都垫进预览＝所见即所得，不用来回切页核对。 -->
+          <div class="ap-preview" aria-hidden="true" style="margin-top:8px">
+            <div class="ap-prev-head">TA</div>
+            <div class="ap-prev-day">今天</div>
+            <div class="ap-prev-sys">TA 更换了头像</div>
+            <div class="ap-prev-msg"><span class="ap-prev-av" id="apPrevPartner">O</span><span class="ap-prev-col"><span class="ap-prev-bub partner">像这样陪你聊天</span><span class="ap-prev-meta">21:30</span></span></div>
+            <div class="ap-prev-msg me"><span class="ap-prev-av" id="apPrevMe">我</span><span class="ap-prev-col"><span class="ap-prev-bub mine">好呀，收到啦</span><span class="ap-prev-meta">21:31</span></span></div>
+            <div class="ap-prev-comp"><span class="ap-prev-pill">说点什么…</span><i class="ap-prev-send"></i></div>
+          </div>
+          <p class="ap-scope"><b>下面几张「美化」卡只作用于这一位 TA</b>：每张只改这位 TA 的聊天页，其他联系人与全站不受影响；全站通用的聊天外观在下方「聊天排版」与「时间与磨砂」两张卡里。</p>
+        </div>
         <div class="setting-card fold" data-fold="ap">
-          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">美化设置</span><span class="fold-sum" id="mateApSum"></span></span><i class="fold-ar">›</i></button>
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">气泡配色</span><span class="fold-sum" id="mateApSum"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
-            <!-- 预览升级（2026-10-14）：顶栏条＋时间轴小签＋系统消息行＋每条气泡下的时间小字＋输入栏条
-                 一并画进来，与聊天页读同一份档（选档样式在 theme.css，.ap-preview 镜像并进同一批选择器；
-                 两根条的浓淡直接引 --head-trans／--comp-row-trans＝透明度两根滑杆拖到哪预览当场变）；
-                 传了背景图连图带「压暗」纱都垫进预览＝所见即所得，不用来回切页核对。 -->
-            <div class="ap-preview" aria-hidden="true">
-              <div class="ap-prev-head">TA</div>
-              <div class="ap-prev-day">今天</div>
-              <div class="ap-prev-sys">TA 更换了头像</div>
-              <div class="ap-prev-msg"><span class="ap-prev-av" id="apPrevPartner">O</span><span class="ap-prev-col"><span class="ap-prev-bub partner">像这样陪你聊天</span><span class="ap-prev-meta">21:30</span></span></div>
-              <div class="ap-prev-msg me"><span class="ap-prev-av" id="apPrevMe">我</span><span class="ap-prev-col"><span class="ap-prev-bub mine">好呀，收到啦</span><span class="ap-prev-meta">21:31</span></span></div>
-              <div class="ap-prev-comp"><span class="ap-prev-pill">说点什么…</span><i class="ap-prev-send"></i></div>
-            </div>
-            <p class="ap-scope"><b>只作用于这一位 TA</b>：下面每项只改这位 TA 的聊天页，其他联系人与全站不受影响；全站通用的聊天外观（气泡形状、行距、字体等）在下方「聊天外观」卡里。</p>
             <div class="ap-sec">
               <div class="ap-sec-t">气泡底色</div>
               <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineColor"><button type="button" class="ap-dot" data-v="ink" style="--dot:#111" title="墨黑" aria-label="墨黑"></button><button type="button" class="ap-dot" data-v="gray" style="--dot:#8a8a8e" title="烟灰" aria-label="烟灰"></button><button type="button" class="ap-dot" data-v="forest" style="--dot:#3f3f43" title="炭灰" aria-label="炭灰"></button><button type="button" class="ap-dot" data-v="coffee" style="--dot:#8e8e92" title="浅灰" aria-label="浅灰"></button><button type="button" class="ap-dot" data-v="mist" style="--dot:#a9c3e2" title="雾蓝" aria-label="雾蓝"></button><button type="button" class="ap-dot" data-v="blossom" style="--dot:#e4bdc3" title="樱粉" aria-label="樱粉"></button><button type="button" class="ap-dot" data-v="mint" style="--dot:#bfe0cc" title="薄荷" aria-label="薄荷"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="雪白" aria-label="雪白"></button></div><span class="ap-dotname"></span></div>
@@ -1002,36 +1028,48 @@
             </div>
             <div class="ap-sec">
               <div class="ap-sec-t">文字颜色</div>
-              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
-              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
             </div>
-            <!-- 聊天气泡字体与字号（2026-10-15，用户「聊天设置美化里缺少修改聊天字号和字体的功能」）：
+          </div>
+        </div>
+        <!-- 聊天气泡字体与字号（2026-10-15，用户「聊天设置美化里缺少修改聊天字号和字体的功能」）：
                  都是【这一位 TA 各一份】的聊天文字档，读写落 chatAppearance[activeChat]（js/settings.js 那两行 chips
-                 的自有写入路径）。与全局那两样刻意分开：全局「聊天外观」卡的「字体」走 .app-shell 整站、设置→外观的
+                 的自有写入路径）。与全局那两样刻意分开：「聊天排版」卡的「字体」走 .app-shell 整站、设置→外观的
                  「字号」走 zoom——那两条改了，别的页面跟着变；这两行只管这一本的聊天气泡正文。默认档（跟随全局／标准）
                  零输出，不写覆盖块。预览里的小气泡一起吃这两档（theme.css 那两条并入 .ap-prev-bub）。 -->
+        <div class="setting-card fold" data-fold="aptext">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">气泡文字</span><span class="fold-sum" id="sumApText"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
             <div class="ap-sec">
-              <div class="ap-sec-t">气泡字体与字号</div>
               <div class="ap-row"><span>气泡字体</span><div class="contact-chip-row" style="margin:0" id="apChatFont"><button type="button" class="contact-chip" data-v="inherit">跟随全局</button><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div>
               <div class="ap-row"><span>气泡字号</span><div class="contact-chip-row" style="margin:0" id="apChatFontSize"><button type="button" class="contact-chip" data-v="small">小</button><button type="button" class="contact-chip" data-v="medium">标准</button><button type="button" class="contact-chip" data-v="large">大</button></div></div>
-              <p class="data-note">两档都只管<b>这一位 TA 聊天气泡里的字</b>，别的页面、顶栏与输入栏、别位 TA 都不动。名字带「气泡」是跟上一张「聊天外观」的「字体」消歧：那张的「字体」是全站一份、所有页面都跟（改的是整站字族）；这两档只落在聊天页的气泡正文上。<b>气泡字体</b>换这一本气泡用的字族（「跟随全局」＝沿用设置 → 外观「全站字体」那一档，选系统／衬线／圆体则只覆盖这一本的气泡）；<b>气泡字号</b>把气泡正文调小／调大（标准＝出厂大小，小 13px、大 17px）。全站文字整体缩放仍在设置 → 外观的「字号」里。</p>
+              <p class="data-note">两档都只管<b>这一位 TA 聊天气泡里的字</b>，别的页面、顶栏与输入栏、别位 TA 都不动。名字带「气泡」是跟下方「聊天排版」的「字体」消歧：那档是全站一份、所有页面都跟（改的是整站字族）；这两档只落在聊天页的气泡正文上。<b>气泡字体</b>换这一本气泡用的字族（「跟随全局」＝沿用设置 → 外观「全站字体」那一档，选系统／衬线／圆体则只覆盖这一本的气泡）；<b>气泡字号</b>把气泡正文调小／调大（标准＝出厂大小，小 13px、大 17px）。全站文字整体缩放仍在设置 → 外观的「字号」里。</p>
             </div>
+          </div>
+        </div>
+        <div class="setting-card fold" data-fold="aphint">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">时间与提示</span><span class="fold-sum" id="sumApHint"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
             <div class="ap-sec">
-              <div class="ap-sec-t">时间与提示</div>
               <div class="ap-dotrow"><span class="ap-dotlab wide">时间轴</span><div class="ap-dots" id="apDayStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div><span class="ap-dotname"></span></div>
-              <div class="ap-dotrow"><span class="ap-dotlab wide">时间颜色</span><div class="ap-dots" id="apMetaColor"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随主题" aria-label="跟随主题">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:#d4af37" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <div class="ap-dotrow"><span class="ap-dotlab wide">时间颜色</span><div class="ap-dots" id="apMetaColor"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随主题" aria-label="跟随主题">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
               <div class="ap-dotrow"><span class="ap-dotlab wide">系统消息</span><div class="ap-dots" id="apSysStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div><span class="ap-dotname"></span></div>
             </div>
+          </div>
+        </div>
+        <div class="setting-card fold" data-fold="apbg">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天背景</span><span class="fold-sum" id="sumApBg"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
             <div class="ap-sec">
-              <div class="ap-sec-t">聊天背景</div>
               <div class="ap-bgrow"><div class="ap-bgthumb" id="apBgPreview">未设置背景图</div><div class="ap-bgbtns"><button type="button" class="ap-btn pri" id="apBgUpload">选择图片</button><button type="button" class="ap-btn" id="apBgClear">清除</button></div></div>
               <!-- 「压暗」那根杆（2026-10-14）：照片太亮太花抢字时给整张图垫一层墨纱，0＝不垫。
                    跟两枚透明度杆同一个口径——只在**这一位传了背景图**后才出现（没图时拖着不变＝死杆）；
                    消息区与输入栏一起压（css/theme.css .chat-area 与 css/chat.css .composer 同一根 --chat-veil），
-                   上面那张预览也垫同一层，拖到哪预览当场变。 -->
+                   顶上那张预览也垫同一层，拖到哪预览当场变。 -->
               <div id="apDimWrap" hidden>
                 <label class="ap-knob"><span>压暗</span><input type="range" id="apBgVeil" min="0" max="100" step="1" aria-label="背景压暗"><output id="apBgVeilOut">0%</output></label>
-                <p class="data-note">照片太亮太花抢字时往右拖：给整张背景图垫一层墨纱，0 是不压。消息区和输入栏一起压暗，配「消息时间＝白色」最经用。</p>
+                <p class="data-note">照片太亮太花抢字时往右拖：给整张背景图垫一层墨纱，0 是不压。消息区和输入栏一起压暗，配「消息时间＝白色」最经用。（选图时会按图片平均亮度自动定一档，亮图压得多、暗图压得少；定完仍可在这根杆上改。）</p>
               </div>
             </div>
             <!-- 两枚透明度滑杆：整节只在**这一位传了聊天背景图之后**才出现（没图时这两行背后只有画布色，
@@ -1044,35 +1082,46 @@
               <label class="ap-knob"><span>输入栏</span><input type="range" id="apCompVeil" min="0" max="100" step="1" aria-label="输入栏透明"><output id="apCompVeilOut">0%</output></label>
               <p class="data-note">拖多少＝这两行让背景图透上来多少，0 是完全不透。聊天栏这一行底下还有聊天记录经过，所以它一透就连带透字——透得多时顺手糊一档，不糊＝两层字叠着读不出谁是谁。</p>
             </div>
-            <!-- 字体那一节 2026-10-12 整节搬走（用户定档「字体只留全局一份」）：上传的字体文件与手打的字体
+          </div>
+        </div>
+        <!-- 字体那一节 2026-10-12 整节搬走（用户定档「字体只留全局一份」）：上传的字体文件与手打的字体
                  CSS 都是「全站一层」的样式，按人各存一份本来就读不出「这位为什么和别人不一样」，
                  且旧写法存的还是重启即失效的 blob: 地址。现入口在 设置 → 外观 →「全站字体」。 -->
+        <div class="setting-card fold" data-fold="apcss">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">自定义气泡 CSS</span><span class="fold-sum" id="sumApCss"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
             <div class="ap-sec">
-              <div class="ap-sec-t">自定义气泡 CSS</div>
               <textarea id="customBubbleCssText" class="ap-ta" rows="4" spellcheck="false" placeholder=".bubble{ border-radius:20px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
 .mine .bubble{ background:#111; color:#fff; }"></textarea>
               <div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customBubbleCssApply">应用气泡 CSS</button><button type="button" class="ap-btn" id="customBubbleCssClear">清空</button></div>
               <div class="ap-frow"><span class="ap-status" id="customBubbleCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customBubbleCssRemove">移除</button></div>
-              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡。常用类名：.message 一条消息（加 .mine 是我方）· .bubble 气泡 · .mini-avatar 小头像 · .message-meta 时间小字 · .day-label 日期签。写好的样式整段自动加权，盖过上面的配色与形状档位，不用再手写 !important；写错不生效也不会弄坏页面，清空即可回头。</p>
+              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡。常用类名：.message 一条消息（加 .mine 是我方）· .bubble 气泡 · .mini-avatar 小头像 · .message-meta 时间小字 · .day-label 日期签。写好的样式整段自动加权，盖过配色与形状档位，不用再手写 !important；写错不生效也不会弄坏页面，清空即可回头。</p>
             </div>
-            <!-- 「恢复默认」（2026-10-14）：这一位 TA 的外观档没有一键回头路，八格点回来太苦。
-                 两段式确认（同 player.js「再点一次就清」那一族，全仓不用原生 confirm）：
-                 点一下改口「再点一次确认」，3 秒不点自动回落。只清 chatAppearance[activeChat] 一本，
-                 其他 TA 与全局设置不动；_caSh() 下次写入时会按 chatAppearanceDefault 重新垫底。 -->
-            <div class="ap-resetrow"><button type="button" class="ap-btn" id="apResetAll">恢复本会话默认外观</button></div>
-            <p class="data-note">只清这一位 TA 的：气泡配色、文字、时间样式、背景图、压暗与透明度、气泡 CSS 一起回出厂。其他 TA 与全局设置不受影响。</p>
           </div>
         </div>
+        <!-- 「恢复默认」（2026-10-14；#449 拆卡后常驻折起卡之外，当本页回头路）：这一位 TA 的外观档没有一键回头路，八格点回来太苦。
+             两段式确认（同 player.js「再点一次就清」那一族，全仓不用原生 confirm）：
+             点一下改口「再点一次确认」，3 秒不点自动回落。只清 chatAppearance[activeChat] 一本，
+             其他 TA 与全局设置不动；_caSh() 下次写入时会按 chatAppearanceDefault 重新垫底。 -->
+        <div class="setting-card">
+          <div class="ap-resetrow" style="margin-top:10px"><button type="button" class="ap-btn" id="apResetAll">恢复本会话默认外观</button></div>
+          <p class="data-note">只清这一位 TA 的：气泡配色、文字、时间样式、背景图、压暗与透明度、气泡 CSS 一起回出厂。其他 TA 与全局设置不受影响。</p>
+        </div>
 
-        <!-- 聊天外观（2026-10-15 自 设置 → 外观 整卡搬来）：气泡形状/行距/字体/消息时间/发送按钮/顶栏磨砂
+        <!-- 聊天外观（2026-10-15 自 设置 → 外观 整卡搬来；#449 十一行拆成「聊天排版」＋「时间与磨砂」两张，行与 chips 本体一字未动）：气泡形状/行距/字体/消息时间/发送按钮/顶栏磨砂
              ＋三组排版新档（头像对齐/小头像显隐/日期签位置，同日新增）
              全是聊天页的东西，用户「很多内容明明是【聊天设置】里的」。读写链一字未动：档位 chips 仍走
              js/settings.js 那个 data-ap-set document 委托——写的是全局 data.appearance＝这十项全站一份、
-             对每位 TA 生效（某一位单独的气泡颜色/背景图仍归上一张「美化设置」）；回显由
+             对每位 TA 生效（某一位单独的气泡颜色/背景图仍归上面那几张「美化」卡）；回显由
              renderApSettings→echoApSets 一处管（renderProfile 进本页就会走到）。 -->
         <div class="setting-card fold" data-fold="chatap">
-          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天外观</span><span class="fold-sum" id="sumChatAp"></span></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>头像对齐</span><div class="contact-chip-row" style="margin:0" data-ap-set="alignMode"><button type="button" class="contact-chip" data-v="bottom">底部对齐</button><button type="button" class="contact-chip" data-v="top">顶部对齐</button></div></div><div class="ap-row"><span>小头像</span><div class="contact-chip-row" style="margin:0" data-ap-set="avatarShow"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏通栏</button></div></div><div class="ap-row"><span>日期签</span><div class="contact-chip-row" style="margin:0" data-ap-set="dayPos"><button type="button" class="contact-chip" data-v="flow">消息流里</button><button type="button" class="contact-chip" data-v="head">钉在顶栏</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><div class="ap-row"><span>气泡毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frostBubble"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">「气泡毛玻璃」把聊天里每条气泡垫成半透＋背后模糊（拿你现在选的那枚气泡色掺透，不抢色）；与上面「顶栏与输入栏」那枚各管各的，也与设置→外观「卡片通透」是两件事。配聊天背景图时最明显。</p><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">「头像对齐」管消息行里头像贴着气泡的上沿还是下沿；「小头像」隐藏后气泡通栏、点头像开面板那一手随之不可用；「日期签＝钉在顶栏」时「今天」这类日期签贴在顶栏下方，往下滚会自动换成当天的。</p><p class="data-note">这些项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上一张「美化设置」里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准；发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天排版</span><span class="fold-sum" id="sumChatAp"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd"><div class="ap-row"><span>气泡形状</span><div class="contact-chip-row" style="margin:0" data-ap-set="bubbleShape"><button type="button" class="contact-chip" data-v="round">圆角</button><button type="button" class="contact-chip" data-v="tail">带尾</button><button type="button" class="contact-chip" data-v="square">方角</button><button type="button" class="contact-chip" data-v="sharp">直角</button></div></div><div class="ap-row"><span>头像对齐</span><div class="contact-chip-row" style="margin:0" data-ap-set="alignMode"><button type="button" class="contact-chip" data-v="bottom">底部对齐</button><button type="button" class="contact-chip" data-v="top">顶部对齐</button></div></div><div class="ap-row"><span>小头像</span><div class="contact-chip-row" style="margin:0" data-ap-set="avatarShow"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏通栏</button></div></div><div class="ap-row"><span>日期签</span><div class="contact-chip-row" style="margin:0" data-ap-set="dayPos"><button type="button" class="contact-chip" data-v="flow">消息流里</button><button type="button" class="contact-chip" data-v="head">钉在顶栏</button></div></div><div class="ap-row"><span>行距疏密</span><div class="contact-chip-row" style="margin:0" data-ap-set="density"><button type="button" class="contact-chip" data-v="cozy">舒适</button><button type="button" class="contact-chip" data-v="compact">紧凑</button></div></div><div class="ap-row"><span>字体</span><div class="contact-chip-row" style="margin:0" data-ap-set="fontFamily"><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div><p class="data-note">「头像对齐」管消息行里头像贴着气泡的上沿还是下沿；「小头像」隐藏后气泡通栏、点头像开面板那一手随之不可用；「日期签＝钉在顶栏」时「今天」这类日期签贴在顶栏下方，往下滚会自动换成当天的。</p><p class="data-note">这六项全站一份、对每位 TA 都生效；这一位单独的气泡颜色与背景图在上面几张「美化」卡里。上传过自定义字体文件时（设置 → 外观 →「全站字体」里传），字体那一档以文件为准。</p></div>
+        </div>
+
+        <div class="setting-card fold" data-fold="chatfx">
+          <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">时间与磨砂</span><span class="fold-sum" id="sumChatFx"></span></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd"><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><div class="ap-row"><span>气泡毛玻璃</span><div class="contact-chip-row" style="margin:0" data-ap-set="frostBubble"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><div id="frostBubbleOpts" hidden><div class="ap-row"><span>气泡磨砂强度</span><input type="range" id="frostBubbleBlurRange" min="0" max="24" step="1" value="12" style="flex:1;min-width:0"><output id="frostBubbleBlurOut" style="flex:none;min-width:40px;text-align:right;font-variant-numeric:tabular-nums">12px</output></div></div><p class="data-note">「气泡毛玻璃」把聊天里每条气泡垫成半透＋背后模糊（拿你现在选的那枚气泡色掺透，不抢色）；拖下面那根强度调糊多少（12px 是默认，越大越雾）。它与上面「顶栏与输入栏」那枚各管各的，也与设置→外观「卡片通透」是两件事。配聊天背景图时最明显。</p><p class="data-note">省电磨砂开着＝顶栏与输入栏不再做实时磨砂采样（手机发烫的大头），观感是这两条栏的底纱更实、底下的内容不再被糊化；弹层类磨砂不受影响（只在打开时才算钱）。手机上觉得烫、或滚动掉帧时可以开。</p><p class="data-note">这些项全站一份、对每位 TA 都生效。发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
         </div>
           </div>
         </div>

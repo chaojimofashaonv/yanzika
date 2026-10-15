@@ -442,7 +442,10 @@ function _attachSticker(msg, pool) {
 // 只藏渲染的话库里会攒一堆屏上永远看不见的值（#114 那条「关掉＝既不掷也不上屏」同一课）。
 // 签落库后与长按掷出来的长得一样（用户定档「不区分来路」）：再长按一次仍重掷覆盖，不攒账。
 function _askBadgeSelf(m, bh) {
-  if (!m || m.from !== 'partner' || m.src || m.recalled) return;
+  // FIX 2026-10-15 #459 补上 m.sentAgain：那一条与撤回同族（屏上只有「重新发送了一条消息」那行占位小字），
+  // 而渲染侧那一把尺（js/render.js 的 _meantEligible）已经不给它那两枚钮——自标这一路多挡一道或少挡一道
+  // 都是「同一个字段两处各一套资格」（本轮新门 tools/_smoke_ask_pair.js 的 G1 逐条对这一份）
+  if (!m || m.from !== 'partner' || m.src || m.recalled || m.sentAgain) return;
   const lo = (v) => Math.max(0, Math.min(100, Number(v) || 0));
   const rp = data.referOn !== false ? lo(bh && bh.referProb) : 0;
   const mp = data.meantOn !== false ? lo(bh && bh.meantProb) : 0;
@@ -1032,11 +1035,18 @@ msgList.addEventListener('click', async e => {
         else if (t && t !== '[表情包]') { if (typeof wishAdd === 'function') { wishAdd(t, data.activeChat, 'me'); toast('已记入心愿'); } }
         else { toast('这条没法记成心愿'); }
       } else if (btn.dataset.act === 'refer') {
+        // FIX 2026-10-15 #459 判定落在点击这一刻（与上面 delete 那一支同一把尺）：工具条是留在 DOM 里的旧节点，
+        // 只切 hidden——开着闸时画出来的那两枚钮不会因为事后关掉闸而消失。旧气泡再点一次就落一枚
+        // 屏上永远画不出的签＝库里攒一堆看不见的值（#114∶#350 那一课）。不合格的那一发直接静默收起，不报错不弹 toast。
+        if (data.referOn === false || (typeof _meantEligible === 'function' && !_meantEligible(m))) { closeMsgActions(); return; }
         // 每按一次重掷一档并覆盖：这一枚说的是「你此刻问的这句话」，不是永久身份，不排队也不攒账
         // 只就地换那一条气泡角上的签——全量重画（resetMessageRender(); renderMessages()）会走贴底那一套，
         // 把正在翻旧消息的人甩到最底部（BUGS #138 二批，用户报「点这个功能消息还跳到最新位置」）
         m.refer = rollRefer(); await save(); patchMessageBadges(m);
       } else if (btn.dataset.act === 'meant') {
+        // FIX 2026-10-15 #459 同一道闸：两枚钮同引一个判据（资格在 js/render.js 的 _meantEligible 一处），
+        // 这一路也在点击这一刻再问一次，不留「渲染侧管∶点击侧不管」的第二份尺
+        if (data.meantOn === false || (typeof _meantEligible === 'function' && !_meantEligible(m))) { closeMsgActions(); return; }
         // 同一颗签的另一段：问「这一句是不是 TA 自己想发给你的」。与「这句说谁」同口径＝掷一次覆盖，不攒账、不重画列表
         m.meant = rollMeant(); await save(); patchMessageBadges(m);
       } else if (btn.dataset.act === 'chatshot') {
@@ -1108,7 +1118,8 @@ function _flushScrollPage() {
 }
 msgList.addEventListener('scroll', () => {
   const dist = msgList.scrollHeight - msgList.scrollTop - msgList.clientHeight;
-  _scrollBtn.hidden = !(dist > 400);
+  const wantHidden = dist <= 400;   // 与旧写法 !(dist>400) 逐值等价
+  if (_scrollBtn.hidden !== wantHidden) _scrollBtn.hidden = wantHidden;   // 只在翻转时写：每发 scroll 都写属性＝每帧无效样式失效（#432 二批）
   // 贴底意图锁：用户主动上翻阅读时解除跟随（此时新消息只亮回底按钮，不抢视口）；
   // 回到底部重新锁定。中间地带保持原状，避免发送瞬间的惯性滚动误判成「想读历史」。
   syncStickIntent();
@@ -1120,7 +1131,11 @@ msgList.addEventListener('scroll', () => {
   if (msgList.scrollTop <= 60 || (inLocateMode() && dist < 120)) {
     _scrollPagePending = true;
     _scrollPageAt = Date.now();
-    requestAnimationFrame(_flushScrollPage);
+    // #432 二批接线：下一帧 → moDefer（js/perf.js ④，#432 建好一直没接的消费者）。惯性未停时
+    // 不插 200 个 DOM，静 140ms 后才执行；没在动时 moDefer 直接跑＝不比原 rAF 多等。
+    // 逃生阀命中（?moperf=off）或 perf.js 未加载时 moDefer 不存在，回原 rAF 路。
+    if (typeof window.moDefer === 'function') window.moDefer(_flushScrollPage);
+    else requestAnimationFrame(_flushScrollPage);
   }
 }, { passive: true });
 _scrollBtn.onclick = () => {
@@ -1202,7 +1217,7 @@ function _syncBatchBtn() {
   const b = $('#batchBtn');
   if (!b) return;
   const on = !!(data && data.behavior && data.behavior.batchSend);   // data 在 app.js 异步 init 才就位：加载期按关处理（出厂本就是暗的），init 后由切会话/保存链再刷
-  b.style.display = on ? '' : 'none';
+  b.hidden = !on;   // 2026-10-15 统一批：走全站 [hidden] 口径，不再写内联 display（html 那枚 style="display:none" 同批摘掉）
   if (!on) _closeBatch();   // 开关关掉＝面板也一并收起（mochi syncBatchBtn 同款）
 }
 function _openBatch() {

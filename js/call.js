@@ -236,10 +236,21 @@ function expandCall() {
   $('#callWindow').hidden = true;
 }
 
-// 小窗拖动
+// 小窗拖动（#432 二批：拖动期零重排）
+// 旧写法每发 pointermove 写 left/top（layout+paint 每帧都付）且各读一次 offsetWidth/offsetHeight
+// （强制同步重排），移动端拖起来明显「坠手」。现在拖动期只写 transform:translate（合成器属性）
+// 并按 rAF 合帧（高刷设备 touchmove 频率高于刷新率，一帧最多写一次），抬手才把位移落回 left/top。
+// 尺寸在 pointerdown 量一次缓存，整个拖动期不再摸 DOM。
+// ⚠ 静置态内联 transform 恒为 'none'（css/call.css:40 那条约定：小窗按压反馈走 opacity 不走
+//   transform，就是因为 _drag 会在这块上写内联 transform）——抬手提交后仍清回 'none'，一字不让。
 function _drag(el, target) {
   if (!el) return;
-  let sx = 0, sy = 0, ox = 0, oy = 0, on = false;
+  let sx = 0, sy = 0, ox = 0, oy = 0, on = false, tw = 0, th = 0;
+  let px = 0, py = 0, pend = false;   // px/py＝最近一次位移（抬手按它提交），pend＝本帧已排队
+  const apply = () => {
+    pend = false;
+    if (on) target.style.transform = 'translate(' + px + 'px,' + py + 'px)';
+  };
   el.addEventListener('pointerdown', e => {
     // 仅跳过内部按钮（如小窗上的挂断红点），避免拖到按钮时误拖动
     const hit = e.target.closest('button');
@@ -249,6 +260,8 @@ function _drag(el, target) {
     sx = e.clientX; sy = e.clientY;
     const r = target.getBoundingClientRect();
     ox = r.left; oy = r.top;
+    tw = r.width; th = r.height;
+    px = 0; py = 0; pend = false;
     target.style.transform = 'none';
     target.style.right = 'auto';
     target.style.left = ox + 'px';
@@ -259,12 +272,22 @@ function _drag(el, target) {
   el.addEventListener('pointermove', e => {
     if (!on) return;
     if (Math.abs(e.clientX - sx) > 6 || Math.abs(e.clientY - sy) > 6) _lastDragMoved = true;
-    const x = Math.max(4, Math.min(window.innerWidth - target.offsetWidth - 4, ox + e.clientX - sx));
-    const y = Math.max(4, Math.min(window.innerHeight - target.offsetHeight - 4, oy + e.clientY - sy));
-    target.style.left = x + 'px';
-    target.style.top = y + 'px';
+    // 钳位口径与旧写法逐字等价（绝对位置 4 ≤ left ≤ innerWidth-tw-4），只是算在相对位移上
+    px = Math.max(4 - ox, Math.min(window.innerWidth - tw - 4 - ox, e.clientX - sx));
+    py = Math.max(4 - oy, Math.min(window.innerHeight - th - 4 - oy, e.clientY - sy));
+    if (!pend) {
+      pend = true;
+      if (typeof window.moFrame === 'function') window.moFrame(apply);   // js/perf.js ③ 全站合帧
+      else requestAnimationFrame(apply);
+    }
   });
-  const up = () => { on = false; };
+  const up = () => {
+    if (!on) return;
+    on = false;
+    target.style.left = (ox + px) + 'px';   // 提交：位移落回 left/top，内联 transform 清回 'none'（见上 ⚠）
+    target.style.top = (oy + py) + 'px';
+    target.style.transform = 'none';
+  };
   el.addEventListener('pointerup', up);
   el.addEventListener('pointercancel', up);
 }

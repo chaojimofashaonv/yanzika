@@ -64,6 +64,119 @@ function startFPSMeasure() {
   })();
 }
 
+// ===== iOS 视口与键盘适配判定（BUGS #456 · 屏幕诊断里「判定器」那一层）=====
+// 与对岸 mochi 的 screenDiagJudge 同一个思路：**实测值 → 一条条 ✓/✗ 结论**，而不是再堆一屏原始读数。
+// 上面那份报告（设备∶视口∶能力∶性能）是给开发者看的原始数据，用户抄回来仍然要人现推；
+// 本段专管四件真机症状：整页可拖出屏幕 / 页面被放大 / 键盘挡住打字框 / 键盘期错位。
+// ⚠ 三条纪律：① 全程只读——不写样式、不装 vv 监听、不新开定时器，键盘那一族的读数一律念 js/app.js 的 __iosFit 镜像；
+//   ② 只在诊断渲染那一刻算（诊断页开着才有成本，静息零开销）；
+//   ③ 判式不许与执行器各写一份——阈值（80px∶16px∶1.01∶24px）与 css/motion.css ⑩∶js/app.js _vvApply 同数，那两边走这里跟。
+function iosFitInp() {
+  const d = document, de = d.documentElement, b = d.body;
+  const vv = window.visualViewport, fit = window.__iosFit || null;
+  const innerH = window.innerHeight, innerW = window.innerWidth;
+  // 横向溢出体检：页面被自动缩小（scale<1）的典型成因是内容横向溢出（固定宽面板把文档撑宽，
+  // iOS 为容纳它把整页缩到能装下）。只报现场、不猜：找出真越界的那几枚。（对岸 mochi #971 同一条经验）
+  // ⚠ 成本闸：只在诊断页开着时跑、节点上限 3000、命中三枚就收手（rect 读数是整帧一次布局，不重复强制）
+  const wide = [];
+  try {
+    const all = b.querySelectorAll('main,section,div,input,textarea,button,img,table,pre,svg');
+    for (let i = 0; i < all.length && i < 3000; i++) {
+      const el = all[i];
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.right > innerW + 1) {
+        wide.push((el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ')[0] : '') + ' 超宽' + Math.round(r.right - innerW) + 'px'));
+        if (wide.length >= 3) break;
+      }
+    }
+  } catch (e) {}
+  // 16px 地板自检：这条盯的不是今天（地板已在 css/motion.css ⑩-b 钉上），而是「以后新页面又写 13px」
+  // 与「闸门被人摘了」——两道都靠这一条现形（只数屏上真看得见的，上限 200 枚）
+  const small = [];
+  try {
+    const eds = b.querySelectorAll('input,textarea');
+    for (let i = 0; i < eds.length && i < 200; i++) {
+      const el = eds[i], t = (el.getAttribute('type') || '').toLowerCase();
+      if (['checkbox', 'radio', 'range', 'file', 'color', 'button', 'submit', 'reset', 'hidden', 'image'].indexOf(t) >= 0) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;              // 没上屏的不算（display:none 的框不会被聚焦，也就不触发放大）
+      const fs = parseFloat(getComputedStyle(el).fontSize) || 0;
+      if (fs > 0 && fs < 16) small.push(((el.id ? '#' + el.id : el.className ? '.' + String(el.className).split(' ')[0] : el.tagName.toLowerCase())) + '=' + fs + 'px');
+    }
+  } catch (e) {}
+  const shell = d.querySelector('.app-shell'), sr = shell ? shell.getBoundingClientRect() : null;
+  let cvLeft = 0;
+  try {
+    d.querySelectorAll('.view').forEach(v => {
+      try { if (getComputedStyle(v).contentVisibility === 'auto') cvLeft++; } catch (e) {}
+    });
+  } catch (e) {}
+  return {
+    uaIOS: /iPhone|iPad|iPod/.test(String(navigator.userAgent || '')),
+    pin: de.classList.contains('ios-pin'), forced: !!(fit && fit.forced),
+    offValve: /[?&]iosfit=off\b/.test(String(location.search || '')),
+    kbFixOff: b.dataset.kbFix === 'off',
+    fit: fit, kb: !!(fit && fit.kb),
+    scale: vv ? (vv.scale || 1) : 1, vvH: vv ? Math.round(vv.height) : 0,
+    dy: vv ? Math.round(vv.offsetTop || 0) : 0,
+    innerH: innerH, innerW: innerW,
+    docOverY: de.scrollHeight - de.clientHeight, docOverX: de.scrollWidth - de.clientWidth,
+    shellBottom: sr ? Math.round(sr.bottom) : 0, shellH: sr ? Math.round(sr.height) : 0,
+    wide: wide, small: small, cvLeft: cvLeft,
+    last: fit ? fit.last : null, log: fit ? (fit.log || []) : []
+  };
+}
+// 纯判定器：inp 为采集好的实测值，返回 findings 数组（{ok,name,detail}）——没有 DOM 调用，量具可直接单测
+function iosFitJudge(inp) {
+  const F = [];
+  const add = (ok, name, detail) => F.push({ ok: !!ok, name: name, detail: detail || '' });
+  // ① 闸门：iOS 上必须挂着（非 iOS 出「不适用」的绿，别拿它吓人）
+  if (!inp.uaIOS) add(true, 'iOS 硬化闸门', '非 iOS，本段判据只作参考');
+  else add(inp.pin, 'iOS 硬化闸门', inp.pin
+    ? '在位' + (inp.forced ? '（?iosfit=force 试跑）' : '') + '：钉文档∶16px 地板∶.view 退出跳过渲染' + (inp.kbFixOff ? '；但 body[data-kbFix=off] 开着（#361 那把人工退路＝不压壳也不捞框）' : '')
+    : '未挂载——' + (inp.offValve ? '地址栏带了 iosfit=off' : '地址栏并没有带 iosfit=off＝闸门件没跑起来，多半是缓存里那份旧产物（先看开屏公告那一行版号）') + '，下面那些 ✗ 都是「本来就没开」不是「开了坏」');
+  // ② 整页可拖余量（症状①的唯一硬证据：文档比布局口高/宽一点点就是「能拖到屏幕外面」）
+  const over = Math.max(inp.docOverY, inp.docOverX);
+  add(over <= 2, '整页可拖余量', over <= 2 ? '文档＝布局口（纵向 ' + inp.docOverY + 'px∶横向 ' + inp.docOverX + 'px）'
+    : '纵向 +' + inp.docOverY + 'px∶横向 +' + inp.docOverX + 'px → 整页可被拖着滚出可视区' + (inp.wide.length ? '；横向越界元素：' + inp.wide.join(' · ') : ''));
+  // ③ 页面缩放（症状②：比例不对。键盘只缩高度从不动 scale，所以 scale≠1 就是「被放大/缩小」不是键盘）
+  const scaled = Math.abs(inp.scale - 1) > 0.01;
+  add(!scaled, '页面缩放 scale', !scaled ? '1.00（无自动放大∶无双指缩放）'
+    : inp.scale.toFixed(2) + ' → ' + (inp.scale > 1 ? '页面被放大（iOS 对 <16px 输入框聚焦的强制放大／用户双指），_vvApply 按 #435 那把闸不补偿' : '页面被缩小（典型成因＝内容横向溢出，iOS 缩到能装下）'));
+  // ④ 16px 地板（症状②③的共同根因：聚焦就放大）
+  add(!inp.small.length, '输入框 16px 地板', inp.small.length ? inp.small.length + ' 枚可见可编辑控件字号 <16px（iOS 聚焦即整页放大）：' + inp.small.slice(0, 3).join(' · ') : '无一枚 <16px');
+  // ⑤ 键盘在场读数（事实行，恒绿：这一行只回答「现在键盘开着吗、量到多高」）
+  add(true, '键盘在场', inp.kb ? ('开着：可视带 ' + inp.vvH + 'px（布局口 ' + inp.innerH + 'px，差 ' + (inp.innerH - inp.vvH) + 'px）∶视觉口平移 ' + inp.dy + 'px') : '收起（可视带＝布局口 ' + inp.innerH + 'px）');
+  // ⑥ 壳与可视带贴合（症状③的硬证据：错位＝输入栏与贴底面板跑在键盘底下或屏幕外面）
+  if (inp.kb) {
+    const gap = Math.abs(inp.shellBottom - (inp.dy + inp.vvH));
+    add(gap <= 24, '壳与可视带贴合', gap <= 24 ? '壳底边＝带底边（差 ' + gap + 'px）' : '差 ' + gap + 'px → 壳没跟着可视带走（补偿未生效或被摘）');
+  } else add(true, '壳与可视带贴合', '键盘收起，不判');
+  // ⑦ 焦点框可视带（＝用户要的「键盘遮挡预警」：拿 js/app.js 捞框那一次的现场读数）
+  const L = inp.last;
+  if (!L) add(true, '焦点框可视带', '未采到（本机这一轮没聚焦过可编辑控件，或聊天输入栏那一面归 _vvApply 压壳管）');
+  else if (L.inside) add(true, '焦点框可视带', (L.id ? '#' + L.id : L.cls || '框') + ' 在带内' + (L.moved ? '（捞过 ' + L.moved + 'px）' : '（无需捞）'));
+  else if (L.noScroller) add(true, '焦点框可视带', (L.id ? '#' + L.id : L.cls || '框') + ' 不在滚动容器里→位置交给压壳那一段（壳底边看 ⑥ 那行）');
+  else add(false, '焦点框可视带', (L.id ? '#' + L.id : L.cls || '框') + ' 被挤出带外 ' + L.out + 'px（带 ' + L.band + '∶框 ' + L.box + '∶scale ' + L.scale + '）');
+  // ⑧ 100dvh 与布局口（键盘收起时这俩该同数；差得多＝工具栏收放途中或补偿残留）
+  if (!inp.kb) {
+    const d2 = Math.abs(inp.shellH - inp.innerH);
+    add(d2 <= 4, 'dvh 与布局口', d2 <= 4 ? '同数（' + inp.shellH + 'px）' : '差 ' + d2 + 'px → 壳高与可视区不等（地址栏收放中／残留），这一族正是抖的来源');
+  } else add(true, 'dvh 与布局口', '键盘开着，不判');
+  // ⑨ .view 跳过渲染残留（#004·#316 那一族：iOS 上挂着就是「滑到飞出屏幕的位置」的同根因；pin 在位时应恒 0）
+  add(inp.cvLeft === 0 || !inp.pin, '.view 跳过渲染', inp.cvLeft === 0 ? '全部已退出（#004·#316 那一族在 iOS 上收干净）'
+    : inp.cvLeft + ' 面还挂着 auto（#359 那条几何契约靠 contain，不靠它）');
+  return F;
+}
+function iosFitLines() {
+  let inp = null, F = [];
+  try { inp = iosFitInp(); F = iosFitJudge(inp); } catch (e) { return ['✗ 判定器出错：' + String((e && e.message) || e)]; }
+  const L = F.map(f => (f.ok ? '✓ ' : '✗ ') + f.name + (f.detail ? '：' + f.detail : ''));
+  const log = (inp && inp.log) || [];
+  L.push(log.length ? '键盘沿（最近 6 条）：' + log.slice(-6).map(e => new Date(e.t).toLocaleTimeString('zh-CN') + (e.kb ? ' 开→' + e.h + 'px' : ' 收') + (e.dy ? '∥平移' + e.dy : '')).join(' · ') : '键盘沿：本轮未采到（没弹过键盘＝无沿可记，这一行不是故障）');
+  return L;
+}
+
 function getDiagnosticInfo() {
   const d = data || {};   // 启动期 data 尚未赋值时也会被 initDiagnostic 调用，必须判空
   const canvas = document.createElement('canvas');
@@ -236,6 +349,9 @@ function getDiagnosticInfo() {
   let perfData = null;
   try {
     const perf = performance.getEntriesByType('navigation')[0];
+    // FIX 2026-10-15 #456：这一页的「DOM 解析」「页面加载」恒写 NaNms——PerformanceNavigationTiming 上早就没有
+    // navigationStart（规范里换成 startTime），读到 undefined 就是 NaN。报告里说假话比少一行更坏，按现名读。
+    const t0 = perf && perf.startTime != null ? perf.startTime : 0;
     if (perf) perfData = {
       unload: (perf.unloadEventEnd - perf.unloadEventStart).toFixed(0) + 'ms',
       redirect: (perf.redirectEnd - perf.redirectStart).toFixed(0) + 'ms',
@@ -243,8 +359,9 @@ function getDiagnosticInfo() {
       tcp: (perf.connectEnd - perf.connectStart).toFixed(0) + 'ms',
       ttfb: (perf.responseStart - perf.requestStart).toFixed(0) + 'ms',
       response: (perf.responseEnd - perf.responseStart).toFixed(0) + 'ms',
-      domParse: (perf.domInteractive - perf.navigationStart).toFixed(0) + 'ms',
-      load: (perf.loadEventEnd - perf.navigationStart).toFixed(0) + 'ms',
+      domParse: (perf.domInteractive - t0).toFixed(0) + 'ms',
+      // loadEventEnd 在 load 之前是 0，拿 0 减 t0 会写出负数——没发生的事不编读数（与本仓「量不到的读数不编」同一条）
+      load: perf.loadEventEnd ? (perf.loadEventEnd - t0).toFixed(0) + 'ms' : '尚未触发 load',
     };
   } catch { /* ignore */ }
 
@@ -456,7 +573,9 @@ function getDiagnosticInfo() {
     `GPU: ${gpuInfo}`,
     `网络在线: ${navigator.onLine ? '在线' : '离线'}`,
     `在线协议: ${navigator.onLine ? (navigator.connection ? navigator.connection.effectiveType : '未知') : '离线'}`,
-    `连接类型: ${navigator.connection ? navigator.connection.effectiveType + ' (' + navigator.connection.type + ')' : '不支持'}`,
+    // FIX 2026-10-15 #456：connection.type 现代内核（Chrome／Safari）根本不暴露，旧写法直接把它接在串里
+    // → 报告里出现「连接类型: 4g (undefined)」；没这个读数就该说没给，不该打印一个 undefined
+    `连接类型: ${navigator.connection ? navigator.connection.effectiveType + (navigator.connection.type ? ' (' + navigator.connection.type + ')' : '（该内核不暴露网络类型）') : '不支持'}`,
     `JS堆内存: ${perfMem ? `used=${perfMem.used} total=${perfMem.total} limit=${perfMem.limit}` : '不支持'}`,
     `电池: ${batteryInfo}`,
     `GPU 渲染: ${gpuAccel}`,
@@ -468,6 +587,10 @@ function getDiagnosticInfo() {
     `--- 键盘与 visualViewport ---`,
     `visualViewport: ${vvInfo}`,
     `键盘高度: ${keyboardHeight}`,
+    ``,
+    // #456：屏幕适配的「结论层」（上面那些是原始读数，这一段的每一行都带着 ✓/✗ 与症状）
+    `--- iOS 视口与键盘适配判定 ---`,
+    ...iosFitLines(),
     ``,
     `--- 页面状态 ---`,
     `滚动位置: x=${scrollX}, y=${scrollY}`,

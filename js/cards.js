@@ -703,9 +703,15 @@ $('#cardsOwnMask').addEventListener('click', e => {
 
 // 整条解析链：挑到文件的那一处与粘贴的那一处共用这一份（BUGS #428，两条入口的行为必须一字不差）
 async function _runCardsImport(readText, label, size) {
-  showProgress('正在读取字卡…');
+  // 体积先说出来：字卡 JSON 里塞满 base64 图/语音时，读全文＋整树 parse 都是主线程长任务（BUGS #458＝#434 二批）
+  showProgress('正在读取字卡…' + (size >= IMP_WARN ? '·' + _impSizeText(size) + ' 比较大，导的过程别切走' : ''));
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));   // 让进度层先真正上屏再开干
   try {
+    // 到 150MB 当面问一句要不要试（复用 js/settings.js 那把体积闸，不再开第二份口径）；选「算了」＝这一趟不导
+    if (size > IMP_HARD) {
+      if (!(await _impGoAhead(size))) return;
+      showProgress('正在读取字卡…');   // _impGoAhead 收掉了进度层，放行后重新摆上
+    }
     let text;
     try {
       text = await readText();
@@ -714,6 +720,9 @@ async function _runCardsImport(readText, label, size) {
       showToast('读不到这个文件的内容：' + ((err && err.message) || '请在手机自带的「文件管理」里挑，别从预览界面分享进来'));
       return;
     }
+    // 解析前让两帧：整树 JSON.parse 是长任务，不让＝屏上钉在「正在读取」不动＝用户眼里的卡住（#428 同族，口径收进 utils 的 progressYield）
+    updateProgress(12, '正在解析…');
+    await progressYield();
     let parsed;
     try {
       parsed = JSON.parse(text || '');
@@ -728,7 +737,7 @@ async function _runCardsImport(readText, label, size) {
       await _importOrdinalGroups(Array.isArray(parsed) ? parsed : parsed.groups, created);
       _applyOrdContacts(parsed && parsed.ordContacts);
       updateProgress(70, '正在落库…');
-      await save();
+      await flushSave();   // 导入是关键写：真等落盘再说「已导入」（save() 不返 Promise，await 它是空等＝BUGS #458）
       hideProgress();
       const own1 = await _askImportOwner(created);
       selectedGroupName = ''; _groupsKey = '';
@@ -755,7 +764,7 @@ async function _runCardsImport(readText, label, size) {
     await _importFlushMedia(jobs, (p, t) => updateProgress(20 + Math.round(p * 0.7), t), stat);
     _applyOrdContacts(parsed && parsed.ordContacts);
     updateProgress(94, '正在落库…');
-    await save();
+    await flushSave();   // 同上：关键写走 flushSave 真落盘（BUGS #458）
     hideProgress();
     const own = await _askImportOwner(created);
     if (stat.public || stat.own) {
@@ -764,7 +773,7 @@ async function _runCardsImport(readText, label, size) {
       else if (!stat.public && stat.own) currentCardsScope = 'own';
       selectedGroupName = '';
       _groupsKey = '';
-      await save();
+      await flushSave();   // 主人定完是关键写：真落盘（BUGS #458）
       renderGroups();
       showToast(`已导入 mochi 字卡：公用 ${stat.public} 张 · 专属 ${stat.own} 张` + _ownTail(own));
     } else {

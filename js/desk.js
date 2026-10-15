@@ -149,10 +149,13 @@ $('#deskBgInput').onchange = async e => {
   const img = await fileData(f, 1440, 0.8);
   if (!img) return;
   data.appearance.deskBg = img;
+  // 自动压暗：用户自传照片才按亮度定一个压暗默认（内置渐变预设不走这条，它自带好看的 44）。
+  const sug = _bgVeilSuggest(await _imgLuma(img), 90);
+  if (sug !== null) data.appearance.deskBgVeil = sug;
   applyDeskVars();
   renderDeskStation();
   await save();
-  showToast('桌面背景已更新');
+  showToast(sug !== null ? ('桌面背景已更新·压暗自动设 ' + sug + '%') : '桌面背景已更新');
 };
 $('#deskBgClear').onclick = async () => {
   data.appearance.deskBg = '';

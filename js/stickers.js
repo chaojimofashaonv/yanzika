@@ -170,9 +170,26 @@ function closeStickerDrawer() { $('#stickerDrawer').classList.remove('open'); _p
 function _panelSyncChrome(which) {
   const view = $('#chatView'); if (!view) return;
   if (which) view.setAttribute('data-panel', which); else view.removeAttribute('data-panel');
+  _syncComposerH(view);
+}
+// --composer-h 的唯一量式（开关面板时∶ResizeObserver 两处同引它，不在第二处重新发明算法）：
+// 输入栏不存在时兑回 70px（css 侧 var(--composer-h,70px) 的同一枚数）。
+function _syncComposerH(view) {
   const c = $('#composer');
   view.style.setProperty('--composer-h', (c ? Math.round(c.getBoundingClientRect().height) : 70) + 'px');
 }
+// --composer-h 此前只在开关面板那一刻现量一次；引用条/待发图会把 #composer 顶高而面板没开时没人重测，
+// 于是 .scroll-bottom-btn 的 bottom:calc(var(--composer-h,70px) + 18px) 会读到上一次关面板时的旧值。
+// 挂一个 ResizeObserver 常驻跟踪：默认量出来就是 70px（浮钮 bottom 88px 与今天同值），
+// 只有输入栏真长高那一下才更新＝修掉「引用条在、浮钮骑进输入栏」，量式不另发明一份（同引 _syncComposerH）。
+(function _watchComposerHeight() {
+  const c = $('#composer'), view = $('#chatView');
+  if (!c || !view || typeof ResizeObserver !== 'function') return;
+  try {
+    const ro = new ResizeObserver(() => _syncComposerH(view));
+    ro.observe(c);
+  } catch (e) { /* 老引擎无 ResizeObserver：回「开关面板时量」的旧行为（兑底 70px） */ }
+})();
 // 「去字卡库绑定」：把抽屉里那一格的语境搬到字卡库（专属 × 那个分类），并当场停在有内容的分组上；
 // 「全部」那一枚保持选中（不选任何单组＝那分类的所有组都在屏上），返回键沿用现状回首页
 function _stGoBindCards(catName) {

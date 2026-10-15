@@ -181,10 +181,17 @@ body .ann-cal-cell.sel::after{background:#FFFFFF}
      也是本文件头部那句「不给外影」在这一屏被自己破掉的地方）。它们不是浮层——没有东西从底下滚过，
      分层靠**与容器反色**（白栏里的灰胶囊 ∶ 灰画布上的白胶囊，见 ① 那条 `.composer-row`），不靠影。 */
 .sheet,.fs-sheet,.cards-modal,.app-modal-panel,.sticker-drawer,.poke-sheet,
-.progress-card,.msg-actions,.scroll-bottom-btn{
+.progress-card,.msg-actions{
   background:var(--panel);border:var(--glass-border);box-shadow:var(--float-shadow);
   -webkit-backdrop-filter:none;backdrop-filter:none}
 .sheet,.fs-sheet{border-radius:var(--r-panel) var(--r-panel) 0 0}
+/* 「回到底部」浮钮自此不在弹层名单（2026-10-15 精修批 B）：它是**浮在内容之上的钮**，不是面板——
+   与首页「＋」∶播放器 FAB 同族同面（④ 主操作实心墨底白字），旧档给它白面细边，压在白气泡∶浅画布
+   缝隙上几乎隐形。落影三枚共用一枚令牌，旧写法 #addContactBtn∶.fab 两处各拄了一遍字面量——
+   注释里早就写着「两枚浮钮共用同一条影，别改一个数留下两层实现」，这里是那一条的收口∶第三枚并入时
+   把两份字面量换成 var()，值逐字节相同。 */
+:root{--float-btn-shadow:0 6px 20px rgba(0,0,0,.20)}
+.scroll-bottom-btn{background:var(--ink);border-color:var(--ink);color:#FFFFFF;box-shadow:var(--float-btn-shadow)}
 /* 首页右上那枚「＋」＝黑底白字（韩系主操作就是黑色实心）
    ⚠ 2026-10-13 按演示稿回改后，深色实心的范围＝**全部选中态与主按钮**（③④④b）＋`#addContactBtn`（首页「＋」）
      ／`.fab`／播放器的 `.pl-pri`（56px 圆形播放键，住在 css/player.css:84）这三枚浮钮；
@@ -196,21 +203,29 @@ body .ann-cal-cell.sel::after{background:#FFFFFF}
    ⚠ 2026-10-13 二批（用户点名「按 ui1 的风格修改」聊天页）：这一枚由 12px 方角改回**正圆**、边框摘掉，
      并补一层与 `.fab` 同一枚落影——它是浮在列表之上的一枚主操作，不是页面里的一颗胶囊（⑤ 头部那条警告
      管的是「页面上的胶囊不许摊影」，这枚不在其列）；两枚浮钮共用同一条影，别在这儿改一个数留下两层实现。 */
-#addContactBtn{background:var(--ink);color:#FFFFFF;border:none;box-shadow:0 6px 20px rgba(0,0,0,.20);border-radius:50%}
+#addContactBtn{background:var(--ink);color:#FFFFFF;border:none;box-shadow:var(--float-btn-shadow);border-radius:50%}
 .home-add:not(#addContactBtn){
   background:var(--ink);color:#FFFFFF;
   border:1px solid rgba(var(--ink-rgb),.10);font-weight:600}
 /* 浮动按钮（FAB）＝黑底白字 */
-.fab{background:var(--ink);color:#FFFFFF;border:none;box-shadow:0 6px 20px rgba(0,0,0,.20)}
+.fab{background:var(--ink);color:#FFFFFF;border:none;box-shadow:var(--float-btn-shadow)}
 
 /* ── ⑥ 气泡：对面＝白底墨字 + 一条浅边；我＝**黑底白字**（本族的标志，靠令牌 --mine/--mine-text 已给色，
-      这里只补边与影；chat.css:66-67 只写了背景/字色、没写边） ── */
-.bubble{background:var(--surface);border:1px solid rgba(var(--ink-rgb),.08);box-shadow:none}
+      这里只补边与影；chat.css:66-67 只写了背景/字色、没写边。浅边浓度 2026-10-15 起引 --bubble-edge
+      （定义与光影档联动见 css/theme.css 的 body 块∶data-ap-light 两块），值与旧字面量逐字节相同） ── */
+.bubble{background:var(--surface);border:1px solid var(--bubble-edge);box-shadow:none}
 .mine .bubble{background:var(--mine);color:var(--mine-text);border:1px solid var(--mine);box-shadow:none}
 /* 引用条：压在白气泡里就是一层浅灰块；压在我那颗黑气泡里则走半透白（否则黑底上看不见） */
 .reply-quote{background:rgba(var(--ink-rgb),.06);border:1px solid transparent}
 .mine .reply-quote{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.18)}
 .bubble.recalled{background:var(--page);border:1px dashed var(--line);box-shadow:none}
+/* 语音条播放钮＝这条消息唯一的主操作（2026-10-15 精修批 C）：旧档 26px 淡环+58% 淡墨三角压在白气泡里
+   读不出「按我」，按 ③「实心墨底白字」成对改——面∶字两处同改缺一边就是 #311 黑底黑字那一族；
+   描边宽度 1px 一字不动（border-color 同色化，不碰几何——#209 的 132px 骨架∶base.css 的 28px 热区
+   补偿全部维持）；我方那颗黑气泡里反白（面＝实白∶字＝墨，引 .mine .reply-quote 同族先例）。
+   playing 态只换 svg 显隐（chat.css 那条），与本条无纠缠；minimax 的 .voice-speak 不在这条上。 */
+body .voice-play{background:var(--ink);border-color:var(--ink);color:#FFFFFF}
+body .message.mine .voice-play{background:var(--surface);color:var(--ink)}
 
 /* ── ⑦ 日期胶囊与系统小字：浅灰胶囊（上一族是玻璃片，撤） ── */
 .day-label,.sys-msg{

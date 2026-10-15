@@ -82,6 +82,8 @@ const PL_PERMS = [
 // tab 默认「发现」（#335）：像网易云那样——进播放器先看见搜索与日推，曲库退居第二格
 const plState = { tab: 'find', favWho: 'mine', list: '', perm: '', full: false, lrc: false };
 let plAudio = null, plCur_ = null, plInvite = null, plMenu = null, plBound = false;
+// #457 不抢声道：plEl＝普通媒体元素（在线∶本机回落）；plWaEl＝接进 WebAudio 的本机混音元素；plAudio＝当前活动那枚
+let plEl = null, plWaEl = null, plWaCtx = null, plWaNode = null, plWaGain = null, plWaBroken = false, _plOnlineDuckNoted = false;
 let plTaFavTimer = 0, plPauseTimer = 0, plResumeTimer = 0, plPauseDone = '', plPauseOn = false;
 let plDelConfirm = 0;   // 「清空曲库」两段式确认的那 2.5 秒
 
@@ -562,26 +564,57 @@ function plRemoveTrack(id) {
   renderPlayerAll();
 }
 
-/* ===== 三、播放（一个 Audio，全站只有这一枚） ===== */
-function _plAudio() {
-  if (plAudio) return plAudio;
-  try { plAudio = new Audio(); } catch (e) { return null; }
-  plAudio.preload = 'metadata';
-  plAudio.addEventListener('timeupdate', _plPaint);
-  plAudio.addEventListener('loadedmetadata', () => {
+/* ===== 三、播放（普通媒体元素＋本机混音元素两枚，活动那枚记在 plAudio） ===== */
+function _plWire(el) {
+  el.preload = 'metadata';
+  el.addEventListener('timeupdate', _plPaint);
+  el.addEventListener('loadedmetadata', () => {
     const t = plCur();
     // 元数据量到的时长写回这一首（只有量到才写＝不写 0）：下次不必等解码就有读数
-    if (t && !t.dur && Number.isFinite(plAudio.duration) && plAudio.duration > 0) {
-      t.dur = Math.round(plAudio.duration); save();
+    if (t && !t.dur && Number.isFinite(el.duration) && el.duration > 0) {
+      t.dur = Math.round(el.duration); save();
     }
     _plPaint();
   });
-  plAudio.addEventListener('ended', plOnEnded);
-  plAudio.addEventListener('play', () => { _plClearTaTimers(); plPauseOn = false; _plScheduleTa(plCur()); _plPaint(); });
-  plAudio.addEventListener('pause', () => { if (!plPauseOn) _plClearTaTimers(); _plPaint(); });
-  plAudio.addEventListener('error', () => { _plPaint(); });
-  return plAudio;
+  el.addEventListener('ended', plOnEnded);
+  el.addEventListener('play', () => { _plClearTaTimers(); plPauseOn = false; _plScheduleTa(plCur()); _plPaint(); });
+  el.addEventListener('pause', () => { if (!plPauseOn) _plClearTaTimers(); _plPaint(); });
+  el.addEventListener('error', () => { _plPaint(); });
+  return el;
 }
+// 普通媒体元素：在线音源、以及「不抢」拿不到 WebAudio 时的本机回落（永远出得来声）
+function _plEl() {
+  if (plEl) return plEl;
+  try { plEl = new Audio(); } catch (e) { return null; }
+  return _plWire(plEl);
+}
+// #457 本机文件的「不抢其他 App 的声音」：把这枚元素的输出接进 WebAudio 图（与保活静音音频同一族）。
+// 只在 AudioContext 确实 running 时才用它，拿不到就退回普通元素——绝不因混音失败而变静音。
+function _plWaEl() {
+  if (plWaBroken) return null;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { plWaBroken = true; return null; }
+    if (!plWaCtx) { try { plWaCtx = new AC(); } catch (e) { plWaBroken = true; return null; } }
+    if (plWaCtx.state !== 'running') { try { const rr = plWaCtx.resume(); if (rr && rr.catch) rr.catch(function () {}); } catch (e) {} }
+    if (plWaCtx.state !== 'running') return null;
+    if (!plWaEl) {
+      const el = new Audio(); _plWire(el);
+      plWaNode = plWaCtx.createMediaElementSource(el);
+      plWaGain = plWaCtx.createGain();
+      plWaNode.connect(plWaGain); plWaGain.connect(plWaCtx.destination);
+      plWaEl = el;
+    }
+    return plWaEl;
+  } catch (e) { plWaBroken = true; return null; }
+}
+function plNoDuckOn() { try { return !!(data && data.appearance && data.appearance.plNoDuck); } catch (e) { return false; } }
+// 选这一首要用的那枚元素并设为活动：本机＋开了不抢＋WebAudio 就绪→混音元素；否则→普通元素
+function _plPickEl(t) {
+  if (t && t.src === 'file' && plNoDuckOn()) { const w = _plWaEl(); if (w) { plAudio = w; return w; } }
+  plAudio = _plEl(); return plAudio;
+}
+function _plAudio() { if (plAudio) return plAudio; plAudio = _plEl(); return plAudio; }
 function _plStopAudio() {
   _plClearTaTimers();
   if (plAudio) { try { plAudio.pause(); plAudio.removeAttribute('src'); plAudio.load(); } catch (e) {} }
@@ -590,7 +623,7 @@ function _plStopAudio() {
 // 装载：本机文件要先把 IDB 里那段字节捞出来（捞不到就如实说一句，不放一枚点着没声音的键）
 function plLoad(t) {
   if (!t) return false;
-  const a = _plAudio(); if (!a) { showToast('这台设备放不了音频'); return false; }
+  const a = _plPickEl(t); if (!a) { showToast('这台设备放不了音频'); return false; }
   if (!plPlayable(t)) {
     showToast(t.src === 'file' ? '这首的本机字节已经不在了（换过设备或清过存储）'
       : t.src === 'qq' ? '这首是 QQ 音源收的，QQ 那一档已经下线了＝取不到声音'
@@ -627,6 +660,8 @@ function plStart(t) {
   const p = _plRoot(), a = _plAudio();
   p.current = t.id; save();
   if (a && a.play) { const r = a.play(); if (r && r.catch) r.catch(() => {}); }
+  // #457 在线音源做不到「不抢」：如实提示一次（本机文件走 WebAudio 混音，不提示）
+  if (plNoDuckOn() && t && t.src !== 'file' && !_plOnlineDuckNoted) { _plOnlineDuckNoted = true; try { showToast('在线音源会占用音频通道，其他 App 的声音会被暂停（浏览器限制，做不到边听边放）'); } catch (e) {} }
   renderPlayerAll();
   return true;
 }
@@ -1255,6 +1290,10 @@ function renderPlayerSettings() {
     // 2026-10-14：原先这一组叫「音源」、下面挂着网易云账号／网易云中转地址／QQ 音乐中转地址／QQ 音乐账号四行。
     // 用户「把登录 QQ 音乐和中转相关的设置删掉」＝那三行整行下线，只剩「网易云账号」一行。
   //   #440 二批补回一格「网易云接口地址」（那是昵称∶日推∶我的歌单唯一的出口，与 QQ∶那台局域网服务无关）＝这一组两行。
+    // #457 全局一份的「不抢其他 App 的声音」：本机文件能真混音；在线音源做不到，行里如实写清
+    '<div class="pl-set-lab">播放<span>全局一份·与按人无关</span></div>' +
+    '<label class="pl-perm pl-perm-sw"><span class="pl-perm-t"><b>不抢其他 App 的声音</b><small>本机上传的歌走混音通道，播放时不挤掉你在听的音乐/视频；在线音源受浏览器限制做不到，播放时仍会占用音频通道、暂停其他 App</small></span>' +
+    '<input type="checkbox" class="pl-perm-in" data-pl-noduck' + (plNoDuckOn() ? ' checked' : '') + '></label>' +
     '<div class="pl-set-lab">账号<span>全局一份·与按人无关</span></div>' +
     '<div class="pl-set-row" data-pl-act="ncm"><span class="pl-tx"><b>网易云账号</b><small>' +
     (_plNcmLogged() ? '已登录' + (_plNcmName() ? ' · ' + escapeHTML(_plNcmName()) : '') + '（点开可退出）' : '未登录·只放免费音质（点开可登录）') +
@@ -1423,6 +1462,8 @@ function bindPlayerOnce() {
     if (invto) { if (plMenu && plSendInvite(invto.dataset.plInvto, plMenu, true)) closePlayerMenu(); return; }
     const act = hit('[data-pl-act]');
     if (act) { _plAct(act.dataset.plAct, act); return; }
+    const nd = hit('[data-pl-noduck]');
+    if (nd) return;                                     // 全局不抢开关自己管 change（与按人那套不同一写入口）
     const perm = hit('[data-pl-perm-in]');
     if (perm) return;                                   // 数字框与开关自己管 change
     const step = hit('[data-pl-step]');
@@ -1459,6 +1500,10 @@ function bindPlayerOnce() {
     if (e.target.classList && e.target.classList.contains('fs-sheet-mask')) { _plMask('', false); plDelConfirm = 0; }
   }, true);
   document.addEventListener('change', e => {
+    const nd = e.target.closest ? e.target.closest('[data-pl-noduck]') : null;
+    if (nd) { try { if (!data.appearance) data.appearance = {}; data.appearance.plNoDuck = !!nd.checked; save(); } catch (x) {}
+      try { showToast(nd.checked ? '已开启：本机上传的歌不再挤掉其他 App 的声音（在线音源仍会占用声道）' : '已关闭：播放器会照常占用音频通道'); } catch (x) {}
+      renderPlayerSettings(); return; }
     const inp = e.target.closest ? e.target.closest('[data-pl-perm-in]') : null;
     if (!inp) return;
     const k = inp.dataset.plPermIn, cell = PL_PERMS.find(x => x.k === k); if (!cell) return;

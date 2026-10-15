@@ -37,11 +37,12 @@
 .sys-msg{width:fit-content;max-width:88%;margin:10px auto;padding:4px 12px;background:var(--surface);border-radius:99px;text-align:center;color:var(--muted);font-size:11px;line-height:1.4;contain:layout}
 /* 会话里只留一行指针的四种：信箱到站那行（#165·信不进聊天）／播放器待答那行（#284·歌不进气泡）／
    换形象那行（#303·整本印象账不打印在聊天里，点它是翻开那本账）／TA 发圈那行（#347·动态不进聊天，
-   点它是跳朋友圈闪那一条）。四者共用同一种「看得出来能点」：
-   与「今天」分隔条同一族手法（虚线下划线·--muted 同色），不另起一套颜色。
-   原先信箱与播放器各写一条一模一样的规则（注释里还写着「不留第二套写法」＝两份实现叠在那儿），
+   点它是跳朋友圈闪那一条）。四者共用同一条规则：只给 cursor:pointer 与按下反馈（下面那行 :active），
+   不再画虚线下划线——原先那圈「看得出来能点」的 dotted 下划线摊在换昵称／换形象这类长句上会整段折行、
+   满屏虚线很脏（BUGS #454，用户报「有线，很丑」）；能点这件事交给 cursor∶按下反馈∶行上那枚「印象」签去说，
+   不靠下划线。原先信箱与播放器各写一条一模一样的规则（注释里还写着「不留第二套写法」＝两份实现叠在那儿），
    第三族进来之前先并成一条列表——以后再少一族也不会有人再抄一遍。 */
-.sys-msg-moment,.sys-msg-letter,.sys-msg-player,.sys-msg-av{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.sys-msg-moment,.sys-msg-letter,.sys-msg-player,.sys-msg-av{cursor:pointer}
 .sys-msg-moment:active,.sys-msg-letter:active,.sys-msg-player:active,.sys-msg-av:active{opacity:.55}
 /* padding-top 是给 .msg-badges（骑角签槽）留的出墨空间（BUGS #022）：content-visibility:auto 自带 paint
    containment，超出本盒的部分不渲染；小签探出气泡上沿 10px，没有这层内距就被削掉上半截。
@@ -65,6 +66,10 @@
 .msg-actions[hidden]{display:none}
 .msg-actions button{font-size:11px;line-height:1;padding:6px 11px;border-radius:999px;background:transparent;color:var(--accent);white-space:nowrap}
 .msg-actions button:active{background:var(--press)}
+/* 「删除」是这一排里唯一的不可逆动作（总闸 delMsgOn 开着才会被画出来，见 js/render.js），
+   平权墨字里它得先看出来——挂全站既有的 --danger-ink，同先例＝信箱批量条 .sticker-batch-btn.del；
+   只改色不加面。撤回不在这条上：撤回是「说错了」、删除是「不想留」，两件事分开（render.js 注释原口径）。 */
+.msg-actions button[data-act="delete"]{color:var(--danger-ink)}
 /* 动作条的横向密度档。加进「复制」之后最宽那一发是七枚钮（复制／撤回／引用／收藏／心愿／这句说谁／这句本意／删除
    里真同屏最多七枚），实测在 ≤430px（＝几乎所有手机宽）都放不下原来那 11px 横向内距：390 屏只剩 2.7px 余量，
    「字号放大」档直接溢出 43.6px（BUGS #202）。故把原先只给 ≤380 的收紧档扩到 ≤430，另给 ≤340 再收一档——
@@ -186,7 +191,12 @@ body:not([data-view=chat]) .typing-indicator{display:none}
 .chat-head:has(.typing-indicator:not([hidden])) .cj-chip{display:none}
 @keyframes pulse{50%{opacity:.3;transform:translateY(-2px)}}
 #chatView{position:relative}
-.scroll-bottom-btn{position:absolute;right:16px;bottom:88px;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:none;font-size:20px;line-height:1;color:var(--accent);z-index:5;display:flex;align-items:center;justify-content:center}
+/* 回到底部浮钮：bottom 吃【输入栏实高】而非死数。旧写法 `bottom:88px` 是按「输入栏恒 70px」手算的，
+   引用条/待发图把 #composer 顶高后钮会骑进栏里；--composer-h 现由 js/stickers.js 量着写（开关面板时∶ResizeObserver 常态）。
+   没有面板时变量缺省不存在＝兑回 70px，calc 出来 88px 与旧值逐像素相同＝无图无面板时观感零变。 */
+.scroll-bottom-btn{position:absolute;right:16px;bottom:calc(var(--composer-h,70px) + 18px);width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:none;font-size:20px;line-height:1;color:var(--accent);z-index:5;display:flex;align-items:center;justify-content:center}
+/* 箭头为矢量（与头部返回键∶发送键同一 stroke 族，字符↓吃系统字重那一族收口）：尺寸在 css 给，不进标签写死 */
+.scroll-bottom-btn svg{width:20px;height:20px;flex:none}
 .scroll-bottom-btn[hidden]{display:none}
 .scroll-bottom-btn:active{opacity:.6}
 
@@ -295,11 +305,16 @@ body:not([data-view=chat]) .typing-indicator{display:none}
    高只由 --panel-maxh 一处封顶；内部 .sticker-body 吃剩余高度（flex:1），**不再自己顶 max-height**——
    「外层封一次＋内层再封一次」正是当初 64.6% 的第二因（44dvh 又叠在 451px 上）。 */
 .sticker-drawer{position:absolute;left:12px;right:12px;bottom:var(--composer-h,70px);z-index:7;
-  display:none;flex-direction:column;box-sizing:border-box;max-height:var(--panel-maxh,44dvh);
+  display:none;flex-direction:column;box-sizing:border-box;max-height:var(--panel-maxh,46dvh);
   background:var(--panel);border:1px solid var(--hair);border-radius:20px 20px 14px 14px;
   box-shadow:0 -8px 28px rgba(var(--shadow-rgb),.13),0 2px 8px rgba(var(--shadow-rgb),.06);padding:12px 0 10px;overflow:hidden}
-.sticker-drawer.open{display:flex}
-/* 面板在位时藏掉「回到底部」那枚浮钮：它的 bottom:88px 是按「输入栏之上」算的，
+.sticker-drawer.open{display:flex;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
+/* 开抽屉自此会弹起（2026-10-15 精修批 D）：旧写法 display:none→flex 瞬时切换＝硬闪现，
+   而同屏的拍一面板有 pokeUp——两个功能相同的下半屏浮层一个弹一个闪。直接**复用** pokeUp 那一条
+   现成 keyframes 与卡片入场同族的那条曲线，不新增第三条动效；#pokeMask 虽同挂 .sticker-drawer，
+   但 .open 类只由 #stickerDrawer 开合时写（见 js/stickers.js），不会给它叠跑两遍；
+   减弱动态的用户由 css/motion.css ⑨ 那条全局兑底自动归零，不在这里重复写名单。 */
+/* 面板在位时藏掉「回到底部」那枚浮钮：它的下沿是按「输入栏之上」算的（见上方 --composer-h 那段），
    浮层化之后输入栏之上就是面板，按钮会骑在面板上沿（实测正好压住 tabs 行左端）。 */
 #chatView[data-panel] .scroll-bottom-btn{display:none}
 .sticker-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -398,9 +413,6 @@ body[data-avatar-shape="square"] .sys-msg-who-avatar{border-radius:4px}
 .sticker-drawer#pokeMask:not([hidden]){display:flex;flex-direction:column}
 .sticker-drawer#pokeMask .poke-sheet{position:static;width:100%;max-width:none;max-height:none;flex:1;min-height:0;display:flex;flex-direction:column;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;animation:pokeUp .22s cubic-bezier(.22,1,.36,1)}
 @media(min-width:521px){.sticker-drawer#pokeMask .poke-sheet{max-width:none}}
-/* 工具行 chips 素笺化：胶囊白浮岛 → 细线文字按钮（hover/按下时才浮起白岛） */
-.sticker-tool{background:transparent;box-shadow:none;border:1px solid var(--line);border-radius:10px;padding:6px 11px}
-.sticker-tool:active{background:var(--island-grad);box-shadow:var(--island-shadow);border-color:transparent}
 /* 「拍谁」那一行（BUGS #184）：群里＝一枚「整个群」＋每位成员，单聊整行 hidden（不占面板高度）。
    与 .poke-groups 同族的横向单行横滚——群成员常有十来个，竖着排会把卡区挤没。 */
 .poke-whos{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:8px 16px 0;margin:0;flex:none;scrollbar-width:none;-ms-overflow-style:none}
@@ -514,25 +526,6 @@ body[data-avatar-shape="square"] .poke-who-avatar{border-radius:5px}
 .batch-item-x:active{filter:brightness(.92)}
 .batch-foot{display:flex;align-items:center;gap:8px;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 12px);flex-shrink:0}
 .batch-foot .soft-btn{flex:1;min-height:44px}
-
-/* ===== 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x）：壳用全站 .fs-sheet-*，这里只有清单与工具钮 ===== */
-.batch-count{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
-.batch-btns{display:flex;gap:6px;padding:0 2px 10px}
-.batch-btns .batch-tool{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 6px;border-radius:11px;border:1px solid var(--ctl-hair);background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
-.batch-btns .batch-tool:active{background:var(--well)}
-.batch-btns .batch-tool svg{width:15px;height:15px;flex-shrink:0}
-.batch-list{min-height:0;max-height:32vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.batch-empty{text-align:center;color:var(--muted);font-size:12px;padding:24px 0}
-.batch-item{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:8px;border-radius:12px;background:var(--well);border:1px solid var(--hair)}
-.batch-item:last-child{margin-bottom:0}
-.batch-item-idx{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--ink);color:var(--surface);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.batch-item-media{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--hair)}
-.batch-item-text{flex:1;min-width:0;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.batch-item-type{flex-shrink:0;font-size:11px;color:var(--muted)}
-.batch-item-x{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;background:var(--hair);color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
-.batch-item-x:active{filter:brightness(.92)}
-.batch-foot{display:flex;align-items:center;gap:8px;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 12px);flex-shrink:0}
-.batch-foot .soft-btn{flex:1;min-height:44px}
 /* 长截图起点标记（选段手势的屏上凭证，出图或取消即撤）：线圈住气泡＋一枚小签。
    用墨色不用危险红——这不是错误/危险态，是「你正在选的一段」的记号 */
 .message.chatshot-from .bubble{box-shadow:0 0 0 1.5px var(--ink)}
@@ -567,3 +560,6 @@ body[data-ap-bg=on] #chatView .composer{background-image:linear-gradient(var(--c
    再薄下去输入框里的字就要压在照片上读不出（theme.css:520 那条「输入栏不能透」的地板，门 B10 一直钉着这个数）。
    外圈那条带子吃滑杆全行程——照片就是从那一圈透出来的。 */
 #chatView .composer-row{background-color:color-mix(in srgb,var(--surface) calc(100% - var(--comp-row-trans,0) * 1%),transparent)}
+/* 「减少动态」不在本件补条目（2026-10-15 统一批自查）：打字三点 pulse／动作条 actionPop／拍一 pokeUp
+   看着不在各页 reduce 名单里，实为 css/motion.css ⑨ 那条全局兑底（animation-duration:.001s!important
+   压过全站任何一处动画）已经接管——再写一层就是第二份实现，两处各保一份必漂。 */

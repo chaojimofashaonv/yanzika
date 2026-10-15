@@ -41,11 +41,20 @@
      ① **名单是怎么来的**：本批先用 assemble.json 的 css_order 反查了「哪些 backdrop-filter
         真的进产物」——css/frost.css 与 css/glass.css **未登记**（留底不加载），所以它们那二十来条
         blur 声明（含 .bubble 气泡磨砂）是死的，写了也白写。真正在屏上付钱的只有四族：
-        theme.css:597 顶栏∶聊天头 ∶ theme.css:599 输入栏 ∶ hub.css:12 首页列表 ∶ letter.css:156 写信底栏。
+        theme.css:627 顶栏∶聊天头 ∶ theme.css:629 输入栏 ∶ hub.css:12 首页列表 ∶ letter.css:156 写信底栏。
         名单按这个结果定，别照着源码里 backdrop-filter 的总数去抄（那个数是 47，多数不生效）。
-     ② 只关 blur，半透的那两处**顺手补一档实底**：顶栏∶聊天头在 glass=on 时底纱是半透的，
-        摘了模糊又不补底＝滚动那 0.2 秒里底下的字会透上来。补的口径与 theme.css:605-611
-        省电档同一套（color-mix --page 92%）。
+     ② 只关 blur，**不许在这一档里改底纱的颜色**（2026-10-15 #444 收掉的就是这一条）。
+        本件起稿时顶栏∶聊天头∶输入栏在 glass 族里是**半透**纱，摘了模糊不补底＝滚动那 0.2 秒
+        底下的字会透上来，所以当年顺手补了一档 color-mix --page 92%。可屏上现在换的是
+        css/mono.css 那一族：它把这三处的 blur 全程写成 none、纱写成**不透明白**
+        （--topbar-veil，见 theme.css:147∶253）⇒ 这一档降级对 blur 一分钱都省不到（本来就是零），
+        补底那条却还剩一个作用＝把实白换成 92% 半透灰白，特异度 (0,3,1) 又压过 mono 的 (0,2,1)，
+        合成亮度 255→247＝Δ8（本仓量过的近白可辨阈正是 8/255，见 css/chat.css 里 #314 那段记录）。
+        而挂／摘这个类**不分来源也不限一次**：一格一格慢滚、程序把列表滚到底（改昵称后
+        saveMateProfile 那一串 render*）、键盘起来把壳压矮夹一下 scrollTop——每一下都跳一次色，
+        那就是用户报的「设置页往下滑顶部栏一直闪∶聊天设置改昵称时也闪一下还变了颜色」。
+        将来若把带 blur 的那一族加回 css_order，补底要写进**那一族自己的文件**、按静息同一枚令牌补，
+        别在这里抄第二份色（两处各写一份＝以后改一处漏一处，#233 那条）。
      ③ 别顺手连 box-shadow 一起摘：影是静态的、合成器缓存得住，摘了反而会在滚动停止
         那一瞬闪一下（影重新出现的那一帧）。这一族只动 backdrop-filter。 */
 html.mo-scrolling body .topbar::before,
@@ -57,17 +66,14 @@ html.mo-scrolling .call-window .call-voice-text{
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
 }
-html.mo-scrolling body[data-ap-glass=on] .topbar::before,
-html.mo-scrolling body[data-ap-glass=on] .chat-head::before,
-html.mo-scrolling body[data-ap-glass=on] .composer{
-  background:color-mix(in srgb,var(--page) 92%,transparent);
-}
 
 /* ── ③ 低端机常驻降级（html.mo-lite，由 js/perf.js 探测后挂）────────
    与 ② 同一套写法、同一个名单，区别只是它**一直挂着**：弱机（内存 ≤4G／逻辑核 ≤4）
    上滚动与静止都关掉实时模糊，换全程不掉帧。观感上仍留玻璃的边与高光，只是不糊背景。
    探测口径与逃生阀写在 js/perf.js 头段，这里只管「挂上之后长什么样」。
-   ⚠ 名单必须与 ② 逐字同源——两处各写一份＝以后改一处漏一处（#233 那条）。 */
+   ⚠ 名单必须与 ② 逐字同源——两处各写一份＝以后改一处漏一处（#233 那条）。
+   ⚠ 纪律也与 ② 同一条：只关 blur、不改色（#444）。这一档在弱机上是常驻的，
+      当年那条补底在这里不会闪（色一直停在灰档），却会把顶栏永久垫成半透＝更难看。 */
 html.mo-lite body .topbar::before,
 html.mo-lite body .chat-head::before,
 html.mo-lite body .composer,
@@ -77,11 +83,13 @@ html.mo-lite .call-window .call-voice-text{
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
 }
-html.mo-lite body[data-ap-glass=on] .topbar::before,
-html.mo-lite body[data-ap-glass=on] .chat-head::before,
-html.mo-lite body[data-ap-glass=on] .composer{
-  background:color-mix(in srgb,var(--page) 92%,transparent);
-}
+
+/* ── ③-b 弱机连整页入场也撤 ──────────────────────────────────
+   入场是 opacity+translateY 全合成器属性，正常机器不值一提；但 mo-lite 是**实测掉帧过**
+   那一档（perf.js ②静态判定或②-b看门狗命中），切页那 200ms 的整层提升叠上重页首帧
+   正是最容易崩的那一下。撤入场≠撤反馈——mono ⑩ 的 :active 下压幅度全留（与系统
+   reduce 那一档同一口径：关动画、不关反馈）。特异度 (0,3,2) 压得住 ⑤ 那条 (0,2,1)。 */
+html.mo-lite body .view.active{animation:none}
 
 /* ── ④ 按压回弹：全站小元件的统一手感 ─────────────────────────
    现状是各写各的（.fab 硬写 .12s ease、.bk-btn 硬写 .15s/.12s、多数元素压根没有＝硬切），
@@ -218,3 +226,50 @@ html body img{decoding:async}
     scroll-behavior:auto !important;
   }
 }
+
+/* ── ⑩ iOS 视口与键盘硬化层（BUGS #456 · iPhone「能滑到屏幕外面·比例不对·键盘把打字那行全挡住·抖」一批）────
+   闸门＝js/app.js 末尾那段自包的 iOS 判定，命中才往 &lt;html&gt; 上挂 `ios-pin`（桌面／安卓整层零输出＝一个字节都不变）。
+   四条各咬一个真机症状，取号同一发，改前逐条读：
+
+   ⑩-a body 钉成视口——治「屏幕莫名其妙能滑到屏幕外面」＋一半「抖／闪一下」。
+     本站的壳是 .app-shell{height:100dvh;overflow:hidden}，本来就不该有可滚余量；但「不该有」不等于「没有」：
+     iOS 上只要文档比布局口多出一两个 px（100dvh 与 innerHeight 在工具栏收放那一瞬的不等／某枚固定宽元件顶出去／
+     浮层把自己排在壳下面），文档就长出滚余量＝一根手指能把整页拖着走、橡皮筋一拉就是「滑到屏幕外面回不来」；
+     而 js/app.js 那套补偿算的是「可视带在哪一条」，它管不着「文档被滚走了多少」（#442 起去重键里带着 scrollY＝只能跟着追）。
+     钉住之后三件事一并没了：① 文档永不可滚（余量是结构上为零，不是「量出来恰好没超」）；
+     ② Safari 地址栏／工具栏不再因滚动收放→innerHeight 与 100dvh 不再变→少一整族全壳重排（那条「闪一下」）；
+     ③ scrollY 恒 0→_vvApply 的补偿只剩 offsetTop 一个变量，不会「补偿与文档滚动」互相对冲。
+     ⚠ 不付代价：今天这一面本来就不滚文档（.app-shell overflow:hidden∶各面自滚），iOS 的工具栏本来就收不掉——
+       钉住不会少拿到什么，只是把「万一长出余量」那一族一次关掉。视觉口平移（键盘把焦点捞上来那一下）归 vv 管，本条管不到、也没想去管。
+     ⚠ 不许顺手改 .app-shell 的高度口径（100dvh 是 #431·#359 那批钉的），这里只加宿主级裁剪。
+
+   ⑩-b 可编辑控件的 16px 字号地板——治「输入法完全挡住正在打字的框」＋「屏幕比例不对」。
+     iOS Safari 自 10 起对 computed font-size &lt;16px 的 input／textarea **聚焦即强制整页放大**，
+     且 head.html 那句 maximum-scale=1 早被它无视（苹果为无障碍留的口子，关不掉、也不该关）。
+     放大后 visualViewport.scale≠1，而 #435 在 _vvApply 里钉了一条「scale≠1＝不是键盘，不做补偿」的闸——
+     两件事咬成用户报的那一形状：整页被放大（比例不对）＋键盘补偿整段罢工（打字的框被完全遮住）＋放大后的页面四向可拖。
+     #435 当年只补了 inputmode=decimal 那三处（css/base.css），聊天输入栏 15px（css/chat.css:200）·
+     设置页 13px（css/settings.css:124）·自定义 CSS 那框 12px（css/settings.css:188）全是漏网的，
+     而聊天那一枚正是全站点得最多的一个。地板按元素族钉一次，以后新页面写多少 px 都不再影响 iOS。
+     ⚠ 写成 16px÷--ui-zoom：全站字号滑杆用 zoom 挂在 .app-shell 的子层（css/theme.css:528），
+       滑到 80% 时「16px」渲染出来只剩 12.8 CSS px，iOS 照样放大——除回布局口径才真是地板（滑杆 80~140%，不会除零）。
+     ⚠ 刻意不含 [contenteditable]：iOS 不做 contenteditable 化（js/input-ce.js #418 定档），挂在这层是一条空规则。
+
+   ⑩-c .view 退出「跳过渲染」但把 containment 原样写回——#004·#316 同根因的收口批。
+     css/theme.css:337 给每一面 .view 挂着 content-visibility:auto。#004 已经量死「这个优化在移动端 WebKit
+     会算错滚动高度」，当年只摘了 #settingsView 一面、#316 只摘了 .message，其余每一面还挂着＝同一根因
+     按页面分布随机复发（#316 原话＝「莫名其妙滑动到飞出屏幕的位置」；#444 那条「程序滚底夹一下 scrollTop」
+     也是这一族引的顶栏跳色）。这里只摘「跳过渲染」那一半，`contain:layout style paint` 逐字写回
+     ＝#359 那条「.view 是 fixed 的包含块」的几何契约一字不变（cards-batch-bar 的 sticky 正靠它），
+     不摘 containment、不重排别的件、不动桌面与安卓。
+
+   ⑩-d 键盘期停整页入场——治「弹键盘那一下跟着晃一下」。
+     ⑤ 那条通配入场是 opacity+translateY，切页时值；但键盘起来那一刻 _vvApply 正把壳压矮＋下移，
+     同一帧里再叠一层整页 transform＝合成层临时扩张＋一遍全屏重采样，读起来就是「跟着抖」。
+     data-kb 由 _vvApply 写在**已去重**那条分支上（值没变一次都不写＝不新增重排、不新增定时器）。
+     弱机档 ③-b 早就常驻撤入场，这一条补的是正常机上键盘动画那 0.25 秒。 */
+html.ios-pin body{position:fixed;top:0;right:0;bottom:0;left:0;overflow:hidden}
+html.ios-pin body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=button]):not([type=submit]):not([type=reset]):not([type=image]),
+html.ios-pin body textarea{font-size:max(1em,calc(16px / var(--ui-zoom,1)))}
+html.ios-pin body .view{content-visibility:visible;contain:layout style paint}
+body[data-kb=on] .view.active{animation:none}

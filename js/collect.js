@@ -4,14 +4,11 @@
 //   「我的」= 所有会话里我收藏的（带 来自·联系人 来源标）
 //   「TA 的」= 联系人 chips 切换（全部/单个联系人），卡片带 TA 名标
 
-let _collectToastTimer = null;
-function toast(msg) {
-  document.body.removeAttribute('data-toast');
-  void document.body.offsetWidth;
-  document.body.setAttribute('data-toast', msg);
-  clearTimeout(_collectToastTimer);
-  _collectToastTimer = setTimeout(() => document.body.removeAttribute('data-toast'), 2000);
-}
+// 收藏夹不再自带一枚 `toast`（BUGS #452）：旧版在这里定义 `function toast(msg)`（data-toast 底部条），
+// 与 js/background.js 的同名顶层 `toast`（#bgToast 顶栏浮层）撞全局名——两份顶层 `function toast` 后者
+// 覆盖前者，background.js 排在 js_order 更后（序 27 > collect 序 18），本文件的定义从上线起就从未生效，
+// 下面 6 处 `toast(...)` 实际一直走 background 那枚 #bgToast。重名＝换序/下架 background 就会把这 6 处
+// 提示的机制无声翻转（顶栏↔底部）。删掉这一重复定义＝全站 `toast()` 单一来源＝#bgToast，行为一字不变。
 // 默认那一份走 lsWrite（js/utils.js）：iOS 无痕模式下 setItem 直接抛异常，全站 JS 拼成一块
 // 内联 script＝这一处抛＝后面所有模块都不执行（#021·#111 那一族）。_collectStore 那枚桩是
 // 探针留的入口，原样留着不动。

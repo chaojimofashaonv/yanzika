@@ -1064,6 +1064,9 @@ function ensureData(raw) {
     if (!(typeof a.frostBlur === 'number' && isFinite(a.frostBlur))) a.frostBlur = da.frostBlur;
     a.frostBlur = Math.min(24, Math.max(0, Math.round(a.frostBlur)));
     if (typeof a.frostBubble !== 'boolean') a.frostBubble = da.frostBubble;
+    // 气泡磨砂强度（frostBubbleBlur 0~24px）：与 frostBubble 同族，脏值/越界夹回默认
+    if (!(typeof a.frostBubbleBlur === 'number' && isFinite(a.frostBubbleBlur))) a.frostBubbleBlur = da.frostBubbleBlur;
+    a.frostBubbleBlur = Math.min(24, Math.max(0, Math.round(a.frostBubbleBlur)));
     if (!['cozy', 'compact'].includes(a.density)) a.density = da.density;
     // 三组排版新档（2026-10-15）脏值回落：枚举与 utils defaults 对齐
     if (!['bottom', 'top'].includes(a.alignMode)) a.alignMode = da.alignMode;
@@ -1085,6 +1088,7 @@ function ensureData(raw) {
     delete a.deskBgChat;   // 更早遗留的死字段（「聊天页跟随桌面背景」开关），不再有任何读取方
     if (typeof a.deskPopup !== 'boolean') a.deskPopup = da.deskPopup;
     if (a.deskPopRows !== 1 && a.deskPopRows !== 2) a.deskPopRows = da.deskPopRows;
+    if (typeof a.deskPopCloseBtn !== 'boolean') a.deskPopCloseBtn = da.deskPopCloseBtn;   // 出厂关（补 false 不是补 true：老档缺键跟着用户定档走，不给全体老用户凭空长出一枚 ×）
     delete a.tileIcons;   // 「功能图标」自定义整族已删（首页磁贴墙没了＝13 枚图标无处可换），清掉旧档残留
     delete a.homePages;   // 「功能放第二页」整族 2026-10-09 删净（首页只有一屏纵向流＋底部导航常驻），旧档残留清掉＝不留没人读的键
     if (typeof a.deskBgAll !== 'boolean') a.deskBgAll = da.deskBgAll;   // 壁纸铺到全站那一枚开关（默认关＝行为与旧档一致）
@@ -1118,6 +1122,7 @@ function ensureData(raw) {
     if (typeof a.bgKeepAlive !== 'boolean') a.bgKeepAlive = da.bgKeepAlive;
     if (typeof a.bgNotify !== 'boolean') a.bgNotify = da.bgNotify;
     if (typeof a.bgNotifyNoDedup !== 'boolean') a.bgNotifyNoDedup = da.bgNotifyNoDedup;
+    if (typeof a.plNoDuck !== 'boolean') a.plNoDuck = da.plNoDuck;   // 2026-10-15 #457 播放器不抢声道开关（缺字段按默认补＝开）
     // 顶部栏入口显隐开关已删（首页入口固定显示）：清掉旧档残留字段
     delete a.topbar;
   }

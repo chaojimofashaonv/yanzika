@@ -45,7 +45,14 @@ function renderFoldSummaries() {
   const _fL = (ca.chatFont && ca.chatFont !== 'inherit') ? ('字体' + (_fontLbl[ca.chatFont] || ca.chatFont)) : '';
   const _fS = (ca.chatFontSize === 'small' || ca.chatFontSize === 'large') ? ('字号' + (ca.chatFontSize === 'small' ? '小' : '大')) : '';
   const _txtAdj = [_fL, _fS].filter(Boolean).join('·');
-  _set('#mateApSum', '我方 ' + _dotLabel('#apMineColor') + ' · 对方 ' + _dotLabel('#apPartnerColor') + (_apAlt ? ' · 提示已调' : '') + (ca.chatBg ? ' · 有背景图' : '') + (_veilTxt ? ' · ' + _veilTxt : '') + (_txtAdj ? ' · ' + _txtAdj : ''));
+  // 「外观」档拆卡（2026-10-15 #449，用户「美化设置分类太杂太长不好操作」）：旧写法一枚 #mateApSum
+  // 串七节的事，折头一行读不下也看不出改的是哪节；现每张卡报自己那一节，默认档不上摘要那条口径照旧。
+  // 写手仍只这一处；色点/滑杆/背景/CSS 各写手尾部都调 renderFoldSummaries 当场重算（js/settings.js）。
+  _set('#mateApSum', '我方 ' + _dotLabel('#apMineColor') + ' · 对方 ' + _dotLabel('#apPartnerColor') + (((ca.mineText && ca.mineText !== 'auto') || (ca.partnerText && ca.partnerText !== 'auto')) ? ' · 字色已调' : ''));
+  _set('#sumApText', _txtAdj || '跟随全局');
+  _set('#sumApHint', _apAlt ? '提示已调' : '跟随主题');
+  _set('#sumApBg', ca.chatBg ? ('有背景图' + (_veilTxt ? ' · ' + _veilTxt : '')) : '未设置背景图');
+  _set('#sumApCss', ca.customBubbleCss ? '已写一段' : '未写');
   const _grp = (typeof _isGroupChat === 'function') && _isGroupChat();
   // TA 自己标那两枚问签的概率（BUGS #350）出厂 0＝什么都不报（同上面那两枚薄纱档那条：默认档不上摘要），
   // 用户开起来之后卡头才说得出这件事——不然「回复节奏」这张卡的摘要会长出一串与他无关的 0%
@@ -58,6 +65,8 @@ function renderFoldSummaries() {
   const _c = (typeof currentContact === 'function') ? currentContact() : null;
   // 设置页那行摘要读**固定昵称**（#346：那是其他功能里的那个名字；这行摘要就是给其他页面指的入口）
   _set('#settingsMateName', (_c && fixedNameOf(_c)) ? (fixedNameOf(_c) + ' · 形象 外观 回复 声音') : '形象 外观 回复 声音');
+  // 切换 TA 那一行的摘要（2026-10-15 用户「无法切换联系人」）：写明现在编辑的是哪一位，点它开通讯录全名单
+  _set('#mateSwitchSum', (_c && chatNameOf(_c)) ? ('现在编辑：' + chatNameOf(_c)) : '还没有联系人');
   // 音色与音效两枚摘要跟着本页的编辑对象走：切到某一位，摘要就该是他的那份
   const _t = _mateTarget() || _c;
   _set('#mateVoiceSum', (_t && _t.mmTimbre) ? ('已绑 ' + _t.mmTimbre) : '未绑定 · 不显示播放键');
@@ -83,16 +92,21 @@ function renderFoldSummaries() {
   // 信箱／收藏两处设置都已搬进各自功能页（那张折叠卡与它们在设置页卡头的摘要同批删除），
   // 这里不再摘一份——一份值两处摘要本来也会互相打嘴（BUGS #100·#198）
   _set('#deskEntryState', '背景图 ' + (g.deskBg ? '已放' : '未放') + ' · 压暗 ' + _num(g.deskBgVeil, 60) + '% · 缩放 ' + _num(g.deskBgZoom, 100) + '% · ' + (g.deskBgSize === 'contain' ? '整张' : '铺满'));
-  // 「聊天外观」卡头摘要（2026-10-15 随卡自设置页搬来）：原先只由 bubbleShape 行上的 data-sum 喂＝
-  // 折着的时候七档里只读得出形状一档。现按全局档现拼一句（与卡内 chips 同源 data.appearance），
-  // 行上的 data-sum 已删＝写手只剩这一处；点击档位后由 settings.js 委托尾部调 renderFoldSummaries 当场重算。
+  // 「聊天外观」卡头摘要（2026-10-15 随卡自设置页搬来；#449 该卡十一行拆成「聊天排版」∶「时间与磨砂」
+  // 两张，摘要跟着分家：形状/行距/对齐/头像/日期签/字体归排版，时间/发送钮/磨砂三枚归磨砂）。
+  // 写手只剩这一处；点完档位由 settings.js 委托尾部调 renderFoldSummaries 当场重算。
   const _bs = { round: '圆角', tail: '带尾', square: '方角', sharp: '直角' }[g.bubbleShape] || '圆角';
-  // 三组排版新档（2026-10-15）与全卡同一条口径：默认档不上摘要，非默认才多说一句
+  // 非默认才多说一句那条口径照旧（三组排版新档与字体档）
   _set('#sumChatAp', '气泡 ' + _bs + ' · 行距 ' + (g.density === 'compact' ? '紧凑' : '舒适')
-    + ' · 磨砂 ' + (g.glass === false ? '关' : '开')
     + (g.alignMode === 'top' ? ' · 顶对齐' : '')
     + (g.avatarShow === false ? ' · 无头像' : '')
-    + (g.dayPos === 'head' ? ' · 日期签钉顶' : ''));
+    + (g.dayPos === 'head' ? ' · 日期签钉顶' : '')
+    + (g.fontFamily === 'serif' ? ' · 衬线' : g.fontFamily === 'round' ? ' · 圆体' : ''));
+  _set('#sumChatFx', '时间 ' + (g.showTime === false ? '隐藏' : '显示')
+    + ' · 按钮 ' + (g.sendBtn === false ? '隐藏' : '显示')
+    + ' · 磨砂 ' + (g.glass === false ? '关' : '开')
+    + (g.glassLite ? ' · 省电' : '')
+    + (g.frostBubble ? ' · 气泡磨砂' : ''));
   _set('#sumData', (_num((data.messages || []).length, 0)) + ' 条消息 · ' + (_num((data.groups || []).reduce((a, x) => a + (x.cards || []).length, 0), 0)) + ' 张字卡');
   // 这一本的条数只在 js/chat-io.js 那一处算（chatIoSummary），这里只端过来，不留第二把尺子
   _set('#mateChatIoSum', (typeof chatIoSummary === 'function') ? chatIoSummary() : '');
@@ -392,6 +406,41 @@ if (_mateAvlib) _mateAvlib.addEventListener('click', () => { if (typeof openAvat
 // 「去聊天」＝页头那枚胶囊（ui1 sc-mate 页头）：回聊天停在刚才的位置（mate 在 CHAT_SUB_VIEWS 名单里＝不重新定位到底部）
 const _mateGoChat = $('#mateGoChat');
 if (_mateGoChat) _mateGoChat.addEventListener('click', () => showView('chat'));
+
+// ===== 切换 TA（2026-10-15 用户「设置里【关于某个 TA 的设置】无法切换联系人」）=====
+// 旧写法：进入本页编辑对象恒＝当前会话那一位，#mateScope 那排 chips 只在群态出成员，单聊态没有任何
+// 「换一位 TA」入口——想改另一位只能退回首页点别的会话再进来。这枚钮补一个整页可见的入口：点它开一个
+// 通往通讯录全名单的底部面板，选中＝switchChat(id, true) 就地换编辑对象（与下面「所在群聊」那几行既有
+// 走法同一口径，不跳转、不动草稿与未读），并把群态残留的成员分段 _mateScope 归零（换会话不带旧选择）。
+// 面板运行时现搭（同 _mateOpenMemberEditor），行样式复用 .member-pick 一族＝零新 CSS、零静态 HTML。
+function openMateSwitch() {
+  const prev = document.getElementById('mateSwitchMask');
+  if (prev) prev.remove();
+  const cur = data.activeChat;
+  // 只列「有自己那一本会话」的联系人：switchChat 进门就查 data.chats[id]，没档位的列出来点了没反应＝本仓零容忍那一族
+  const list = (data.contacts || []).filter(c => c && data.chats && data.chats[c.id]);
+  const mask = document.createElement('div');
+  mask.className = 'sheet-mask';
+  mask.id = 'mateSwitchMask';
+  mask.innerHTML = `<div class="sheet"><div class="sheet-head">切换要设置的 TA</div>`
+    + `<div class="member-pick-list">${list.length ? list.map(c => `<div class="member-pick${c.id === cur ? ' on' : ''}" data-mate-go="${escapeHTML(c.id)}"><span class="avatar member-pick-avatar">${contactAvatarHTML(c)}</span><span class="member-pick-name">${escapeHTML(chatNameOf(c))}</span><span class="member-pick-check" aria-hidden="true"></span></div>`).join('') : ''}</div>`
+    + `<p class="member-pick-empty"${list.length ? ' hidden' : ''}>${list.length ? '' : '通讯录里还没有联系人'}</p>`
+    + `<button type="button" class="sheet-btn" data-mate-switch-close>关闭</button></div>`;
+  document.body.appendChild(mask);
+  mask.addEventListener('click', ev => {
+    if (ev.target === mask || ev.target.closest('[data-mate-switch-close]')) { mask.remove(); return; }
+    const row = ev.target.closest('[data-mate-go]');
+    if (!row) return;
+    const id = row.dataset.mateGo;
+    mask.remove();
+    if (!id || id === cur) return;
+    _mateScope = ''; _mateScopeChat = '';   // 换会话＝不带上一位的成员分段选择（renderMateScope 会按新会话归位）
+    if (typeof switchChat === 'function') switchChat(id, true);
+    showView('mate');
+  });
+}
+const _mateSwitchBtn = $('#mateSwitchBtn');
+if (_mateSwitchBtn) _mateSwitchBtn.addEventListener('click', openMateSwitch);
 
 // 形象即点即存：改名字当场落库（原「保存资料／保存我的资料」两枚按钮已删）
 function saveMateProfile() {
