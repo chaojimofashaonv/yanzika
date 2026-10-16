@@ -73,6 +73,11 @@
    卡片里那枚 nowrap 的徽标／图片字卡会把轨道顶到比容器还宽（BUGS #063 同一刀）。 */
 .cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start}
 .cards.category-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px}
+/* 宽屏（iPad／电脑）适配：壳加宽后 2 列字卡会显得每张过大，760px 以上提到 3 列；图片分类网格 4→6 列（开「手机适配」档时不生效，回到 2 列∶4 列） */
+@media(min-width:760px){
+  body:not([data-ap-phonefit=on]) .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  body:not([data-ap-phonefit=on]) .cards.category-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+}
 /* 分片加载哨兵（BUG #048）：不是按钮，是一行进度提示，滚过去就消失 */
 .cards-pager{padding:14px 2px 4px;text-align:center;font-size:11px;color:var(--muted);letter-spacing:.3px}
 .category-grid .card-img-item{padding:6px;background:var(--surface);border-radius:var(--r-card);box-shadow:none;display:flex!important;flex-direction:column!important;align-items:center;position:relative;margin:0}

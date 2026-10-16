@@ -431,8 +431,18 @@ body[data-toast]::after{content:attr(data-toast);position:fixed;top:calc(var(--t
 .progress-fill{height:100%;width:0;border-radius:12px;background:var(--bar-ink);transition:width .25s ease}
 .progress-sub{font-size:12px;color:var(--muted);margin-top:10px;letter-spacing:.5px}
 
-/* 电脑端居中 */
-@media(min-width:521px){.app-shell{height:calc(100vh - 24px);height:calc(100dvh - 24px);margin:12px auto;border-radius:var(--r-card);box-shadow:none}}
+/* 宽屏（iPad／平板／电脑）适配：把窄卡加宽成宽单栏 */
+/* 2026-10-16 iPad 适配：旧版宽屏只把壳收成 480 宽圆角卡居中，iPad 竖屏两侧各留 144px 空灰边。
+   按用户判定「加宽单栏·所有宽屏」：壳在宽屏放宽到 min(94vw,820px)，仍居中带圆角浮在舞台上。
+   2026-10-16 二批：加一枚手动「手机适配」档（body[data-ap-phonefit=on]，入口 设置→外观→宽屏适配）：
+   开了就把下面那几段加宽档全部收回，回到旧那版 480 窄卡居中（卡片壳子本身——圆角∶阴影∶上下边距——两档共有，不收）。 */
+@media(min-width:521px){
+  /* 卡片壳子：两档都保留（宽屏上无论加宽还是窄栏，都是一张居中带圆角的卡浮在舞台上） */
+  .app-shell{height:calc(100vh - 24px);height:calc(100dvh - 24px);margin:12px auto;border-radius:var(--r-card);box-shadow:none}
+  /* 以下三段的加宽只在「非手机适配」时生效；开了 data-ap-phonefit=on 则逐条退回基础值（.app-shell 480∶.sheet left/right:10px） */
+  body:not([data-ap-phonefit=on]) .app-shell{max-width:min(94vw,820px)}
+  body:not([data-ap-phonefit=on]) .sheet{left:50%;right:auto;transform:translateX(-50%);width:min(88%,420px)}
+}
 
 /* 小屏手机 */
 @media(max-height:640px){:root{--topbar-h:52px}}
@@ -600,6 +610,32 @@ body[data-ap-desk=on][data-view=chats] .app-shell::before,body[data-ap-desk=on][
   body[data-ap-desk=on][data-ap-deskblur=on][data-ap-deskall=on] .app-shell::before{
     inset:calc(var(--desk-blur,0px) * -1.4);
     -webkit-filter:blur(var(--desk-blur,0px));filter:blur(var(--desk-blur,0px))}
+/* FIX 2026-10-15 #460 iOS 上这只壁纸盒不等于屏幕，而它有两条「盒比屏小」的形态（用户报＝「主页背景图比例不对·四边边缘有框·没铺满」）：
+   ① js/app.js 的 _vvApply 在键盘期往壳上写内联 height+margin-top（iOS 不支持 head 里那句 interactive-widget=resizes-content，
+      这一层只能 JS 补），壁纸长在壳上就跟着一起缩＝屏底／屏顶露出一条 --page 底色带，图还被按新盒子重新 cover 裁一遍；
+   ② 宽一点的屏（iPad·以及 iPhone 被整页缩到 scale<1 之后）命中本文件 min-width:521px 那两张卡片档，
+      壳收成 480 宽圆角卡＋margin:12px＝壁纸被关进卡里，四边一圈底噪＝那句「四边有框」。
+   改法只换宿主不换观感：position:fixed 把这一层钉回初始包含块（视口），从此壳矮不矮与图无关。
+   ⚠ 三条不许动的地方：① 只在 html.ios-pin（js/app.js 末尾那枚 iOS 闸门·含 iPad）下生效——桌面／安卓逐字节不变，
+     那张居中圆角卡与卡外 #EFEFEF 一圈是电脑端刻意的设计（本文件 435·662 两处），不许顺手也铺过去；
+   ② 不许给 .app-shell 加 transform/will-change/contain：那会把这只 fixed 的包含块从视口收回到壳内，这一条当场失效
+     （与 #430 那条「压壳用 margin-top 不用 transform」是同一枚地雷的两半）；
+   ③ .app-shell{overflow:hidden} 裁不到 fixed 后代（它的包含块不在壳内），层级仍由 isolation+z-index:-1 定＝
+     落在壳底色之上·内容之下，与旧写法同一层；base.css 那两条 tabbar 薄纱条件逐字未动（_smoke_tabbar_wall_veil A2 钉同源）。 */
+html.ios-pin body[data-ap-desk=on][data-view=chats] .app-shell::before,
+html.ios-pin body[data-ap-desk=on][data-ap-deskall=on] .app-shell::before{position:fixed}
+/* FIX 2026-10-15 #460 老引擎兜底（iOS 16.0/16.1 的 Safari·以及厂商停更的安卓 WebView 都不认 color-mix()）：
+   上面三条背景层把「墨纱」与「照片」写在同一条 background-image 里，而 color-mix() 解析失败是**整条 shorthand 作废**——
+   照片跟着纱一起不上屏（那是用户报的另一发形状＝「首页压根没图」）。本块用纯 CSS3 的 rgba() 重给一份照片层：
+   两枚小数副本（--desk-veil-a∶--chat-veil-a）本来就由 js/desk.js∶js/settings.js 与那两枚无单位数同时写（#433 那次留的），
+   今天才第一次有消费方——兜底里写死 α 等于把滑杆冻住，那一枚副本不能只写不读。
+   ⚠ 只补 background-image 这一条：--tabbar-veil 那族作废时退回的是 base.css 的实白底＝看得到东西，不是「没了」，补它属于顺手优化。 */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  body[data-ap-desk=on][data-view=chats] .app-shell::before,
+  body[data-ap-desk=on][data-ap-deskall=on] .app-shell::before{background-image:linear-gradient(rgba(var(--ink-rgb),var(--desk-veil-a,.44)),rgba(var(--ink-rgb),var(--desk-veil-a,.44))),var(--desk-bg)}
+  body[data-ap-bg=on] .chat-area{background-image:linear-gradient(rgba(var(--ink-rgb),var(--chat-veil-a,0)),rgba(var(--ink-rgb),var(--chat-veil-a,0))),var(--chat-bg)}
+  body[data-ap-bg=on] .ap-preview{background-image:linear-gradient(rgba(var(--ink-rgb),var(--chat-veil-a,0)),rgba(var(--ink-rgb),var(--chat-veil-a,0))),var(--chat-bg)}
+}
 /* 聊天页只认本会话自己的背景图（--chat-bg，会话外观页按会话上传）；不跟随桌面背景 */
 
 /* 字体：system(默认)/serif/round/custom */

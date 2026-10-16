@@ -147,10 +147,14 @@ function _deskPopForChat(msg, chatId) {
 // 系统通知（切后台那一族）：谁的消息就按谁的名字与头像弹，tag 带上 cid → 点通知直达那一本会话。
 // 前台不弹是引擎自己的规矩（visible 时只 markSeen 就 return），那时桌面前台横幅＋未读角标已带了同一条，不在两处各响一遍。
 // avFixed 必须给：不兜全局 profile.avatar（那是主联系人 c0 的镜像，会串人，BUGS #128 同族）。
+// 纯图那一发的正文与横幅**刻意不同**（用户 2026-10-15 定档）：横幅的缩略图一定画得出来，占位符仍是多余的（#199 那一课照旧）；
+// 而通知里的大图只在桌面浏览器上才渲染——安卓浏览器与 APK 原生通道都没有 image 位（两处通道注释见 js/background.js），
+// 正文再留空就只剩引擎那句兜底白话（bgNotifyCheck 的「收到一条新消息」），屏上既看不出是表情包还是图片。
+// 故仅此处补回占位符（图档按 m.imgKind 分「图片／表情包」，BUGS #157 那一枚身份），横幅与会话列表那一行不动。
 function _bgNotifyForChat(msg, chatId) {
   if (typeof bgNotifyCheck !== 'function') return;
-  const cap = _msgCapText(msg);
-  if (!cap && !msg.sticker) return;
+  const cap = _msgCapText(msg) || (msg.sticker ? (msg.imgKind === 'image' ? '[图片]' : '[表情包]') : '');
+  if (!cap) return;
   const c = (data.contacts || []).find(x => x.id === chatId) || null;
   bgNotifyCheck(_msgCapLine(msg, cap), Date.now(), {
     name: (c && (c.chatName || c.name)) || partnerName(),
@@ -218,7 +222,10 @@ function _scheduleRecall(target, bh, originChat) {
     }
     if (target.sticker && Math.random() < 0.25) found.peekSticker = true;
     save();
-    if (isActive) { resetMessageRender(); renderMessages(); }
+    // 就地换掉那一条气泡，不重画整列表：全量重建会清屏＋亮空窗骨架＋分片重建反复贴底钉底＝「闪屏＋聊天记录弹跳」
+    // （BUGS #462 用户报「联系人撤回消息时聊天页闪屏、聊天记录弹跳」；缘由详见 render.js 的 patchMessage）。
+    // 不在渲染窗口里时它返回 false＝屏上本就没有这条，无需重画，不拿「跳到底」换一个当场可见。
+    if (isActive && typeof patchMessage === 'function') patchMessage(found);
     if (!viewingThis && typeof renderChatsList === 'function') { try { renderChatsList(); } catch (e) {} }
     if (willResend) {
       setTimeout(() => {
@@ -1010,14 +1017,20 @@ msgList.addEventListener('click', async e => {
         _setReplyTarget(m.sticker && !cap ? '回复' : '回复：' + cap, m.sticker || '');
         $('#messageInput').focus();
       } else if (btn.dataset.act === 'recall' && m.from === 'me') {
-        m.recalled = true; await save(); resetMessageRender(); renderMessages();
+        // 就地换掉自己那一条（与联系人撤回同一条路，见 render.js 的 patchMessage）：不重画整列表
+        m.recalled = true; await save();
+        if (typeof patchMessage === 'function') patchMessage(m);
       } else if (btn.dataset.act === 'delete') {
         // 「删除消息」总闸（delMsgOn，出厂关）：渲染侧已经不画这枚钮，这里再判一次——
         // 长按工具条是**留在 DOM 里**的一行旧节点（只切 hidden），开着开关时画过的那几枚不会因为关掉开关而消失，
         // 用户当场关掉设置再点旧气泡仍能删。凡是「开关一关就该立刻失效」的动作，判定都得落在点击这一刻。
         if (!data.delMsgOn) { toast('删除消息在设置里开启后才能用'); closeMsgActions(); return; }
         const idx = data.messages.findIndex(x => String(x.id) === message.dataset.id);
-        if (idx > -1) { data.messages.splice(idx, 1); await save(); resetMessageRender(); renderMessages(); }
+        if (idx > -1) {
+          data.messages.splice(idx, 1); await save();
+          // 就地撤掉屏上那一条（含记账游标回退），不重画整列表：见 render.js 的 patchMessageRemove
+          if (typeof patchMessageRemove === 'function') patchMessageRemove(m, idx);
+        }
       } else if (btn.dataset.act === 'collect') {
         if (m.recalled) { toast('已撤回的消息不能收藏'); }
         // 图（聊天图片与表情包同存 m.sticker）与问答卡快照一起带走：以前只抄 m.text，
@@ -1088,6 +1101,11 @@ msgList.addEventListener('click', e => {
   body.hidden = !show;
   const btn = message.querySelector('.recall-peek-toggle');
   if (btn) { btn.textContent = show ? '收起' : '查看'; btn.setAttribute('aria-expanded', show ? 'true' : 'false'); }
+  // FIX 2026-10-16 #465 展开后把这块原文滚进可视区：撤回那条常贴在屏底（TA 刚发完就撤回），而内联展开只往气泡下方长。
+  // 用户上翻过历史时 _stickBottom 已关＝render.js 的贴底自钉（ResizeObserver 只盯末条、且只在贴底意图为真时补钉）不会接手，
+  // 展开的那块探出可视区下沿被截断＝点了「查看」屏上却什么也没多出来（用户报「联系人撤回的消息无法点击查看内容·被截断」）。
+  // block:'nearest' 只在真被裁到时挪最少距离、已在视野内则纹丝不动＝不跟 _stickLoop 那套贴底抢滚动容器。
+  if (show) { try { body.scrollIntoView({ block: 'nearest' }); } catch (err) {} }
   closeMsgActions();
 });
 

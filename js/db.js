@@ -10,6 +10,58 @@ const G2048_VALS = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048];
 let _db = null;
 let _useLS = false;
 
+// ===== 主库那道「读没读到 / 写没写进」的常驻闸（2026-10-16 BUGS #466）=====
+// 两笔账分开记，因为会造出两种「数据不见了」：
+//   ① 读：旧写法 `catch { result = null; }` 把「这一趟没读到」与「库本来就是空的」折成同一格，于是读一旦
+//     瞬时失败（大记录反序列化失败∶事务被系统回收∶store 暂不可用）就顺着「空库 → LS 种子回填」那一支走下去，
+//     下一行 `put(merged,'all')` 把（多半是出厂空档的）整棵树**盖在那一份可能还好好活着的存档上**＝不可逆，
+//     而用户读到的正是「更新版本后数据全部消失」。现在：读失败＝本会话进入只读兜底（内存与 LS 镜像照写，
+//     主库那一下不写），并把这一格红字挂在屏上。
+//   ② 写：旧写法失败只有一发「一次会话只说一次」的 toast，人接着打字攒一整页只活在内存里的改动，
+//     下次开机回到上次真落成的那一份＝「最近的都不见了」。现在失败挂一枚常驻条，且 _doSave/flushSave 把
+//     成败回给 await 它的人（整包导入那一路据此不再说「导入成功」）。
+// 常驻条只在真出事那一次才造元素＝平时零节点零开销；样式唯一宿主在 css/base.css 末尾。
+// 判据不许长第二份：屏上读数一律走 dataGuardState()，别处要念就引它。
+let _dbReadFail = '';
+let _dbWriteFail = '';
+function _dbErrText(e) {
+  const t = e && e.target && e.target.error ? e.target.error : null;
+  const s = (e && (e.name || e.message)) || (t && (t.name || t.message)) || (e ? String(e) : '');
+  return String(s).slice(0, 48);
+}
+function dataGuardState() { return { readFail: _dbReadFail, writeFail: _dbWriteFail, lsMode: _useLS === true }; }
+function _dbGuardBar() {
+  const why = _dbReadFail
+    ? { msg: '主库这一趟没读到（' + _dbReadFail + '）：为防把已有的存档盖掉，这一趟不再写主库；改动只兜在本机镜像里，请尽快导出备份', act: 'reload' }
+    : _dbWriteFail
+      ? { msg: '主库写不进去（' + _dbWriteFail + '）：这些改动只存在内存里，关掉页面就没了；请先导出备份', act: 'retry' }
+      : null;
+  let bar = document.getElementById('dbGuardBar');
+  if (!why) { if (bar) bar.hidden = true; return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'dbGuardBar';
+    bar.innerHTML = '<span id="dbGuardTxt"></span><span class="db-guard-acts">'
+      + '<button type="button" id="dbGuardGo">导出备份</button>'
+      + '<button type="button" id="dbGuardFix"></button></span>';
+    (document.body || document.documentElement).appendChild(bar);
+    const go = document.getElementById('dbGuardGo');
+    // 去备份＝引 js/app.js 现成那条「直达数据卡＋点亮导出钮」的路（#365 那族），不另写一遍跳转
+    if (go) go.onclick = () => { try { if (typeof _bkGoBackup === 'function') _bkGoBackup(); } catch (e) {} };
+  }
+  const txt = document.getElementById('dbGuardTxt');
+  if (txt) txt.textContent = why.msg;
+  const fix = document.getElementById('dbGuardFix');
+  if (fix) {
+    fix.textContent = why.act === 'reload' ? '刷新重进' : '再试一次';
+    fix.onclick = () => {
+      if (why.act === 'reload') { try { location.reload(); } catch (e) {} return; }
+      try { Promise.resolve(flushSave()).then(() => _dbGuardBar()); } catch (e) {}
+    };
+  }
+  bar.hidden = false;
+}
+
 // 节流：save 去抖 1200ms 合并写盘（2026-10-07 耗电优化：put 是整棵 data 树结构化克隆，连发消息时
 // 逐条立即全库重写＝发热尖峰；攒 1.2s 一次把克隆次数压到最低。切后台/离开由 flushSave 立即冲刷兜底）
 const SAVE_DEBOUNCE_MS = 1200;
@@ -56,15 +108,23 @@ function lsGet() {
   } catch { return null; }
 }
 
-// ===== localStorage 那一份整包副本的体积闸（2026-10-15 BUGS #434，手机端「导入／保存时卡住然后闪退」那一批的一档）=====
-// LS 里这一枚 `ordinal-data` 是「iOS 被系统冻结／关页赶在异步事务前」的保险，同一棵树的整包副本。
+// ===== localStorage 那一份副本的分流（2026-10-15 BUGS #434 立体积闸∶2026-10-16 #467 照 mochi 收口）=====
+// LS 里这一枚 `ordinal-data` 是「iOS 被系统冻结／关页赶在异步事务前」的保险，同一棵树的一份副本。
+// ⚠ 先认清两个格子的区别，别拿「手机还有多少空间」来推「装得下」：
+//   数据本体住 IndexedDB＝配额跟设备剩余空间挂钩（存储页那行「设备剩余可用」念的就是 navigator.storage.estimate()）；
+//   localStorage 是浏览器给每个站点单独划的一小块固定配额（移动端约 5MB 那一档），**与手机剩余存储无关**，persist 也救不到它。
 // 存档一大（字卡∶聊天里的 base64 图）这一发三件事同时坏：
 //   ① 整树 JSON.stringify 是主线程长任务（实测 183M 字符那一份桌面要 0.4s，手机按 3~5 倍算）；
-//   ② 移动端 localStorage 配额约 5MB，超了一律 QuotaExceededError——必然写不进去；
+//   ② 超配额一律 QuotaExceededError——必然写不进去；
 //   ③ 旧写法 `catch {}` 把失败吞干净＝用户以为「下一次 load 能从 LS 兜回来」，其实那份备份压根没写成。
-// 现在先按节点估一把，估不过就不写镜像：load 按 _savedAt 取较新通道（#024），镜像没动→IDB 那一份照常赢，
-// 既不丢数据也不写假话，而且不再为「一个装不下的东西」花那一整轮 stringify。
-// ⚠ 唯一不能跳的是降级模式（_useLS＝IndexedDB 用不了，LS 就是主库）：那时照写，写不下就在屏上说一句。
+// #434 那一版的解法是「估不过就整发不写，并在屏上说一句」＝治住了①②，代价是**大存档用户从此连一份文本副本都没有**，
+// 而那句话（「这份存档比本机的存储镜像大得多，镜像就没写了」）全是开发者口径——用户读到的是「我的东西存不下」，
+// 而事实是「那份额外的第二副本塞不进那个小格子」，与你手机还剩多少空间一点关系都没有。
+// 现在照 mochi 那把尺收口（mochi js/idb.js 的 LS_BIG_LIMIT：大值压根不进 localStorage，只进 IndexedDB）：
+//   估得过 3MB → 整棵照写（小存档那一档的兜底能力一条不减，仍按 _savedAt 取较新通道＝#024）；
+//   估不过 → 退一步只写「剔掉大资产的那一份」（打一枚 _lite 标记），文本与设置照样兜得住，且不再在屏上说废话。
+// ⚠ 唯一不许剔的是降级模式（_useLS＝IndexedDB 用不了，LS 就是唯一那份）：那时整树照写，写不下面上说一句——那一发是真危险。
+// ⚠ _lite 那一份缺的正是图与附件，load 里它不许当整树 base 盖回主库（那＝把用户的大资产清掉），只许在主库读空时当种子。
 const LS_MIRROR_MAX = 3 * 1024 * 1024;
 let _lsMirrorQuiet = 0;
 function _lsSay(msg) {
@@ -92,14 +152,32 @@ function _roughJsonBytes(node, budget) {
   return total;
 }
 
+// FIX 2026-10-16 #467 瘦镜像：复用设置小快照那把尺（_snapVal＝超 SNAP_ASSET_MAX 的字符串一律不进门），不留第二份口径
+function _liteForLS(obj) {
+  const lite = _snapVal(obj);
+  if (!lite || typeof lite !== 'object' || Array.isArray(lite)) return null;
+  lite._lite = 1;   // 这一份缺大资产：load 认的就是这一枚标记，才不许它当整树 base
+  return lite;
+}
+
 function lsSet(obj) {
-  if (!_useLS && _roughJsonBytes(obj, LS_MIRROR_MAX) < 0) {
-    _lsSay('这份存档比本机的存储镜像大得多，镜像就没写了（数据存在主库里，不会丢）');
-    return false;
+  if (!_useLS) {
+    // 装得下整棵就写整棵，装不下就退一步写瘦的那一份——两条路都不再在屏上说话：
+    // 这一发是保险不是数据本体，保险缺一格不值得让用户看见一句读不懂的话（真危险的只有下面降级模式那一档）
+    let payload = obj;
+    try {
+      if (_roughJsonBytes(obj, LS_MIRROR_MAX) < 0) {
+        payload = _liteForLS(obj);
+        // 瘦到这份还超预算＝纯文本本身已经太大（几万字聊天、一张图没有）：静默跳，不白跑那一整轮 stringify
+        if (!payload || _roughJsonBytes(payload, LS_MIRROR_MAX) < 0) return false;
+      }
+    } catch (e) { return false; }
+    try { localStorage.setItem(LS_KEY, JSON.stringify(payload)); return true; }
+    catch (e) { return false; }
   }
   try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); return true; }
   catch (e) {
-    _lsSay('本机存储装不下这一份，没兜住这一发镜像备份；建议先在 设置→数据→存储 里清掉大图再重新导出');
+    _lsSay('这台设备的备用存储装不下你的数据（主存储用不了，目前只有这一份在存）：可能没存全，请去 设置→数据→存储 清掉大图，并尽快在 设置→数据 导出一次备份');
     return false;
   }
 }
@@ -1072,8 +1150,12 @@ function ensureData(raw) {
     if (!['bottom', 'top'].includes(a.alignMode)) a.alignMode = da.alignMode;
     if (typeof a.avatarShow !== 'boolean') a.avatarShow = da.avatarShow;
     if (!['flow', 'head'].includes(a.dayPos)) a.dayPos = da.dayPos;
+    if (typeof a.phoneFit !== 'boolean') a.phoneFit = da.phoneFit;   // 宽屏「手机适配」档（布尔，脏值回落默认 false＝加宽）
     if (typeof a.showTime !== 'boolean') a.showTime = da.showTime;
     if (typeof a.sendBtn !== 'boolean') a.sendBtn = da.sendBtn;
+    // 按钮颜色自定义（2026-10-15）：四枚 hex 串只认 #rrggbb 或空串，透度 10~100。
+    ['sendBg','sendFg','scrollBg','scrollFg'].forEach(k => { if (typeof a[k] !== 'string' || (a[k] && !/^#[0-9a-fA-F]{6}$/.test(a[k]))) a[k] = ''; });
+    if (!(typeof a.btnAlpha === 'number' && a.btnAlpha >= 10 && a.btnAlpha <= 100)) a.btnAlpha = da.btnAlpha;
     if (typeof a.chatBg !== 'string') a.chatBg = da.chatBg;
     // 桌面美化台（设置-外观「桌面美化」）：壁纸 dataURL 与四根杆
     if (typeof a.deskBg !== 'string') a.deskBg = da.deskBg;
@@ -1670,16 +1752,28 @@ async function load() {
   try {
     const db = await getDB();
     let result = null;
+    // FIX 2026-10-16 #466 「这一趟没读到」与「库是空的」分成两件事（旧写法同一个 catch 折成一格 →
+    // 顺着空库那一支 put 上去＝拿出厂空档盖掉唯一的真存档，不可逆）。读失败＝落下写闸、只在内存与 LS 兜。
+    // ⚠ 唯一例外＝store 压根不存在（NotFoundError）：那一格里确实没有档，按「空库」走、不落写闸。
+    let readErr = '';
     try {
       result = await new Promise((resolve, reject) => {
-        const r = db.transaction(STORE).objectStore(STORE).get('all');
-        r.onsuccess = () => resolve(r.result);
-        r.onerror = () => reject(r.error);
+        let rq;
+        try { rq = db.transaction(STORE).objectStore(STORE).get('all'); } catch (e) { reject(e); return; }
+        // 事务级中止不一定走到 request.onerror（大记录读不动时正是这一发），两路都要有人接
+        try { const tx0 = rq.transaction; if (tx0) tx0.onabort = () => reject(tx0.error || new Error('read-aborted')); } catch (e) {}
+        rq.onsuccess = () => resolve(rq.result);
+        rq.onerror = () => reject(rq.error || new Error('read-error'));
       });
-    } catch { result = null; }
+    } catch (e) {
+      if (!e || e.name !== 'NotFoundError') readErr = _dbErrText(e) || 'read-error';
+    }
     if (result) {
       const ls = lsGet();
-      if (ls && _stamp(ls) > _stamp(result)) {
+      // FIX 2026-10-16 #467 带 _lite 的那一份是「剔掉大资产的镜像」（见本文件开头 lsSet）：它缺的正是主库里的图与附件，
+      // 拿它当整树 base 回填＝把用户的大资产整片清掉。所以它不参与「取较新通道」那一问（设置那一族自有 ordinal-settings 兜），
+      // 只在本文件末尾那条「主库读空」的路上当种子——缺图也总比整本空白强。整树副本（不带标记）那一问照旧＝#024 一字不动。
+      if (ls && !ls._lite && _stamp(ls) > _stamp(result)) {
         // localStorage 里有更新的数据（上次会话曾降级写入）：以较新方为准回填 IDB
         const merged = ensureData(_applySnap(ls));
         try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
@@ -1690,8 +1784,18 @@ async function load() {
       try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
       return merged;
     }
-    // IDB 可用但库为空（新装/清库）：用 LS 数据（若有）做种子回填，此后正常走 IDB，不降级
+    // FIX 2026-10-16 #466 没读到 ≠ 空库：落下写闸（_doSave 从此不 put），这一趟只用 LS/默认值撑住内存。
+    // 刻意不回写主库＝下一次读得着时，那一份真存档还在原处；屏上那条红字由 _dbGuardBar 负责说。
+    if (readErr) {
+      _dbReadFail = readErr;
+      const seed = ensureData(_applySnap(lsGet()));
+      try { delete seed._lite; } catch {}   // 同下面那条种子路径：「缺大资产」的标记不许跟着内存跑一整趟
+      _dbGuardBar();
+      return seed;
+    }
+    // IDB 可用且真的读到空（新装/清库）：用 LS 数据（若有）做种子回填，此后正常走 IDB，不降级
     const merged = ensureData(_applySnap(lsGet()));
+    try { delete merged._lite; } catch {}   // 种子那一路带进来的「缺大资产」标记不落进主库（下一次镜像照新形状重写）
     try { db.transaction(STORE, 'readwrite').objectStore(STORE).put(merged, 'all'); } catch {}
     return merged;
   } catch { /* IndexedDB 真不可用才降级 localStorage */ }
@@ -1711,7 +1815,8 @@ function save() {
   // 按 _savedAt 取较新通道回填兜住（#024 双通道），不丢整本。
   _savePending = true;
   if (_saveTimer) return;
-  // 设置小快照每次都同步落一份（剔大资产、恒几 KB）：兜住「大存档过不了全量镜像那枚 3MB 体积闸 ∶ iOS 关页赶在异步事务前」那一族丢设置
+  // 设置小快照每次都同步落一份（剔大资产、恒几 KB）∶与 lsSet 那一份 _lite 镜像同族，
+  // 它兜的是「大存档过不了整棵那一档 ∶ iOS 关页赶在异步事务前」那一族丢设置
   saveSettingsSnap();
   _saveTimer = setTimeout(() => {
     _saveTimer = null;
@@ -1722,13 +1827,13 @@ function save() {
   }, SAVE_DEBOUNCE_MS);
 }
 
-// 同步镜像一份到 localStorage（闸在 lsSet 里：装不下就跳、并在屏上说一句）
-function _lsMirror() { _stampNow(); lsSet(data); }
+// 同步一份副本到 localStorage（分流与那把体积尺在 lsSet 里：装得下写整棵、装不下写剔掉大资产的那一份，都不在屏上说话）
+// 回这一发的成败＝#466 那条常驻条在降级模式下的唯一读数（那时 LS 就是唯一一份，它写不进必须上屏）
+function _lsMirror() { _stampNow(); return lsSet(data); }
 
 // ===== 设置小快照（2026-10-15 拆分）=====
-// 全量 LS 镜像有 3MB 体积闸（见上 lsSet/_roughJsonBytes）：大存档（字卡∶聊天里的 base64 图）压根进不了 LS，
-// 于是那批用户的「设置」只剩 IndexedDB 一条命——iOS 赶在异步事务 oncomplete 之前被冻结那一发时，
-// 回复节奏∶信箱∶朋友圈那些概率与数字就跟着重置。这一枚把「设置类小对象」单独**同步**写一份（剔掉一切
+// 全量 LS 副本过不了整棵那一档时退一步写 _lite 那一份（见上 lsSet/_liteForLS），而 _lite 不参与「取较新通道」那一问：
+// 于是那批大存档用户的「设置」在 iOS 赶在异步事务 oncomplete 之前被冻结那一发时仍会跟着重置。这一枚把「设置类小对象」单独**同步**写一份（剔掉一切
 // 大资产，恒几 KB，永远过得了配额）：save() 每次都落它，load() 里若它比主库新就把设置并回去。
 // 深并只覆盖快照里存在的叶子，缺的键（大资产）＝保留主库那一份，不会误清用户背景图／字体／头像。
 const LS_SETTINGS_KEY = 'ordinal-settings';
@@ -1784,19 +1889,29 @@ function _stampNow() { try { data._savedAt = Date.now(); } catch {} }
 // 历史增长不影响浏览；数据体积靠 设置→数据 的导出备份与备份提醒兜底。
 
 async function _doSave() {
+  // FIX 2026-10-16 #466 写闸：这一趟压根没读到过主库＝不许把内存那棵树（可能是一份出厂空档）盖上去
+  if (_dbReadFail) { _dbGuardBar(); return false; }
   _stampNow();
   try {
     const db = await getDB();
     const tx = db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(data, 'all');
-    await new Promise(resolve => {
-      tx.oncomplete = resolve;
-      tx.onerror = () => { console.error('保存失败:', tx.error); _lsSay('保存到本机主库失败：请检查本机的存储空间，并尽快在 设置→数据 导出一次备份'); resolve(); };
-      tx.onabort = () => { console.error('保存被中断:', tx.error); _lsSay('保存到本机主库时被中断：数据可能没存住，请检查存储空间并尽快导出备份'); resolve(); };
+    const ok = await new Promise(resolve => {
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => { console.error('保存失败:', tx.error); _lsSay('保存到本机主库失败：请检查本机的存储空间，并尽快在 设置→数据 导出一次备份'); resolve(false); };
+      tx.onabort = () => { console.error('保存被中断:', tx.error); _lsSay('保存到本机主库时被中断：数据可能没存住，请检查存储空间并尽快导出备份'); resolve(false); };
     });
+    // FIX 2026-10-16 #466 成败都回话并上屏：旧写法只 toast 一句（一次会话只说一次）就再无下文，
+    // 人接着打字攒一整页只活在内存里的改动，下次开机回到上次真落成的那一份＝「最近的都不见了」
+    if (!ok) { _dbWriteFail = _dbErrText(tx && tx.error) || '主库事务没走完'; _dbGuardBar(); return false; }
+    if (_dbWriteFail) { _dbWriteFail = ''; _dbGuardBar(); }   // 后来某一发写成了＝条子自己收，不留一句过期警告
+    return true;
   } catch (err) {
     console.error('保存失败:', err);
     _lsSay('保存到本机主库失败：请检查本机的存储空间，并尽快在 设置→数据 导出一次备份');
+    _dbWriteFail = _dbErrText(err) || '主库写不动';
+    _dbGuardBar();
+    return false;
   }
 }
 
@@ -1807,11 +1922,16 @@ function isLSMode() { return _useLS === true; }
 // FIX 2026-09-01 #006 页面卸载兜底保存：app.js 的 pagehide 一直调用 flushSave 但本文件从未定义，
 // 导致卸载时抛 ReferenceError，其后的 lsSet(data) 兜底备份不执行
 function flushSave() {
-  saveSettingsSnap();   // 设置小快照：立即兑一份，与全量镜像同一时刻（闸在 lsSet 里）
-  // 返回 Promise：调用方（设置页）可 await 到 IndexedDB 事务真正完成，不再靠去抖能否赶在冻结前跑完
-  if (_useLS) { _lsMirror(); return Promise.resolve(); }
+  saveSettingsSnap();   // 设置小快照：立即兑一份，与那一份 LS 副本同一时刻（分流在 lsSet 里）
+  // 返回 Promise＋返回成败：调用方（设置页／导入那一路）可 await 到 IndexedDB 事务真正完成，
+  // 并以这一枚布尔决定屏上说的是「成功」还是「没落定」（#466；#006 那条锚一字未动）
+  if (_useLS) {
+    const okLS = _lsMirror() === true;
+    if (!okLS) { _dbWriteFail = '本机存储写不进（降级模式＝这一份是唯一数据）'; _dbGuardBar(); }
+    return Promise.resolve(okLS);
+  }
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; _savePending = false; }
-  // 立即兑一份同步镜像兜 iOS 冻结，再 await 异步 IndexedDB 写（与 save() 同一把尺，闸在 lsSet 里）
+  // 立即兑一份同步副本兜 iOS 冻结，再 await 异步 IndexedDB 写（与 save() 同一把尺，分流在 lsSet 里）
   _lsMirror();
   return _doSave();
 }

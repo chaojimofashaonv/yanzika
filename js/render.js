@@ -157,13 +157,17 @@ function _msgBadgesHTML(m) {
   return badgeList.length ? `<span class="msg-badges">${badgeList.join('')}</span>` : '';
 }
 
+// 屏上那一条消息节点（按 data-id 认；找不着＝这一条不在当前渲染窗口里）
+function _findMsgNode(list, m) {
+  if (!list || !m) return null;
+  return [...list.querySelectorAll('.message')].find(x => String(x.dataset.id) === String(m.id)) || null;
+}
+
 // 就地换那一条气泡角上的签——**不重画整个列表**：全量重画会走贴底那一套（renderMessages 里的
 // _stickLoop/_stickSnap），把正在往上翻旧消息的人一把甩到最底部（用户报「点这个功能消息还跳转」，BUGS #138 二批）。
 // 那条在分页窗口外没渲染时什么都不做：值已经落库，下次重画自然长出来，不拿「跳到底」换一个当场可见。
 function patchMessageBadges(m) {
-  const list = $('#messageList');
-  if (!list || !m) return;
-  const el = [...list.querySelectorAll('.message')].find(x => String(x.dataset.id) === String(m.id));
+  const el = _findMsgNode($('#messageList'), m);
   if (!el) return;
   const old = el.querySelector('.msg-badges');
   if (old) old.remove();
@@ -171,6 +175,48 @@ function patchMessageBadges(m) {
   if (!html) return;
   const anchor = el.querySelector('.bubble');
   if (anchor) anchor.insertAdjacentHTML('afterbegin', html);
+}
+
+// 就地换掉**那一条**消息的整颗气泡（BUGS #462：撤回把「有正文的气泡」改成「撤回占位小字」就走这里）。
+// 别退回 resetMessageRender()+renderMessages() 那条整列表重建路：它会 list.innerHTML='' 清屏、亮空窗骨架、
+// 再分片异步重建并反复 _stickSnap 贴底钉底——用户看到的就是「闪屏＋聊天记录弹跳」（用户报「联系人撤回消息
+// 时聊天页闪屏、聊天记录弹跳」）。与 patchMessageBadges 同族（BUGS #138 二批：全量重画会把正在上翻旧消息的人
+// 一把甩到最底部）。只在这一条正落在渲染窗口内时动手并返回 true；认不到就什么都不做（值已落库，下次重画
+// 自然长出来，不拿「跳到底」换一个当场可见）。
+function patchMessage(m) {
+  const el = _findMsgNode($('#messageList'), m);
+  if (!el) return false;
+  const [miniImg, miniPartner, miniMine] = getMiniAvatarHTML();
+  let next;
+  try { next = _buildMessageHTML(m, miniImg, miniMine, miniPartner); }
+  catch (e) { return false; }   // 渲染器抛错就原样留着旧那条，绝不半途把列表拆了
+  if (!next) return false;
+  el.replaceWith(next);
+  initLazyImages(next);   // 新节点上的懒图（撤回「查看」里那张表情包…）要重挂观察
+  _stickWatch();          // 换掉的若是末条，把尺寸观察从旧节点挪到新节点
+  return true;
+}
+
+// 就地撤掉**那一条**（数据数组已由调用方 splice 掉）：同 patchMessage 的缘由，不进清屏重建那条路。
+// 记账游标按删除位置回退一格（_msgEnd／_msgStart／_lastMsgCount 都是「下标」，删掉一条后其后全体前移）；
+// 那一「天」被删空时再把日期分隔条一并收走——留着会是一枚没有内容的分隔条（下次重画时它又会自己消失，
+// 两处口径不一致）。返回 false＝这一条不在渲染窗口里（游标已回退，屏上无需动）。
+function patchMessageRemove(m, idx) {
+  if (typeof idx === 'number' && idx >= 0) {
+    if (idx < _msgEnd) _msgEnd = Math.max(0, _msgEnd - 1);
+    if (idx < _msgStart) _msgStart = Math.max(0, _msgStart - 1);
+    if (idx < _lastMsgCount) _lastMsgCount = Math.max(0, _lastMsgCount - 1);
+  }
+  const el = _findMsgNode($('#messageList'), m);
+  if (!el) return false;
+  const prev = el.previousElementSibling;
+  const next = el.nextElementSibling;
+  const orphanDay = !!prev && prev.classList.contains('day-label') && (!next || next.classList.contains('day-label'));
+  const parent = el.parentNode;
+  if (parent) parent.removeChild(el);
+  if (orphanDay && prev.parentNode) prev.parentNode.removeChild(prev);
+  _stickWatch();
+  return true;
 }
 
 function _buildMessageHTML(m, miniImg, miniMine, miniPartner) {

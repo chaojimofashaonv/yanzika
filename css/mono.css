@@ -191,7 +191,7 @@ body .ann-cal-cell.sel::after{background:#FFFFFF}
    注释里早就写着「两枚浮钮共用同一条影，别改一个数留下两层实现」，这里是那一条的收口∶第三枚并入时
    把两份字面量换成 var()，值逐字节相同。 */
 :root{--float-btn-shadow:0 6px 20px rgba(0,0,0,.20)}
-.scroll-bottom-btn{background:var(--ink);border-color:var(--ink);color:#FFFFFF;box-shadow:var(--float-btn-shadow)}
+.scroll-bottom-btn{background:var(--scroll-bg,rgba(var(--ink-rgb),.45));border-color:transparent;color:var(--scroll-fg,#FFFFFF);box-shadow:0 2px 8px rgba(0,0,0,.10)}
 /* 首页右上那枚「＋」＝黑底白字（韩系主操作就是黑色实心）
    ⚠ 2026-10-13 按演示稿回改后，深色实心的范围＝**全部选中态与主按钮**（③④④b）＋`#addContactBtn`（首页「＋」）
      ／`.fab`／播放器的 `.pl-pri`（56px 圆形播放键，住在 css/player.css:84）这三枚浮钮；

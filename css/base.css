@@ -181,3 +181,16 @@ body[data-view=settings] .settings-list{padding-bottom:calc(20px + env(safe-area
 .up-go{border:1px solid var(--ink);background:var(--ink);color:var(--page)}
 .up-note{font-size:10.5px;line-height:1.6;color:var(--muted);letter-spacing:.3px;margin-top:12px}
 @media(prefers-reduced-motion:reduce){.up-panel{animation:none}.up-btn:active{transform:none}}
+
+/* ===== 主库读写那道闸的常驻条（BUGS #466 · js/db.js 的 _dbGuardBar）=====
+   元素由 JS 现造（与 js/background.js 的 #notify-heal-bar 同一先例），样式这一处是唯一宿主；
+   平时不造元素＝零节点零开销，只在「主库没读到／写不进」那一次才上屏，所以它不参与任何观感套餐。
+   横向尺与 .ann-undo（css/anniversary.css）同一条（max(16px,calc(50% - 224px))），坐在 tab 栏之上；
+   z=12 与那族同级＝不压弹层与贴底面板（那两层各自有 z=130∶z=8，条子不该盖住人正在点的东西）。
+   色全引现成令牌：面 --surface∶红细描边 --danger-hair∶字与钮 --danger-ink（危险态全站同一口径，不给实心红底）。 */
+#dbGuardBar{position:fixed;left:max(16px,calc(50% - 224px));right:max(16px,calc(50% - 224px));bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--danger-hair);box-shadow:var(--float-shadow);font-size:11.5px;line-height:1.5;color:var(--danger-ink)}
+#dbGuardBar[hidden]{display:none}
+#dbGuardTxt{flex:1;min-width:0}
+.db-guard-acts{display:flex;gap:6px;flex:none}
+#dbGuardBar button{font-family:inherit;font-size:11px;line-height:1.2;color:var(--danger-ink);background:transparent;border:1px solid var(--danger-hair);border-radius:99px;padding:7px 11px;min-height:28px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#dbGuardBar button:active{background:var(--press)}

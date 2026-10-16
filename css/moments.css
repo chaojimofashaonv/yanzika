@@ -185,11 +185,19 @@
 .moment-popup[hidden]{display:none}
 .moment-popup-hide{opacity:0;transform:translateY(-8px);pointer-events:none}
 .moment-popup-info{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.moment-popup-avatar{width:32px;height:32px;flex:none;overflow:hidden}
-.moment-popup-avatar img,.moment-popup-avatar .initial{width:100%;height:100%;object-fit:cover}
+/* 头像盘＝全站同一口径（与 .desk-pop-av／.avatar 同手）：盘自己裁圆＋裁掉溢出，
+   无头像那一档的浅底与发丝边由 .initial-person 供（唯一写手 css/theme.css，border-radius:inherit 跟盘走圆）。
+   ⚠ .initial 必须 position:absolute;inset:0：它是 inline 时 width/height:100% 根本不生效
+   ＝只剩一枚悬空的人形矢量图压在正文上（用户 2026-10-16 报「其他消息弹窗 ui 都不正常」的第二发，BUGS #464）。
+   ⚠ 盘不画 border：盘缘由 .initial-person 那圈 inset --line 交代，只此一道（同 deskpop.css 那条注释，#318 第八轮）。 */
+.moment-popup-avatar{position:relative;width:32px;height:32px;border-radius:50%;overflow:hidden;flex:none;background:var(--bubble);display:flex;align-items:center;justify-content:center;font-size:14px}
+.moment-popup-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.moment-popup-avatar .initial{position:absolute;inset:0;display:grid;place-items:center}
 .moment-popup-user{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .moment-popup-name{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .moment-popup-action{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 正文那一截现在挂在 .moment-popup-user 那一列的下面（不再与头像同排，BUGS #464）：
+   同列里它是块级，两行裁断靠 -webkit-line-clamp；min-width:0 由父列带着，不再抢同排的宽。 */
 .moment-popup-preview{font-size:11px;color:var(--muted);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .moment-popup-preview[hidden]{display:none}
 .moment-popup-close{flex:none;width:26px;height:26px;border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}

@@ -98,6 +98,14 @@ function applyAppearance() {
   b.dataset.apAlign = a.alignMode === 'top' ? 'top' : 'bottom';
   b.dataset.apAvat = a.avatarShow === false ? 'off' : 'on';
   b.dataset.apDaypos = a.dayPos === 'head' ? 'head' : 'flow';
+  // 按钮颜色自定义（2026-10-15）：空串＝不写属性，CSS 走自带回退；填 hex 才写。
+  // 透明度走 --btn-alpha（10~100 折成 0.1~1）；chat.css 的 .send-btn/.scroll-bottom-btn 消费。
+  if (a.sendBg) b.style.setProperty('--send-bg', a.sendBg); else b.style.removeProperty('--send-bg');
+  if (a.sendFg) b.style.setProperty('--send-fg', a.sendFg); else b.style.removeProperty('--send-fg');
+  if (a.scrollBg) b.style.setProperty('--scroll-bg', a.scrollBg); else b.style.removeProperty('--scroll-bg');
+  if (a.scrollFg) b.style.setProperty('--scroll-fg', a.scrollFg); else b.style.removeProperty('--scroll-fg');
+  const _ba = Math.min(100, Math.max(10, Math.round(Number(a.btnAlpha) || 100)));
+  b.style.setProperty('--btn-alpha', (_ba / 100).toFixed(2));
   b.dataset.apFontfamily = a.fontFamily;
   if (a.customFontCss) {
     b.dataset.apFontfamily = 'custom';
@@ -115,6 +123,7 @@ function applyAppearance() {
   b.dataset.apLight = _apLight();
   b.dataset.apCorner = _apCorner();
   b.dataset.apDeskall = ((data.appearance || {}).deskBgAll === true) ? 'on' : 'off';
+  b.dataset.apPhonefit = a.phoneFit ? 'on' : 'off';   // 宽屏手机适配档：消费方在 css/theme.css∶chat.css∶cards.css（body:not([data-ap-phonefit=on]) 那几段宽屏档）
   // 两枚透明度滑杆（美化设置里那一节，BUGS #314 二批）：值写成两枚**无单位数字**给 CSS 去乘，
   // 并在这里就按「这一本传没传背景图」掐一次——没传图时两栏一律完全不透（用户这一轮要的是「只在传图时能调」），
   // 旧档里残留的数值也不会在一面没有图的情况下偷偷留出字来。「有图吗」这件事只在这里判一次，
@@ -659,7 +668,7 @@ function echoApDotNames() {
 $('#apBgUpload').onclick = () => $('#chatBgInput').click();
 $('#chatBgInput').onchange = async e => {
   if (!e.target.files[0]) return;
-  const img = await fileData(e.target.files[0], 1440, 0.8);
+  const img = await fileData(e.target.files[0], _bgUploadEdge(), 0.8);   // FIX 2026-10-15 #460 与桌面壁纸同一个口径（js/utils.js 的 _bgUploadEdge）：长边按屏×DPR 现算，不再写死 1440
   if (!img) return;
   _caSh().chatBg = img;
   // 自动压暗：按图片亮度给这一本定一个压暗默认（亮图压得多、暗图压得少），之后仍可在“压暗”杆上改。
@@ -866,6 +875,54 @@ function renderFrostBubble() {
   const out = $('#frostBubbleBlurOut');
   if (out) out.textContent = v + 'px';
 }
+// ===== 按钮颜色自定义（2026-10-15）=====
+// 四枚色块＋一枚透杆＋四枚 × 清除，写入 data.appearance.sendBg/sendFg/scrollBg/scrollFg/btnAlpha。
+// 即点即生效（input）＋ 松开存盘（change），与 frostBubbleBlurRange 同一模式。
+(function _bindBtnColors() {
+  const PAIRS = [['#apSendBg','sendBg','#apSendBgRst'],['#apSendFg','sendFg','#apSendFgRst'],['#apScrollBg','scrollBg','#apScrollBgRst'],['#apScrollFg','scrollFg','#apScrollFgRst']];
+  PAIRS.forEach(([sel,key,rstSel]) => {
+    const inp = $(sel);
+    if (!inp) return;
+    inp.addEventListener('input', () => {
+      data.appearance = data.appearance || {};
+      data.appearance[key] = inp.value;
+      applyAppearance();
+    });
+    inp.addEventListener('change', () => save());
+    const rst = $(rstSel);
+    if (rst) rst.addEventListener('click', () => {
+      data.appearance = data.appearance || {};
+      data.appearance[key] = '';
+      applyAppearance();
+      renderBtnColors();
+      save();
+    });
+  });
+  const alpha = $('#apBtnAlpha');
+  if (alpha) {
+    alpha.addEventListener('input', () => {
+      const v = Math.min(100, Math.max(10, Math.round(Number(alpha.value)) || 100));
+      data.appearance = data.appearance || {};
+      data.appearance.btnAlpha = v;
+      const out = $('#apBtnAlphaOut');
+      if (out) out.textContent = v + '%';
+      applyAppearance();
+    });
+    alpha.addEventListener('change', () => save());
+  }
+})();
+function renderBtnColors() {
+  const a = (data.appearance || {});
+  const _setColor = (sel, val) => { const el = $(sel); if (el) el.value = val || '#1c1917'; };
+  _setColor('#apSendBg', a.sendBg);
+  _setColor('#apSendFg', a.sendFg || '#ffffff');
+  _setColor('#apScrollBg', a.scrollBg);
+  _setColor('#apScrollFg', a.scrollFg);
+  const alpha = $('#apBtnAlpha');
+  if (alpha) alpha.value = Math.min(100, Math.max(10, Number(a.btnAlpha) || 100));
+  const out = $('#apBtnAlphaOut');
+  if (out) out.textContent = (alpha ? alpha.value : 100) + '%';
+}
 // ===== 主题预设（外观页顶部那排 chips，2026-10-15）=====
 // 纯宏：把几个已有 appearance 键一次写好，走同一套 save＋applyAppearance＋回显，不新增字段、不做第二套实现。
 // 不碰 deskBg（不覆盖用户上传的壁纸）与气泡颜色（各归各的控件）。套完仍可单独微调；手改后 _echoTheme 认不出成套→都不高亮（如实）。
@@ -932,6 +989,7 @@ const AP_SETS = {
   avatarShow: ['on', 'off'],      // 聊天里的小头像：on 显示（默认）/ off 隐藏＝气泡通栏
   dayPos: ['flow', 'head'],       // 日期签位置：flow 消息流里（默认）/ head 钉在顶栏下方（sticky 随滚动换签）
   deskBgAll: ['on', 'off'],
+  phoneFit: ['on', 'off'],   // 宽屏「手机适配」：on＝强制收回 480 窄卡（手机那一屏），off＝iPad/电脑默认加宽单栏（布尔，消费方在 css 的 body:not([data-ap-phonefit=on]) 宽屏档）
 };
 // 底色档只认这四个值，脏值一律回落 soft（soft 没有覆盖块——css/theme.css 的基础令牌本身就是它）
 // 四档：soft 暖光玻璃（默认）／frost 霜白／warm 暖米／flat 纯白（＝关掉玻璃的退路，留着做反向对照）
@@ -992,6 +1050,7 @@ function echoApSets() {
   });
   renderFrost();   // frost 开了才亮「强度＋气泡」那一节；搭这一趟便车，不在每处 chip 处理器里各写一遍
   renderFrostBubble();   // 气泡毛玻璃开了才亮它自己那根强度滑杆（聊天外观卡里，与卡片 frost 各走各的）
+  renderBtnColors();     // 按钮颜色自定义回显（四枚色块＋透明度滑杆）
 }
 // 底色档：soft 暖光玻璃（默认）∕ frost 霜白 ∕ flat 纯白 ∕ warm 暖米。旧的「雪原高差／素白／冷白」与
 // 「素白／冷白」两批档位实现（body[data-ap-tier]／[data-ap-snow]）已整族撤除；现在这一族只有
@@ -1465,7 +1524,15 @@ $('#dataInput').onchange = async e => {
     payload = null;   // 备份那一棵树已经交给 data，本函数这一份引用不该再押着
     p(88, '正在保存…');
     await progressYield();
-    await flushSave();
+    // FIX 2026-10-16 #466 落没落成必须当场说：旧写法不问 flushSave 的结果，走到「导入成功，即将刷新」再 reload＝
+    // 屏上闪一下新数据、回来还是原来那一份，而用户以为备份已经吃进去了（规则.md §六：不得声称数据很安全）
+    const saved = await flushSave();
+    if (!saved) {
+      hideProgress();
+      showToast('这一份没能写进本机主存储，只兜在备用副本里（那份装不下大图，不一定保得住）：屏上那条红字写了下一步该怎么做');
+      setTimeout(() => location.reload(), 2400);
+      return;
+    }
     p(100, '导入成功，即将刷新');
     setTimeout(() => location.reload(), 500);
   } catch (err) {

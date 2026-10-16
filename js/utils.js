@@ -533,6 +533,13 @@ const defaults = {
     alignMode: 'bottom',   // 头像与气泡对齐：bottom 底部对齐（默认）/ top 顶部对齐
     avatarShow: true,      // 聊天里的小头像：开（默认）/关＝气泡通栏
     dayPos: 'flow',        // 日期签位置：flow 消息流里（默认）/ head 钉在顶栏下方（sticky 随滚动换签）
+    // 宽屏「手机适配」档（2026-10-16）：false＝iPad/电脑宽屏默认加宽单栏（~820px）；true＝强制收回 480 窄卡（手机那一屏）。
+    //   四落点：defaults（这里）∶db.js 布尔回落∶settings.js AP_SETS＋applyAppearance 写 body[data-ap-phonefit]∶
+    //   view-settings.html 那行 chips；消费方在 css/theme.css∶chat.css∶cards.css 的 body:not([data-ap-phonefit=on]) 宽屏档。
+    phoneFit: false,
+    // 聊天按钮颜色自定义（2026-10-15）：空串＝不覆盖＝走 CSS 自带回退；填 hex 才写 --send-bg 等令牌。
+    // 透明度 10~100，100＝不透明；入口在 TA 设置 → 时间与磨砂 →「按钮颜色」那一节。
+    sendBg: '', sendFg: '', scrollBg: '', scrollFg: '', btnAlpha: 100,
     // 全站字体两样 2026-10-12 也由「按会话」收成**全站一份**（用户定档「字体只留全局一份」）：
     // customFont*＝上传的字体文件，整条 @font-face 连字体本体一起存进这里（不是 blob: 地址——那种地址
     // 只在写下它的那一份文档里有效，重启必失效）；customGlobalFont*＝手打的字体 CSS。
@@ -926,6 +933,19 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const PASS_MAX_DATAURL = 1.5 * 1024 * 1024;
 const PASS_EDGE_MUL = 1.5;
 
+// 背景图（桌面壁纸／会话聊天背景）上传的长边口径（BUGS #460）：按「这块屏要多少设备像素」现算，不再写死 1440。
+// 1440 在 iPhone（DPR 3·屏高 ~852 → 要 2556 才 1:1）上等于让浏览器把图放大 1.8 倍去铺：糊得像「比例不对」。
+// 地板仍 1440＝小屏不许比旧写法收得更小（那是回归）；天花板 2560＝守住存档（base64 进 IndexedDB，一张 2560 的
+// JPEG q0.8 约 1~2MB，再往上就是 #434∶#458 那一族体积账）。读数拿不到就回 1440＝与旧写法逐字节相同。
+function _bgUploadEdge() {
+  const dpr = Math.min(3, Math.max(1, Number(window.devicePixelRatio) || 1));
+  const s = window.screen || {};
+  let long = 0;
+  [s.width, s.height, window.innerWidth, window.innerHeight].forEach(v => { const n = Number(v) || 0; if (n > long) long = n; });
+  if (long <= 0) return 1440;
+  return Math.max(1440, Math.min(2560, Math.round(long * dpr)));
+}
+
 // 是否支持 WebP 编码（一次探测，缓存结果）。不支持则退回 JPEG。
 let _webpOK = null;
 function webpSupported() {
@@ -1154,7 +1174,7 @@ function progressYield() {
 // ===== 「这句说谁」：长按消息掷一枚指向签 =====
 // 三档纯随机、不解析句子：TA 本就是随机状态机，按字面推「这句说的是谁」等于替它编一句它没说的话（世界感知那几条线同一口径）。
 const REFER_KEYS = ['ta', 'me', 'us'];
-const REFER_LABEL = { ta: '说TA', me: '说我', us: '说我们' };
+const REFER_LABEL = { ta: '说TA', me: '说你', us: '说我们' };
 function rollRefer() { return REFER_KEYS[Math.floor(Math.random() * REFER_KEYS.length)]; }
 // 外来备份里的怪键当没标，不在屏上画一枚空签
 function referLabelOf(k) { return REFER_LABEL[k] || ''; }

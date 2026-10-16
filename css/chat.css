@@ -107,6 +107,8 @@ body[data-avatar-shape="square"] .mini-avatar{border-radius:4px;overflow:hidden}
    svg 的 margin-top:.22em（theme.css .initial svg 那条）两边同吃＝与列表头像完全同款。 */
 .mini-avatar .initial{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;color:var(--muted);font-weight:600}
 .bubble-wrap{max-width:78%}
+/* 宽屏（iPad／电脑）适配：壳加宽到 820 后 78% 会把气泡拉到 ~618px 一行太长，这里给绝对上限 560px 收住阅读宽度（开「手机适配」档时不生效，回到基础 78%） */
+@media(min-width:521px){body:not([data-ap-phonefit=on]) .bubble-wrap{max-width:min(78%,560px)}}
 /* 气泡几何的唯一写点（值由 css/theme.css 的 body[data-ap-bubble=*] 四档发令牌，var() 里那份是兜底）：
    几何不住特异度低的条目上，「TA 的设置 → 气泡 CSS」那格 placeholder 教的写法就永远盖不动它（BUGS #280） */
 .bubble{padding:10px 14px;border-radius:var(--bub-r,6px 20px 20px 20px);background:var(--surface);box-shadow:none;font-size:14.5px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
@@ -161,7 +163,7 @@ body[data-avatar-shape="square"] .mini-avatar{border-radius:4px;overflow:hidden}
 .as-badge-refer{letter-spacing:0}
 /* 一颗签上的两段之间那个点：只做「这是两件事」的分隔，不带底色不带边（一枚记号一个语义，它不是第三枚签） */
 .as-badge-refer .rb-sep{font-style:normal;opacity:.4;margin:0 3px}
-/* 我方气泡靠右：槽继续往右长会探出滚动区右界（一段「不止这句」比「说我」宽一倍），与纯图片那一族同法改右锚 */
+/* 我方气泡靠右：槽继续往右长会探出滚动区右界（一段「不止这句」比「说你」宽一倍），与纯图片那一族同法改右锚 */
 .message.mine .msg-badges{left:auto;right:9px}
 /* 世界感知来源签（m.src==='cjian'，render.js 出）：与「主动」同一枚白浮岛范式，零新样式。
    两处不同：① 可点（父级 .as-badge 是 pointer-events:none，这里放开并给手型）→ 跳世界感知页，
@@ -194,11 +196,10 @@ body:not([data-view=chat]) .typing-indicator{display:none}
 /* 回到底部浮钮：bottom 吃【输入栏实高】而非死数。旧写法 `bottom:88px` 是按「输入栏恒 70px」手算的，
    引用条/待发图把 #composer 顶高后钮会骑进栏里；--composer-h 现由 js/stickers.js 量着写（开关面板时∶ResizeObserver 常态）。
    没有面板时变量缺省不存在＝兑回 70px，calc 出来 88px 与旧值逐像素相同＝无图无面板时观感零变。 */
-.scroll-bottom-btn{position:absolute;right:16px;bottom:calc(var(--composer-h,70px) + 18px);width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:none;font-size:20px;line-height:1;color:var(--accent);z-index:5;display:flex;align-items:center;justify-content:center}
-/* 箭头为矢量（与头部返回键∶发送键同一 stroke 族，字符↓吃系统字重那一族收口）：尺寸在 css 给，不进标签写死 */
-.scroll-bottom-btn svg{width:20px;height:20px;flex:none}
+.scroll-bottom-btn{position:absolute;right:14px;bottom:calc(var(--composer-h,70px) + 12px);width:30px;height:30px;border-radius:50%;background:var(--scroll-bg,rgba(var(--ink-rgb),.07));border:0;box-shadow:0 2px 8px rgba(0,0,0,.06);line-height:1;color:var(--scroll-fg,var(--ink));z-index:5;display:flex;align-items:center;justify-content:center;opacity:var(--btn-alpha,1)}
+.scroll-bottom-btn svg{width:16px;height:16px;flex:none}
 .scroll-bottom-btn[hidden]{display:none}
-.scroll-bottom-btn:active{opacity:.6}
+.scroll-bottom-btn:active{opacity:calc(.5 * var(--btn-alpha,1))}
 
 /* 输入栏＝悬浮托盘：透明底上浮一张白卡托盘（按钮+输入一体的「字卡托盘」） */
 .composer{background:transparent;border-top:0;padding:6px 12px calc(10px + env(safe-area-inset-bottom));flex:none;contain:layout style}
@@ -226,14 +227,15 @@ body:not([data-view=chat]) .typing-indicator{display:none}
    且胶囊同批改回白面（mono.css 输入框那条）后灰面更没法读。墨底白箭头与「首页＋／FAB／我的气泡」同族，
    白字用绝对值字面量（与 mono 族「我的气泡白字」同一先例），换墨色深浅时字不需跟。 */
 .compose-icon{width:34px;height:34px;border-radius:50%;flex:none;background:transparent;border:0;color:var(--icon-ink);font-size:19px}
-.send-btn{width:40px;height:40px;align-self:center;flex:none;display:grid;place-items:center;margin:0;border-radius:50%;background:var(--ink);border:0;box-shadow:none;color:#FFFFFF}
-.send-btn svg{width:20px;height:20px;stroke-width:2.3;color:#FFFFFF}
+.send-btn{height:34px;min-width:44px;padding:0 12px;align-self:center;flex:none;display:flex;align-items:center;justify-content:center;margin:0;border-radius:17px;background:var(--send-bg,var(--ink));border:0;box-shadow:none;color:var(--send-fg,#FFFFFF);line-height:1;opacity:var(--btn-alpha,1)}
+/* 箭头为矢量（2026-10-16 用户判「文字发送」不敌原版线稿箭头＝内容回到↑箭头，形状保留胶囊）：尺寸在 css 给，不进标签写死 */
+.send-btn svg{width:18px;height:18px;stroke-width:2.3;flex:none}
 .send-btn:active{transform:scale(.94)}
 /* 空输入时这枚键点了什么都不做（同 js/chat.js 那道早退），淡一档＝把"没有可发的东西"照实画出来；已插图时不淡。
    ⚠ 宿主必须是 .composer：#composerAttach 是 .composer-row 的兄弟，锚在行上那条 :not(:has( 恒成立＝插图也照淡（门 C3 抓的）
    ⚠ 靠 #messageInput 那枚 placeholder=" " 才成立（:placeholder-shown 在无此属性的输入框上根本不匹配，实测恒 1）
    ⚠ :has() 不支持的老浏览器整条作废＝恒满强度，属可接受降级（与 glass.css 乙b 同口径） */
-.composer:has(#messageInput:placeholder-shown):not(:has(#composerAttach:not([hidden]))) .send-btn{opacity:.4}
+.composer:has(#messageInput:placeholder-shown):not(:has(#composerAttach:not([hidden]))) .send-btn{opacity:calc(.4 * var(--btn-alpha,1))}
 
 /* 表情消息＝两档尺寸（参考自家 mochi 的 .msg-img ∶ .msg-img-big）
    表情包＝恒 110×110 一方格，object-fit:contain 整张可见不裁。旧写法是 max-width:110px ＋ img{width:100%}、高度一根没夹，

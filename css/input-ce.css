@@ -69,8 +69,8 @@ input.ce-ghost, textarea.ce-ghost {
    有字也是灰的（量具 F1 会红）。故 :not 照留，只是**写在前头**换个顺序：
    tools/_smoke_send_btn_262.js 的 A8 靠「原规则那句话在产物里恰一次」判产物同步，
    换个顺序既保权重又不撞那句话（连注释里也别把原串整句抄进来——注释同样进产物）。 */
-body.ce-on .composer:not(:has(#composerAttach:not([hidden]))):has(#messageInput:placeholder-shown) .send-btn { opacity:1; }
-body.ce-on .composer:has(#messageInput.ce-empty):not(:has(#composerAttach:not([hidden]))) .send-btn { opacity:.4; }
+body.ce-on .composer:not(:has(#composerAttach:not([hidden]))):has(#messageInput:placeholder-shown) .send-btn { opacity:var(--btn-alpha,1); }
+body.ce-on .composer:has(#messageInput.ce-empty):not(:has(#composerAttach:not([hidden]))) .send-btn { opacity:calc(.4 * var(--btn-alpha,1)); }
 
 /* [chats] .chat-form input,.chat-form textarea（添加联系人／建群的表单） */
 .chat-form .ce-box {

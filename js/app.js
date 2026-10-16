@@ -1,10 +1,10 @@
 // ===== 入口初始化 =====
 
 // 全站版号（更多页顶部那格读它；assemble.py --bump 时与下面 markStep 一起 +1，锚点别合并＝bump 按各自锚替换）
-window.APP_VER = 'v9.9.5';
+window.APP_VER = 'v10.1.0';
 
 // 启动进度标记（开屏层已删除：#splashStep 不再有宿主，本函数为空操作，保留作版本锚点与排障落点）
-function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v9.9.5' + s; }
+function markStep(s) { const e = document.getElementById('splashStep'); if (e) e.textContent = 'v10.1.0' + s; }
 
 (async function init() {
   try {

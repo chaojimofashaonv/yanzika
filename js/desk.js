@@ -146,7 +146,7 @@ $('#deskBgInput').onchange = async e => {
   const f = e.target.files && e.target.files[0];
   e.target.value = '';
   if (!f) return;
-  const img = await fileData(f, 1440, 0.8);
+  const img = await fileData(f, _bgUploadEdge(), 0.8);   // FIX 2026-10-15 #460 长边按屏×DPR 现算（旧写死 1440 在 iPhone 上被放大 1.8 倍去铺＝看着糊／比例不对）
   if (!img) return;
   data.appearance.deskBg = img;
   // 自动压暗：用户自传照片才按亮度定一个压暗默认（内置渐变预设不走这条，它自带好看的 44）。

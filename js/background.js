@@ -2011,26 +2011,12 @@ const summaryText = sentSummaryText(); // #1443d：先按类别拼好话，再�
 sentReset();
 if (!inChat && n > 0) {
 try { if (window.showDeskPopup) window.showDeskPopup({ uid: 'bg-resume', name: who, text: summaryText, views: ['chat'] }); } catch (eDP) {}
-const now = Date.now();
-if (saved === '1' && bgNotifyAllowed() &&
-(!lastResumeNotifyAt || now - lastResumeNotifyAt > 30000)) {
-lastResumeNotifyAt = now;
-const notiIcon = ((data && data.profile && data.profile.avatar) || '');
-const sendNoti = function (iconVal) {
-const o = { body: summaryText };
-if (iconVal) o.icon = iconVal;
-showSysNotification(who, o);
-};
-if (notiIcon && (notiIcon.indexOf('data:') === 0 || /^https?:\/\//i.test(notiIcon))) {
-makeAvatarThumb(notiIcon, function (u) { sendNoti(u || notiIcon); });
-} else {
-sendNoti('');
-}
-}
+// 回前台只补这一条应用内桌面前台横幅，不再掉一条系统通知（用户 2026-10-16 定档）：
+// 人已经回到页面上，未读角标／会话列表本就看得见，顶部再弹「你不在的时候收到 N 条」＝突兀。
+// 系统通知仍由 bgNotifyCheck 在「真在后台」那一刻按条发，这里只是不再于回场时重复汇总。
 }
 } catch (e) {}
 });
-let lastResumeNotifyAt = 0; // v3.5.154：回前台汇总通知去重
 let lastVisibleAt = Date.now();
 let lastHiddenAt = 0; // v3.16.x：最近一次切后台时刻（修复过渡期闸门失效）
 (function () {
