@@ -83,8 +83,8 @@
     } catch (e) {}
   })();
   </script>
-  <link rel="stylesheet" href="dist/app.v10.2.5.css">
-  <script defer src="dist/app.v10.2.5.js"></script>
+  <link rel="stylesheet" href="dist/app.v10.3.0.css">
+  <script defer src="dist/app.v10.3.0.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -323,7 +323,7 @@
     </div>
     <section class="view" id="chatView">
       <div class="chat-head"><button type="button" class="icon-btn" data-view="chats" aria-label="返回聊天列表"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="chat-head-name" id="chatHeadName"><span id="chatHeadNameText"></span></div><span class="typing-indicator" id="typingIndicator" hidden><span></span><span></span><span></span><em>TA正在想怎么回你</em></span><button type="button" class="cj-chip" id="cjChip" hidden aria-label="世界感知速览：TA的状态·心情与时间"></button><div class="chat-head-tools"><button type="button" class="icon-btn" id="callBtn" title="打电话" aria-label="打电话"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button type="button" class="icon-btn" id="chatApBtn" aria-label="会话外观"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="20" r="3"/></svg></button></div></div>
-            <!-- 世界感知速览小框（BUGS #484）：点昵称下面那行小字（#cjChip）在聊天页里开，不跳整页。
+            <!-- 世界感知速览小框（BUGS #486）：点昵称下面那行小字（#cjChip）在聊天页里开，不跳整页。
            贴聊天页头部下沿；遮罩透明＝点外面即关、不挡聊天内容；底部一条出口进整页。
            群聊没有唯一的 TA＝chip 整枚不显，小框无从打开（开关都在 js/cjian.js）。 -->
       <div class="cj-pop-mask" id="cjPopMask" hidden></div>
