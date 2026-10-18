@@ -1,108 +1,869 @@
 <!doctype html>
+
 <html lang="zh-CN">
+
 <head>
+
   <meta charset="utf-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+
   <meta name="theme-color" content="#F7F7F5">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
+
   <meta name="mobile-web-app-capable" content="yes">
+
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <meta name="apple-mobile-web-app-title" content="言字卡">
+
   <meta name="format-detection" content="telephone=no,address=no,email=no,date=no">
+
   <link rel="manifest" href="manifest.json">
+
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+
   <link rel="alternate icon" href="icon-192.png">
+
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
   <title>言字卡（完全免费 · 禁止倒卖）</title>
+
   <script>
+
   // 首屏前置：本次打开还没确认过声明 → 第一帧就是公告页，否则读档（IndexedDB + ensureData + 首轮渲染）期间会先闪出桌面。
+
   // 键名在这里定义一次，js/age-gate.js 读这两个全局判同一件事，不留第二份实现。
+
   // 每次文档加载都要重新过这一关（BUGS #258）：确认只记在本页内存里，所以这里问的从来不是「这台设备确认过没有」，
+
   // 而是「有没有自动化门预置的跳过标记」——真实确认路径从不写这个键，只有测试夹具写。
+
   var AGE_GATE_KEY_EARLY = 'ordinal-age-test-skip';
+
   var AGE_GATE_VER_EARLY = '2026-10-09';
+
   // #431（薄入口化）：js 外置成 <script defer> 后，「脚本死没死」不能再拿 DOMContentLoaded／__domJs 当读数——
+
   // 那是**最晚**的信号（要等全部 defer 件执行完才翻真），慢网上整个下载阶段它都是 false，旧判据据此在 3 秒
+
   // 误放人＝公告先摘、露出桌面、JS 到齐后又盖回来＝用户报的 GitHub 手机端那一闪。改回用 document.readyState
+
   // === 'complete'（load 事件后＝全部资源含 defer 件都已尝试过、成功或失败）作「网络到齐了没有」的唯一权威读数：
+
   // 还在下载＝没到 complete＝只是慢，绝不摘公告页；已到 complete 而公告没接管＝那一发是真死，照旧放人。
+
   (function () {
+
     try {
+
       if (localStorage.getItem(AGE_GATE_KEY_EARLY) !== null) return;
+
       window.__gateEarlyAt = performance.now();
+
       document.documentElement.classList.add('gate-early');
+
       // 兜底问「主脚本有没有在推进」，不问「age-gate 那一段跑到没」（BUGS #346）。
+
       // 全部 JS 拼成同一个内联块、age-gate.js 排在第 35 段：慢机上光解析＋执行到那一段就要好几秒——
+
       // tools/_probe_gate_early_flash.js 在 CPU 节流 16/20 倍下多轮量到 __ageGateBound 落在 2.2~12.0 秒
+
       // （这台机器被几个会话共用，单次读数会漂，别拿一个数当数；正常速度那一档是 0.2 秒）。
+
       // 旧那发一次性 setTimeout(…, 3000) 会在这种时候把类摘掉＝公告页先盖上、又让位给桌面、随后公告再回来：
+
       // 把兜底换回旧写法复现得到「2585~3055ms 盖上 → 4728~5795ms 露出桌面（首绘在 4220~5400ms＝看得见的一帧）→ 8096~9933ms 才接管」，
+
       // 中间那一段正是用户报的「闪一下桌面」。所以两档问法：
+
       // ① 整块压根没跑起来（js/data.js 那枚 __jsAlive 不在＝并行抢构建／孤悬顶层绑定，#021·#111 那族，
+
       //    确认键是死的，不能把人锁在屏上）→ 解析收尾后标记仍不在就放人走（同一把尺子量到 3045ms 摘类）；
+
       // ② 跑起来了只是慢 → 不摘类，只留一条宽松绝对上限兜「跑到中段就卡死」这种没见过的形状。
+
       // 公告一旦接管（bound）兜底当场下岗，绝不摘已经在看的那一页。
+
       // ⚠ #363·#431 合并口径（薄入口／外置 defer 世界下的唯一正确尺法）：「__jsAlive 不在」≠「整块死了」。
+
       // js/data.js 是外置件的第一件，__jsAlive 要等它**下完并开始执行**才落 1；GitHub Pages
+
       // 手机端弱网下这一发常 >3 秒，而那段时间里文档虽解析完、外置件仍在路上。旧 #431 判据错拿 __domJs
+
       // （DOMContentLoaded，等全部 defer 执行完才翻真）当「脚本到了」的读数——它比 __jsAlive 更晚，整个慢加载
+
       // 阶段都为 false，于是 `!__jsAlive && !__domJs` 在「慢但活着」时也成立＝3 秒摘类、露出桌面、JS 到齐后再盖回＝
+
       // 用户报的「加载中途跳桌面、进不去开屏」正是这一闪（本地伺服秒回，复现不出「外置件还在流」这个形状）。
+
       // 尺子换成 document.readyState === 'complete'：load 事件（全部资源含 defer 件尝试完毕，成功或失败）后
+
       // 才为真。慢加载途中它停在 'loading'／'interactive'＝还没到齐＝只是慢，绝不放人走；已到 complete 而
+
       // 脚本没接管＝真死，照旧 ~3s 放人（#021·#111 那族「不锁死人」的原意不变）。
+
       // ⚠ #474 二批（用户复报「加载总是跳到别的页面，而不是在开屏加载」）：#431 那次只收了 3 秒那一档，
+
       // **绝对上限那一档还是无条件摘类**（旧值 CEIL_MS=20000）。线上一次冷启动要拉 84 件（薄入口＋36 css＋47 js
+
       // ≈ 3MB），github.io 手机端 20 秒跑不完是常态＝每次都在「还在下载」的中途把公告摘掉，JS 到齐后又盖回来。
+
       // 本地伺服秒回、这条永远撞不穿，所以三轮量具全绿而用户每次都看见那一闪（同 #363 那句「复现不出这个形状」）。
+
       // 现在这一档也先问 readyState：**没到齐＝只是慢＝公告页继续挂着当加载中那一屏**——它本来就是全屏的一页，
+
       // 读它不亏；提前摘类换不来一个能用的界面（JS 一件没到，桌面是死的），只是把「一闪」做成必然。
+
       // 真「连接卡死·load 永不来」那种形状仍要兜底（不能把人锁在屏上＝#346 换向的原意），把那一发抬到 4 分钟：
+
       // 弱网下整包本就要几分钟，而 4 分钟里连 load 都不来的，屏幕换成什么样都不再有区别。
-      var DEAD_MS = 3000, CEIL_MS = 240000, STEP_MS = 200, waited = 0, timer = 0;
+
+      // #545：CEIL_MS 从 4 分钟收到 90 秒——旧值不是「宽容」而是「让用户在那一屏上干等 4 分钟」，
+
+
+
+      // 而现在到点也不再摘类（见下方 _bfFail），只是把「载入没完成」这句话与重载入口摆出来。
+
+
+
+      var DEAD_MS = 3000, CEIL_MS = 90000, STEP_MS = 200, waited = 0, timer = 0;
+
       var release = function (why) {
+
         clearInterval(timer);
+
         document.documentElement.classList.remove('gate-early');
+
         // 放人必须留一句读数（本站口径：失败不许静默）——「为什么摘的」四样一次报齐，
+
         // 下次再出「跳页面」这类复报，第一眼看读数就能分清是「真死放人」还是「上限兜底」。
+
         try {
+
           console.warn('[言字卡] 开屏兜底放人（' + why + '）· jsAlive=' + !!window.__jsAlive +
+
             ' bound=' + !!window.__ageGateBound + ' 已等 ' + waited + 'ms · readyState=' + document.readyState);
+
         } catch (e) {}
+
       };
+
+      // ===== BUGS #545：开屏这一屏要自己说清「还在载入」=====
+
+
+
+      // 外置那两件合并件（dist/app.<ver>.css∶js 共约 3MB）在**换版后首访**必然 cache miss（文件名带版号＝
+
+
+
+      // 内容一变 URL 就变），弱网上这一发要好几秒到几分钟。旧写法对这段时间一句话都没有、也不给出路，
+
+
+
+      // 于是同一个成因长出两句报障：那一发 **pending** → load 不来 ⇒ gate-early 永不摘 ⇒ 纸尾那两枚钮
+
+
+
+      // （HTML 里写死的 disabled，解锁逻辑又全在外置 js 里）永远点不动 ⇒ 用户报「开屏点不了 √ 进入，
+
+
+
+      // 以为是 bug，不知道是还在加载」；那一发 **失败** → load 照发 ⇒ 3 秒兜底摘类 ⇒ 露出 .app-shell，
+
+
+
+      // 而 #chatsView 自带 .active、内容一件没渲染 ⇒ 用户报「只有主页的顶部栏，总要刷新多次」。
+
+
+
+      // 这一屏现在自己扛下那段时间，做四件事：
+
+
+
+      //   ① 屏顶细条＋纸尾百分比：按**真实到齐的件数**走（PerformanceObserver 数那两件的 responseEnd），
+
+
+
+      //      件内另用时间曲线补一段平滑——否则几十秒里条子一动不动＝看着还是卡死；只增不减，到齐即 100。
+
+
+
+      //   ② 读到底解锁 √／「确认进入」这份逻辑**内联一份**（与 js/age-gate.js 的 _ageGateUpdate 同口径，
+
+
+
+      //      改一边要改两边）：读声明那十几秒正好是载入那 3MB 的时间，读完就能勾、勾完等载入完就能进。
+
+
+
+      //   ③ 载入没完成就点「确认进入」：不再静默（旧状＝disabled 的钮，点了没反应），改口告知还在载入百分之几。
+
+
+
+      //   ④ 载入没完成 ⇒ **不摘类**（旧摘类＝正把人推进空壳页），改在开屏上给一枚「重新载入」。
+
+
+
+      var BOOT_FILES = ['dist/app.v10.8.8.css','dist/app.v10.8.8.js'];
+
+
+
+      var HINT_OK_EARLY = '— 已读完，勾选确认后进入 —';   // 与 js/age-gate.js 的 AGE_HINT_OK 同一句，改一处要改两处
+
+
+
+      var SLOW_MS = 25000, TICK_MS = 300, _bfT0 = Date.now();
+
+
+
+      var _bfGot = {}, _bfDone = 0, _bfSeg = _bfT0, _bfPct = 0, _bfEl = {}, _bfHook = 0, _bfState = '';
+
+
+
+      for (var _bfi = 0; _bfi < BOOT_FILES.length; _bfi++) _bfGot[_bfi] = 0;
+
+
+
+      // 真实件数只认这一页自己引的那两件。responseStatus 为 0 是老内核不给这一位（同源，不会是跨域遮的），也当成功；
+
+
+
+      // 反过来 503／404 那些**不算到齐**＝否则失败那一趟会被画成 100%，正好把最该说话的那一态糊过去。
+
+
+
+      try {
+
+
+
+        var _bfPO = new PerformanceObserver(function (list) {
+
+
+
+          var es = list.getEntries();
+
+
+
+          for (var k = 0; k < es.length; k++) {
+
+
+
+            var en = es[k];
+
+
+
+            if (en.responseStatus !== 0 && (en.responseStatus < 200 || en.responseStatus >= 300)) continue;
+
+
+
+            for (var j = 0; j < BOOT_FILES.length; j++) if (en.name.indexOf(BOOT_FILES[j]) >= 0) _bfGot[j] = 1;
+
+
+
+          }
+
+
+
+        });
+
+
+
+        _bfPO.observe({ type: 'resource', buffered: true });
+
+
+
+      } catch (_bfe1) {}
+
+
+
+      function _bfQ(id) { if (!_bfEl[id]) _bfEl[id] = document.getElementById(id); return _bfEl[id]; }
+
+
+
+      function _bfCount() { var n = 0; for (var i = 0; i < BOOT_FILES.length; i++) n += _bfGot[i]; return n; }
+
+
+
+      function _bfPaint() {
+
+
+
+        var pw = (Math.round(_bfPct * 10) / 10) + '%';
+
+
+
+        var bi = _bfQ('ageGateBarIn'), li = _bfQ('ageGateLoadBar'), tt = _bfQ('ageGateLoadTxt');
+
+
+
+        if (bi) bi.style.width = pw;
+
+
+
+        if (li) li.style.width = pw;
+
+
+
+        if (!tt) return;
+
+
+
+        if (_bfState === 'wait') return;      // 那句「还在载入 X%」正在占着，别被覆盖掉
+
+
+
+        var total = BOOT_FILES.length, n = _bfDone, ms = Date.now() - _bfT0;
+
+
+
+        if (_bfState === 'fail') { tt.textContent = '载入没完成（' + n + '/' + total + ' 件）· 网络慢或断了'; return; }
+
+
+
+        if (n >= total) { tt.textContent = '载入完成 · 共 ' + total + ' 件'; return; }
+
+
+
+        if (ms > SLOW_MS) { tt.textContent = '还在载入 ' + Math.round(_bfPct) + '%（网络有点慢，' + n + '/' + total + ' 件）'; return; }
+
+
+
+        tt.textContent = '正在载入 ' + Math.round(_bfPct) + '%（' + n + '/' + total + ' 件）';
+
+
+
+      }
+
+
+
+      function _bfTick() {
+
+
+
+        _bfHookUp();
+
+
+
+        if (!BOOT_FILES.length) return;
+
+
+
+        var n = _bfCount();
+
+
+
+        if (n > _bfDone) { _bfDone = n; _bfSeg = Date.now(); }
+
+
+
+        // 件内那段：8 秒时间常数、最多补到该段的 0.9（剩 0.1 留给真到齐那一跳）。只有两件时条子的动感全靠它
+
+
+
+        var seg = Math.max(1, Date.now() - _bfSeg);
+
+
+
+        var p = (_bfDone + 0.9 * (1 - Math.exp(-seg / 8000))) / BOOT_FILES.length * 100;
+
+
+
+        if (_bfDone >= BOOT_FILES.length) p = 100;
+
+
+
+        if (p > 99.4) p = 99.4;
+
+
+
+        if (p < _bfPct) p = _bfPct;            // 只增不减（网络抖一下不会让条子倒回去）
+
+
+
+        _bfPct = p;
+
+        // 排障读数（本站口径：失败不许静默）：这三枚让人在控制台一眼看出「卡在第几件∶条子画到几」
+        try { window.__bootPct = Math.round(_bfPct); window.__bootDone = _bfDone; window.__bootTotal = BOOT_FILES.length; } catch (_bfe0) {}
+
+
+        _bfPaint();
+
+
+
+      }
+
+
+
+      // 读到底解锁 √／「确认进入」＋两枚钮的点击，全部内联一份，不依赖外置件。外置件到齐后 js/age-gate.js
+
+
+
+      // 自己那一份也会绑一遍——两边写的是同样几行、结果是幂等的，谁先到谁先画，谁也不清对方的账。
+
+
+
+      function _bfHookUp() {
+
+
+
+        if (_bfHook || !BOOT_FILES.length) return;
+
+
+
+        var g = document.getElementById('ageGate');
+
+
+
+        if (!g || !document.getElementById('ageGateEnter')) return;
+
+
+
+        _bfHook = 1;
+
+
+
+        var sc = g.querySelector('.ag-scroll'), ck = _bfQ('ageGateCheck'), btn = _bfQ('ageGateEnter'), hint = _bfQ('ageGateHint');
+
+
+
+        var unlock = function () {
+
+
+
+          if (!sc || g.classList.contains('readok')) return;
+
+
+
+          if (sc.scrollHeight - sc.scrollTop - sc.clientHeight > 8) return;
+
+
+
+          g.classList.add('readok');
+
+
+
+          if (ck) ck.disabled = false;
+
+
+
+          if (ck && btn && ck.checked) btn.disabled = false;
+
+
+
+          if (hint) hint.textContent = HINT_OK_EARLY;
+
+
+
+        };
+
+
+
+        if (sc) sc.addEventListener('scroll', unlock, { passive: true });
+
+
+
+        window.addEventListener('resize', unlock);
+
+
+
+        if (ck) ck.addEventListener('change', function () { if (btn) btn.disabled = !ck.checked; });
+
+
+
+        if (btn) btn.addEventListener('click', function () {
+
+
+
+          if (window.__ageGateBound) return;    // 外置件已接管＝它自己那一份会走进入流程，这里不插手
+
+
+
+          var tt = _bfQ('ageGateLoadTxt'); if (!tt) return;
+
+
+
+          _bfState = 'wait';
+
+
+
+          tt.textContent = '还在载入 ' + Math.round(_bfPct) + '%（载入完才能进去）';
+
+
+
+          setTimeout(function () { if (_bfState === 'wait') _bfState = ''; }, 1800);
+
+
+
+        });
+
+
+
+        var rt = _bfQ('ageGateLoadRetry');
+
+
+
+        if (rt) rt.addEventListener('click', function () { _bfRefetch(); });
+
+
+
+      }
+
+
+
+      // 载入没完成：旧写法在这里摘 gate-early＝把人推进「有顶栏没内容」的空壳页（报②那一屏）。现在留在这屏上：
+
+
+
+      // 它本来就画全了，还多一句「载入没完成」＋一枚重新载入。#021·#111 那族「不许把人锁死」的原意照旧守着：
+
+
+
+      // 开屏那一页真不在（DOM 缺件）时才走老路摘类放人——那时留在这里也没有任何东西可看。
+
+
+
+      function _bfFail(why) {
+
+
+
+        if (_bfState === 'fail' || !BOOT_FILES.length) return;
+
+
+
+        if (!document.getElementById('ageGate')) { release(why); return; }
+
+
+
+        _bfState = 'fail';
+
+
+
+        var g = document.getElementById('ageGate'); if (g) g.classList.add('bootfail');
+
+
+
+        var rt = _bfQ('ageGateLoadRetry'); if (rt) rt.hidden = false;
+
+
+
+        try {
+
+
+
+          console.warn('[言字卡] 开屏载入没完成（' + why + '）· ' + _bfDone + '/' + BOOT_FILES.length +
+
+
+
+            ' 件 · 已等 ' + (Date.now() - _bfT0) + 'ms · readyState=' + document.readyState);
+
+
+
+        } catch (_bfe2) {}
+
+
+
+        _bfPaint();
+
+
+
+      }
+
+
+
+      // 重新载入：先把 index 与那两件用长超时自己拉下来落进缓存（与 js/sw.js 共用同一本账 ordinal-nav∶ordinal-code，
+
+
+
+      // 页面与 SW 用同一个 CacheStorage，所以这一趟落的东西下次导航 SW 直接命中），再换址重载。
+
+
+
+      // 换址（?v=时间戳）绕开 HTTP 缓存与 github.io 那 10 分钟边缘缓存（#415 那一族）。
+
+
+
+      // 落盘这一趟**不等 SW**：iOS 会冻结空闲的 SW，首条消息常常没人收（#1047 那个形状）。
+
+
+
+      var _bfBusy = 0;
+
+
+
+      function _bfRefetch() {
+
+
+
+        if (_bfBusy) return;
+
+
+
+        _bfBusy = 1;
+
+
+
+        var rt = _bfQ('ageGateLoadRetry');
+
+
+
+        var base = String(location.href).split('#')[0].split('?')[0].replace(/index\.html$/, '');
+
+
+
+        var urls = [base + 'index.html'], i;
+
+
+
+        for (i = 0; i < BOOT_FILES.length; i++) urls.push(base + BOOT_FILES[i]);
+
+
+
+        var go = function () {
+
+
+
+          if (_bfBusy > 1) return;
+
+
+
+          _bfBusy = 2;
+
+
+
+          if (rt) rt.textContent = '正在重新载入…';
+
+
+
+          try { location.replace(base + '?v=' + Date.now()); } catch (_bfe3) { try { location.reload(); } catch (_bfe4) {} }
+
+
+
+        };
+
+
+
+        if (typeof fetch !== 'function' || typeof caches === 'undefined') { go(); return; }
+
+
+
+        var left = urls.length;
+
+
+
+        var one = function () { if (--left <= 0) go(); };
+
+
+
+        for (i = 0; i < urls.length; i++) {
+
+
+
+          (function (u, isNav) {
+
+
+
+            fetch(u, { cache: 'reload' }).then(function (r) {
+
+
+
+              if (!r || !r.ok) { one(); return; }
+
+
+
+              return r.clone().text().then(function (tx) {
+
+
+
+                // 截断的不许落盘（mochi #134 同族）：把残缺固化进缓存＝用户永远卡在那个残缺版
+
+
+
+                if (tx.length >= (isNav ? 20000 : 50000)) {
+
+
+
+                  caches.open(isNav ? 'ordinal-nav' : 'ordinal-code').then(function (c) { c.put(u, r); }).then(one, one);
+
+
+
+                } else { one(); }
+
+
+
+              }, function () { one(); });
+
+
+
+            }, function () { one(); });
+
+
+
+          })(urls[i], i === 0);
+
+
+
+        }
+
+
+
+        setTimeout(go, 60000);   // 60 秒硬上限：这三件在弱网下本就要几分钟，等满了也照重载（能落几件是几件）
+
+
+
+      }
+
+
+
+      setInterval(_bfTick, TICK_MS);
+
+
+
+
+
+
+
       timer = setInterval(function () {
+
         waited += STEP_MS;
+
         if (window.__ageGateBound) { clearInterval(timer); return; }
+
         // 常态放人只认这一条：网络已经到齐（load 已过＝全部 defer／合并件都**尝试完**了，成功失败都算），
+
         // 而公告页还没接管。三种真死都从这里走：整件没到（离线／404／顶层抛错＝__jsAlive 不在）、
+
         // 跑到中段卡住（__jsAlive 在而 bound 不在）、DOM 缺宿主（js/age-gate.js 那两条 !check||!btn 的 return）。
-        if (waited >= DEAD_MS && document.readyState === 'complete') { release('网络到齐而公告未接管'); return; }
-        // 绝对上限仍问一句 bound（兜底只在公告真没接管时才有权摘它）：到这儿＝load 一直没来＝连接卡死。
-        if (waited >= CEIL_MS) { release('load 一直没来（连接卡死）'); }
+
+        // #545：旧写法「到齐而公告未接管 ⇒ 摘类」。摘类是这一族报障的放大器：摘完露出 .app-shell，
+
+        // 而里面的内容要等 JS 渲染——用户看到的就是「有顶栏、有底栏、中间全空」那一屏（报②）。
+
+        // 现在改成不摘，留在这屏上把「载入没完成」说清楚并给出重载入口（见上方 _bfFail）。
+
+        if (waited >= DEAD_MS && document.readyState === 'complete') { clearInterval(timer); _bfFail('网络到齐而公告未接管'); return; }
+
+        // 绝对上限仍问一句 bound（兜底只在公告真没接管时才有权过问）：到这儿＝load 一直没来＝连接卡死。
+
+        if (waited >= CEIL_MS) { clearInterval(timer); _bfFail('等满 ' + (CEIL_MS / 1000) + ' 秒还没到齐'); }
+
       }, STEP_MS);
+
     } catch (e) {}
+
   })();
+
   </script>
+
   <style>
+
   /* 首屏关键样式兜底（薄入口 #431/#474 的后遗症·手机端启动「乱码 / UI 错位 / 飞的 / 莫名跳进内部页」）：
+
      薄入口把 36 件 css 并成一枚外置 <link>（dist/app.<ver>.css），而「只画开屏公告、把其余视图与壳全部藏掉」
+
      那几条 display 规则全住在这枚外置件里——css/age-gate.css 的 #ageGate{display:none}∶html.gate-early #ageGate{display:flex}、
+
      css/theme.css 的 .view{display:none}∶.app-shell{display:flex}。外置件到齐之前（手机端 github.io 弱网冷启动要好几秒；
+
      或 Service Worker 对代码件回了个失败的响应让这张样式表整个不生效），<body> 里内联的全部片段会按浏览器默认样式一并铺开
+
      ＝用户报的那一幕。桌面有 HTTP 缓存∶本地 file:// 秒回，所以复现不出，但「多台不同型号手机」必现——这是形状问题不是机型问题。
+
      下面这几条刻意只用最古老、各内核（停更的国产 WebView∶Android WebView∶Edge）都认的属性（用 top/right/bottom/left 长写法而非 inset），
+
      且与外置件里的同名规则取同样的选择器·同样的属性——外置件加载后按「源序在后」逐条胜出覆盖这段＝正常机型观感一字不变，
+
      只有外置件缺席/未到的那一帧才由它兜住「先看见的就是全屏的免责声明、别的都不漏」。这段只在 gate-early 那一帧生效，
+
      用户点「确认进入」后 gate-early 被摘∶#ageGate 落回 display:none＝不挡桌面。 */
+
   #ageGate{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;background:#fff;flex-direction:column}
+
+
+
+  /* #545：外置件没到齐时，<body> 里内联的那一整壳会先铺出一屏「有顶栏∶有底栏∶中间全空」——
+
+
+
+     因为 html/view-chats.html 里 #chatsView 自带 class="view active"（＝不等 JS 就已经显示），
+
+
+
+     而里面的内容要等 JS 渲染才有。旧写法只藏了 .view，顶栏照样露在外面＝用户报的「只有主页的顶部栏」。
+
+
+
+     现在 gate-early 那一帧把**整壳**藏掉：加载中屏上就只有开屏这一页＋它自己那根进度条。
+
+
+
+     特异性（0,2,1）压过外置件里的 .app-shell{display:flex}（0,1,0）＝外置件到了也还是藏着，
+
+
+
+     只有 gate-early 被摘（用户点「确认进入」）才放出来，那时 JS 早已把内容渲染完了。 */
+
+
+
+  html.gate-early .app-shell{display:none}
+
   html.gate-early #ageGate{display:flex}
+
+
+
   .ag-scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
+
+
+
+  /* #545 开屏加载进度（这两件的形制定在 css/age-gate.css，这里只兜外置件没到／没生效的那一帧，
+
+
+
+     所以一律用最古老的属性与固定色值：top/right/left 长写法而非 inset、#efeeed 而非 color-mix。
+
+
+
+     外置件到了按「源序在后」逐条胜出＝正常机型观感一字不变） */
+
+
+
+  .ag-bar{position:absolute;top:0;right:0;left:0;height:2px;background:#efeeed;z-index:2}
+
+
+
+  .ag-bar>i{display:block;height:100%;width:0;background:#575652}
+
+
+
+  .ag-load{margin:0 0 12px}
+
+
+
+  .ag-load-bar{height:3px;background:#efeeed}
+
+
+
+  .ag-load-bar>i{display:block;height:100%;width:0;background:#575652}
+
+
+
+  .ag-load-txt{font-size:11px;color:#5b5a58;text-align:center;letter-spacing:.3px;margin-top:8px}
+
+
+
+  .ag-load-btn{display:block;width:100%;min-height:44px;margin-top:9px;padding:10px 12px;border-radius:15px;border:1px solid #cdcbc9;background:#fff;color:#1c1917;font-size:12.5px;line-height:1.5}
+
   </style>
-  <link rel="stylesheet" href="dist/app.v10.6.8.css">
-  <script defer src="dist/app.v10.6.8.js"></script>
+
+  <link rel="stylesheet" href="dist/app.v10.8.8.css">
+  <script defer src="dist/app.v10.8.8.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
+    <!-- #545 开屏加载进度（屏顶细条）：外置的两件合并件没到齐之前，这一条是屏上唯一在动的东西。
+         它 absolute 于 #ageGate（position:fixed 全屏），不占 flex 流、不挡纸面任何一行。 -->
+    <div class="ag-bar" id="ageGateBar"><i id="ageGateBarIn"></i></div>
     <div class="ag-scroll">
       <div class="ag-inner">
         <div class="ag-ver" id="ageGateVer"></div><!-- 版号由 js/app.js 启动时填 window.APP_VER -->
@@ -142,6 +903,13 @@
           <div class="ag-row"><span class="ag-no">11</span><div class="ag-rowc"><h4>条款可分割 · 最后更新 2026-10-13</h4><p>本页任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。</p></div></div>
         </div>
         <div class="ag-foot">
+          <!-- #545 开屏加载进度（纸尾状态块）：由 html/head.html 那段首屏前置脚本直接写（不依赖外置 js），
+               载入没完成时这一块就是「为什么现在还点不了」的那一句话，载入失败时它变成重试入口。 -->
+          <div class="ag-load" id="ageGateLoad">
+            <div class="ag-load-bar"><i id="ageGateLoadBar"></i></div>
+            <div class="ag-load-txt" id="ageGateLoadTxt">正在载入…</div>
+            <button type="button" class="ag-load-btn" id="ageGateLoadRetry" hidden>网络慢，还没载入完 · 点这里重新载入</button>
+          </div>
           <div class="ag-hint" id="ageGateHint">— 请阅读至底部后勾选 —</div>
           <label class="ag-check" for="ageGateCheck">
             <input type="checkbox" id="ageGateCheck" disabled>
@@ -499,6 +1267,7 @@
           <button class="cards-menu-item" id="plusImportJson">批量导入字卡（JSON）</button>
           <button class="cards-menu-item" id="plusImportTxt">批量导入字卡（TXT）</button>
           <button class="cards-menu-item" id="plusAddBatch">＋ 批量添加字卡</button>
+          <button class="cards-menu-item" id="plusAddImg">＋ 添加表情包 / 图片</button>
           <button class="cards-menu-item" id="plusNewGroup">新建分组</button>
           <div class="cards-modal-hint">导入会自动按文件里的分组建好组，不用先手动建组；想先建组再逐张加也行</div>
         </div>
@@ -689,6 +1458,7 @@
         <div class="fs-sheet-body">
           <div class="mm-scopes" id="mmOwnersSet"></div>
           <p class="fs-sheet-note" id="mmScopeNote"></p>
+          <p class="fs-sheet-note" id="mmPendingNote" hidden></p>
           <div class="setting-subhead">TA 自己发圈</div>
           <label class="fs-sheet-chk"><input type="checkbox" id="mmPostEnabled">会自己发动态（关掉＝这位不再出现在你的朋友圈里）</label>
           <div class="field-row"><label>到点就发的概率（%）<input type="text" id="mmPublishProb" min="0" max="100" inputmode="numeric"></label><label>每天最多（条）<input type="text" id="mmDailyMax" min="0" max="99" inputmode="numeric"></label></div>
@@ -700,13 +1470,16 @@
           <div class="field-row"><label>带表情包（%）<input type="text" id="mmStickerProb" min="0" max="100" inputmode="numeric"></label><label>带图片（%）<input type="text" id="mmImageProb" min="0" max="100" inputmode="numeric"></label></div>
           <div class="setting-subhead">评论怎么拼</div>
           <div class="field-row"><label>一条评论用多张字卡（%）<input type="text" id="mmMultiCardProb" min="0" max="100" inputmode="numeric"></label><label>最多几张<input type="text" id="mmMaxCardsInComment" min="1" max="20" inputmode="numeric"></label></div>
-          <div class="field-row"><label>评论里带表情包（%）<input type="text" id="mmCommentStickerProb" min="0" max="100" inputmode="numeric"></label><div></div></div>
+          <div class="field-row"><label>评论里带表情包（%）<input type="text" id="mmCommentStickerProb" min="0" max="100" inputmode="numeric"></label><label>带图片（%）<input type="text" id="mmCommentImageProb" min="0" max="100" inputmode="numeric"></label></div>
+          <div class="field-row"><label>带颜文字（%）<input type="text" id="mmCommentKaomojiProb" min="0" max="100" inputmode="numeric"></label><label>带 emoji（%）<input type="text" id="mmCommentEmojiProb" min="0" max="100" inputmode="numeric"></label></div>
           <div class="setting-subhead">你互动之后</div>
           <div class="field-row"><label>点赞概率（%）<input type="text" id="mmLikeProb" min="0" max="100" inputmode="numeric"></label><label>最快（秒）<input type="text" id="mmLikeMin" min="1" max="3600" inputmode="numeric"></label></div>
           <div class="field-row"><label>最慢（秒）<input type="text" id="mmLikeMax" min="1" max="3600" inputmode="numeric"></label><label>你评论后他回应（%）<input type="text" id="mmCommentProb" min="0" max="100" inputmode="numeric"></label></div>
           <div class="field-row"><label>回应最快（秒）<input type="text" id="mmCommentMin" min="1" max="3600" inputmode="numeric"></label><label>回应最慢（秒）<input type="text" id="mmCommentMax" min="1" max="3600" inputmode="numeric"></label></div>
           <div class="field-row"><label>你回复后他回应（%）<input type="text" id="mmReplyProb" min="0" max="100" inputmode="numeric"></label><label>回应最快（秒）<input type="text" id="mmReplyMin" min="1" max="3600" inputmode="numeric"></label></div>
           <div class="field-row"><label>回复最慢（秒）<input type="text" id="mmReplyMax" min="1" max="3600" inputmode="numeric"></label><label>你赞他之后他回赞（%）<input type="text" id="mmReturnLikeProb" min="0" max="100" inputmode="numeric"></label></div>
+          <div class="field-row"><label>你发圈后他来评论（%）<input type="text" id="mmTaCommentPostProb" min="0" max="100" inputmode="numeric"></label><div></div></div>
+          <p class="fs-sheet-note">「你发圈后他来评论」是另一件事：填 0＝他不请自来地评论你发的东西（出厂就这样）；填了数＝你每发一条，他都有这个概率来说一句。</p>
           <div class="setting-subhead">TA 收藏你的动态</div>
           <div class="field-row"><label>概率（%）<input type="text" id="mmTaCollectProb" min="0" max="100" inputmode="numeric"></label><div></div></div>
           <label class="fs-sheet-chk"><input type="checkbox" id="mmPopup">有新动静时提醒我（前台弹层与切后台的系统通知都归这一格）</label>
