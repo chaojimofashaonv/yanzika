@@ -83,8 +83,23 @@
     } catch (e) {}
   })();
   </script>
-  <link rel="stylesheet" href="dist/app.v10.3.0.css">
-  <script defer src="dist/app.v10.3.0.js"></script>
+  <style>
+  /* 首屏关键样式兜底（薄入口 #431/#474 的后遗症·手机端启动「乱码 / UI 错位 / 飞的 / 莫名跳进内部页」）：
+     薄入口把 36 件 css 并成一枚外置 <link>（dist/app.<ver>.css），而「只画开屏公告、把其余视图与壳全部藏掉」
+     那几条 display 规则全住在这枚外置件里——css/age-gate.css 的 #ageGate{display:none}∶html.gate-early #ageGate{display:flex}、
+     css/theme.css 的 .view{display:none}∶.app-shell{display:flex}。外置件到齐之前（手机端 github.io 弱网冷启动要好几秒；
+     或 Service Worker 对代码件回了个失败的响应让这张样式表整个不生效），<body> 里内联的全部片段会按浏览器默认样式一并铺开
+     ＝用户报的那一幕。桌面有 HTTP 缓存∶本地 file:// 秒回，所以复现不出，但「多台不同型号手机」必现——这是形状问题不是机型问题。
+     下面这几条刻意只用最古老、各内核（停更的国产 WebView∶Android WebView∶Edge）都认的属性（用 top/right/bottom/left 长写法而非 inset），
+     且与外置件里的同名规则取同样的选择器·同样的属性——外置件加载后按「源序在后」逐条胜出覆盖这段＝正常机型观感一字不变，
+     只有外置件缺席/未到的那一帧才由它兜住「先看见的就是全屏的免责声明、别的都不漏」。这段只在 gate-early 那一帧生效，
+     用户点「确认进入」后 gate-early 被摘∶#ageGate 落回 display:none＝不挡桌面。 */
+  #ageGate{display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;background:#fff;flex-direction:column}
+  html.gate-early #ageGate{display:flex}
+  .ag-scroll{flex:1 1 auto;min-height:0;overflow-y:auto}
+  </style>
+  <link rel="stylesheet" href="dist/app.v10.6.8.css">
+  <script defer src="dist/app.v10.6.8.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -192,10 +207,10 @@
         <div class="chat-form-head"><strong id="chatFormTitle">添加联系人</strong><button type="button" class="chat-form-close" id="chatFormClose" aria-label="关闭">×</button></div>
         <label class="chat-form-label">名字<input id="chatFormName" maxlength="20" placeholder="给 TA 起个名字"></label>
         <!-- 固定昵称（2026-10-13 BUGS #346）：聊天以外的功能（字卡库/信箱/世界感知/纪念日/主动消息/…）读这一格。
-             与上面那格分开的理由写在下头那句里——「头像昵称」里换的聊天昵称可能换得勤，其他功能的牌子不跟着翻。
-             留空＝跟随上面这个名字（fixedNameOf 的回落口径，db.js 同一句）。 -->
+             与上面那格分开的理由写在下头那句里——「头像昵称」里换的聊天昵称可能换得勤：这一格填了就一直是它、
+             其他功能的牌子不跟着翻；留空＝跟着名字走（fixedNameOf 的回落口径：chatName→name，db.js 同一句）。 -->
         <label class="chat-form-label">固定昵称<input id="chatFormFixed" maxlength="20" placeholder="其他功能里的名字 · 留空＝同上"></label>
-        <p class="chat-form-note" id="chatFormFixedNote">上面这个名字用在聊天里，之后在「头像昵称」里还能换（可能换得勤）；这一格给字卡库、信箱等其他功能用，不随聊天昵称变。留空＝跟上面一样。</p>
+        <p class="chat-form-note" id="chatFormFixedNote">上面这个名字用在聊天里，之后在「头像昵称」里还能换（可能换得勤）；这一格给字卡库、信箱等其他功能用——填了就一直用它、不跟着聊天里的名字翻；留空＝其他功能跟着名字走。</p>
         <div class="chat-form-label" id="chatFormMembersRow" hidden>群成员（勾选要拉入的联系人，TA 们会在群里随机发言）<div class="member-pick-list" id="chatFormMemberList"></div><p class="member-pick-empty" id="chatFormMemberEmpty" hidden>还没有可拉入的联系人，先「添加联系人」再建群</p></div>
         <div class="chat-form-row"><button type="button" class="soft-btn" id="chatFormCancel">取消</button><button type="button" class="primary-btn" id="chatFormOk">完成</button></div>
       </div></div>
@@ -257,6 +272,13 @@
           <div class="g-hi">更多</div>
           <div class="g-sub" id="moreVer"></div><!-- 版号由 js/app.js 启动时填 window.APP_VER（bump 三锚之一） -->
         </div>
+        <!-- 页头右侧两枚动作＝「自定义」（#tabbarEntry）＋「使用大全」（#hubEntry）。两枚并排裹在 .mg-acts 里：
+             不裹的话 .home-greet 的 justify-content:space-between 会把先来的那枚推到页头正中（左题头∶中按钮∶右按钮）。 -->
+        <div class="mg-acts">
+        <!-- 2026-10-18 新增：底部导航那一条自此由用户自己定。入口就是这一枚（与「使用大全」同址＝不新增第三处）。
+             它不带 data-view、也不是一行直达：点它开的是那一块贴底面板（#tbMask，住在 html/sheet.html＝app-shell 末尾，
+             与 appModal／cardLinesMask 同址）。名字·线稿·勾选全在那一块面板里由 js/hub.js 一处现画，本页只放这一枚壳。 -->
+        <button type="button" class="more-hub" id="tabbarEntry">自定义</button>
         <!-- 整册目录的入口（id 与 data-view 一字未动，仍是 #hubEntry ＋ data-view="hub"＝哨兵 #044 钉的那对）。
              2026-10-13 二批：它原先是这一列的**最后一行**（BUGS #300 那批由设置页那一格搬来），本批改成页头这一枚
              ＝目录不列它自己（前面每一行本身都是它的一项，目录与条目混摆一层＝读不出层级，这正是「太乱」的一半）。
@@ -266,6 +288,7 @@
              页头的一个动作——align-self:stretch 让命中区天然 ≥44，不必垫伪元素（垫了会去抢下面那一排 tag 的点击）。
              导航仍走 settings.js 那条加载期一次性绑定的 [data-view]（不是委托——js/hub.js 先加载，行早于绑定就存在），零新 JS。 -->
         <button type="button" class="more-hub" id="hubEntry" data-view="hub">使用大全</button>
+        </div>
       </div>
       <!-- 一排组 tag ∶ 当前那一组的直达行＝两样都由 js/hub.js 从 HUB_GROUPS 现派生（册子里带 more 那一格的行才上这一列）。
            本页自此不再自己抄一份名单：新增∶改名∶删一个功能只在册子那一处改（用户定档「两处不再各抄一份」）。 -->
@@ -944,12 +967,12 @@
               <button type="button" class="mate-name-edit" id="mateNameEdit" aria-label="修改昵称"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
             </div>
             <!-- 固定昵称（2026-10-13 BUGS #346）：聊天以外的功能（字卡库/信箱/世界感知/纪念日/主动消息/写信统计/邀请/玩家按人设置）
-                 读这一格。与上面那格分开＝「头像昵称」里换的聊天昵称可能换得勤，其他功能的牌子不跟着翻。留空＝跟随名字。 -->
+                 读这一格。与上面那格分开＝「头像昵称」里换的聊天昵称可能换得勤：这一格填了就一直是它、其他功能的牌子不跟着翻；留空＝其他功能跟着上面这枚名字走（BUGS #346 立“填了就钉住”、#508 收“留空就跟随”）。 -->
             <label class="mate-fixed-row"><span class="mate-fixed-cap">固定昵称</span><input id="fixedNameInput" maxlength="20" placeholder="其他功能用 · 留空＝同名字" aria-label="固定昵称（其他功能用）"></label>
           </div>
           <button type="button" class="mate-go" id="mateGoChat">去聊天</button>
         </div>
-        <p class="data-note mate-fixed-note">上面「名字」是聊天里用的，之后在「头像昵称」里还能换（可能换得勤）；「固定昵称」给字卡库、信箱、世界感知等其他功能用，不随聊天昵称变。两处各改各的，留空＝跟随名字。</p>
+        <p class="data-note mate-fixed-note">上面「名字」是聊天里用的，之后在「头像昵称」里还能换（可能换得勤）；「固定昵称」给字卡库、信箱、世界感知等其他功能用——填了就一直用它、不跟着上面那个名字翻；留空＝其他功能跟着「名字」走。</p>
         <!-- 切换 TA（2026-10-15 用户「设置里【关于某个 TA 的设置】无法切换联系人」）：从设置页那行／聊天右上角
              进入本页，编辑对象恒＝当前会话那一位；旧写法单聊态没有任何切换入口（#mateScope 那排 chips 只在群态
              出成员），想改另一位只能退回首页点别的会话再进来。这枚钮补一个整页可见的「切哪一位 TA」入口＝点它
@@ -1115,7 +1138,7 @@
               <div class="ap-btnrow"><button type="button" class="ap-btn pri" id="customBubbleCssApply">应用气泡 CSS</button><button type="button" class="ap-btn" id="customBubbleCssUpload">选择 .css 文件</button><button type="button" class="ap-btn" id="customBubbleCssClear">清空</button></div>
               <input type="file" id="customBubbleCssInput" accept=".css,text/css" hidden>
               <div class="ap-frow"><span class="ap-status" id="customBubbleCssStatus">未加载</span><button type="button" class="ap-btn sm" id="customBubbleCssRemove">移除</button></div>
-              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡（也可点「选择 .css 文件」把一份 CSS 读进来）。常用类名：.message 一条消息（加 .mine 是我方）· .bubble 气泡 · .mini-avatar 小头像 · .message-meta 时间小字 · .day-label 日期签——**别的工程（如 mochi）的类名在这打不中，得按上面这套重写**。写好的样式整段自动加权，盖过配色（含对方气泡底色）与形状档位，不用再手写 !important；@keyframes 里的动效也能正常写。写错不生效也不会弄坏页面，清空即可回头。</p>
+              <p class="data-note">进阶功能：懂 CSS 再写，只作用于这一位 TA 的气泡（也可点「选择 .css 文件」把一份 CSS 读进来）。常用类名：.message 一条消息（加 .mine 是我方）· .bubble 气泡 · .mini-avatar 小头像 · .message-meta 时间小字 · .day-label 日期签——**别的工程（如 mochi）的类名在这打不中，得按上面这套重写**。写好的样式整段自动加权，盖过配色（含对方气泡底色）与形状档位，不用再手写 !important；以 .bubble 收尾的那条会自动绕开两张互动卡（问问TA ∶ TA 想问你——它们卡面永远走中性白，写成黑底白字会把卡里的字糊掉），要单独定制那两张就直写 .ask-card ∶ .taask-card；@keyframes 里的动效也能正常写。写错不生效也不会弄坏页面，清空即可回头。</p>
             </div>
           </div>
         </div>
@@ -1154,10 +1177,12 @@
             <div class="check-row"><label class="check-item"><input type="checkbox" id="enterSend"><span>回车键发送消息</span></label></div>
             <div class="check-row"><label class="check-item"><input type="checkbox" id="batchSend"><span>批量发送<span style="display:block;font-size:11px;color:var(--muted)">聊天输入栏显示「批量发送」按钮：面板里逐项添加文字 / 表情包 / 图片，每一项就是一条消息，可删可清空；点「发送全部」按顺序一次发出，TA 等这批说完才回。</span></span></label></div>
             <div class="setting-subhead">已读不回与回复速度</div>
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="rnOn"><span>允许「已读不回」<span style="display:block;font-size:11px;color:var(--muted)">关掉＝TA 每一轮都会回你正文，下面那格概率不再生效（与把它填 0 一样，只是这里按一下就行）。</span></span></label></div>
             <label id="rnProbLab">已读不回概率（%）<input type="text" id="rnProb" min="0" max="100" inputmode="numeric"></label>
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="rnByState"><span>按 TA 此刻在做什么浮动「已读不回」<span style="display:block;font-size:11px;color:var(--muted)">只动上面那一格：TA 那边空闲时把概率砍一半，忙碌 · 忙着 · 休息 · 睡着依次抬上去（睡着最狠，×3），读不到时不浮动。与「话没挤过来」那格各调各的，也与上面「按 TA 此刻在做什么浮动间隔」是两枚开关——关掉一个，另一个照旧。填 0 乘多少都是 0。</span></span></label></div>
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="strayOn"><span>允许「话没挤过来」<span style="display:block;font-size:11px;color:var(--muted)">关掉＝TA 每一轮都会回正文，不会只落一行居中小字。</span></span></label></div>
             <label id="strayProbLab">话没挤过来的概率（%）<input type="text" id="strayProb" min="0" max="100" inputmode="numeric"></label>
             <p class="data-note">命中那一轮 TA 不回你正文，只在聊天里落一行居中小字「有句话没挤过两个世界」；0＝从不。它不替 TA 编一句发不出来的话＝走系统小字，不走气泡。</p>
-            <div class="check-row"><label class="check-item"><input type="checkbox" id="rnByState"><span>按 TA 此刻在做什么浮动「已读不回」<span style="display:block;font-size:11px;color:var(--muted)">只动上面那一格：TA 那边空闲时把概率砍一半，忙碌 · 忙着 · 休息 · 睡着依次抬上去（睡着最狠，×3），读不到时不浮动。与「话没挤过来」那格各调各的，也与上面「按 TA 此刻在做什么浮动间隔」是两枚开关——关掉一个，另一个照旧。填 0 乘多少都是 0。</span></span></label></div>
             <label>最短回复（秒）<input type="text" id="rsMin" min="1" max="3600" inputmode="numeric"></label>
             <label>最长回复（秒）<input type="text" id="rsMax" min="1" max="3600" inputmode="numeric"></label>
             <div class="setting-subhead">一次回话几条</div>
@@ -1361,6 +1386,25 @@
       <textarea id="cardLinesInput" class="fs-sheet-ta" rows="6" placeholder="一行一张字卡" aria-label="字卡内容，一行一张"></textarea>
       <div class="fs-sheet-note">可一次粘贴多行，一行进一张；这一组里已经有一模一样的自动跳过。</div>
       <div class="fs-sheet-acts"><button type="button" class="soft-btn" id="cardLinesYes">添加</button><button type="button" class="soft-btn" id="cardLinesNo">取消</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- tbMask：「自定义底部栏」面板（2026-10-18）。入口＝「更多」页页头那枚 #tabbarEntry（与「使用大全」并排）。
+     壳复用全站那族贴底面板 .fs-sheet-*（信箱设置∶收藏设置∶添加昵称∶加字卡四面已在用）＝一处只有一份贴底壳；
+     挂在这里（app-shell 末尾）＝与 appModal／backupRemind／cardLinesMask 同址，不为第二个入口再画一块。
+     这里只放壳：候选名单·名字·线稿·勾选状态·上限与「更多恒在」全由 js/hub.js 的 renderTabbarPanel 一处现画
+     （名字与线稿的唯一来源是 HUB_GROUPS 与栏子里出厂那四枚，本文件不抄第三份）。
+     行样式 .tb-* 在 css/more.css（这一块归「更多」页那一家）。 -->
+<div class="fs-sheet-mask" id="tbMask" hidden>
+  <div class="fs-sheet">
+    <div class="fs-sheet-bar">
+      <div class="fs-sheet-t"><span class="fs-sheet-ti">自定义底部栏</span><span class="fs-sheet-en">TABBAR</span></div>
+      <button type="button" class="fs-sheet-close" id="tbClose" aria-label="关闭">×</button>
+    </div>
+    <div class="fs-sheet-body">
+      <div class="fs-sheet-note" id="tbNote"></div>
+      <div class="tb-list" id="tbList"></div>
     </div>
   </div>
 </div>
