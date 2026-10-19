@@ -207,28 +207,35 @@ async function navWithBundle(event) {
     if (fresh && fresh.ok) text = await fresh.clone().text();
   } catch (e) { fresh = null; }
   const cached = (await nav.match(key)) || (await nav.match(navSibling(key))) || (await caches.match(key));
+  const ctext = cached ? await cached.clone().text() : '';
+
+  // #614 版本守卫：github.io 的边缘缓存（约 10 分钟）可能把**上一版**的 index.html 原样吐回来。
+  // 它引的旧 dist 件正好还在代码账本里（sweepCode 留两代）⇒ 下面的 codeHas 会判成「成套」，
+  // 旧页于是被当成最新落账、连后台补下载都不触发＝升级过的机器原地退回旧版。
+  // 判据只认 refs 里的版号：取到的那一页比账本里那一页**更旧**就不认它，直接给账本里那一份。
+  const fv = htmlVer(text), cv = htmlVer(ctext);
+  if (cached && fv && cv && fv < cv && (await codeHas(distRefs(ctext)))) return cached;
 
   if (fresh && fresh.ok && text) {
     const refs = distRefs(text);
     if (refs.length) {
       if (await codeHas(refs)) {
-        saveNav(nav, key, fresh.clone());
+        await navVerSave(nav, key, fresh.clone(), text);
         return fresh;
       }
       if (cached) {
-        const ctext = await cached.clone().text();
         const crefs = distRefs(ctext);
         if (crefs.length && (await codeHas(crefs))) {
           // 旧页成套 ⇒ 给旧页；新页那一套交给后台补（补齐了才会真正落进导航账本，见 syncNew）
-          event.waitUntil(syncNew(key, fresh.clone(), refs));
+          event.waitUntil(syncNew(key, fresh.clone(), refs, text));
           return cached;
         }
       }
-      saveNav(nav, key, fresh.clone());
-      event.waitUntil(syncNew(key, fresh.clone(), refs));
+      await navVerSave(nav, key, fresh.clone(), text);
+      event.waitUntil(syncNew(key, fresh.clone(), refs, text));
       return fresh;
     }
-    saveNav(nav, key, fresh.clone());
+    await navVerSave(nav, key, fresh.clone(), text);
     return fresh;
   }
   if (cached) return cached;
@@ -239,28 +246,62 @@ function saveNav(nav, key, res) {
   try { nav.put(key, res.clone()); nav.put(navSibling(key), res.clone()); } catch (e) {}
 }
 
+// 一页引的 dist 合并件版号（#614）：0＝这一页不是薄入口（没有可比的版号，比不了就一律放行）
+function htmlVer(html) {
+  const refs = distRefs(html || '');
+  let best = 0;
+  for (let i = 0; i < refs.length; i++) {
+    const m = /app\.(v[0-9.]+)\.(?:css|js)/.exec(refs[i]);
+    if (m) best = Math.max(best, verNum(m[1]));
+  }
+  return best;
+}
+
+// 导航账本的唯一写手（#614）：只许「同版或更新」的那一页落账，旧页盖新页一律拒。
+// 三处写手（navWithBundle ∶ syncNew ∶ UPD_PREFETCH）必须同一把尺——否则守护住门口、后门照进。
+async function navVerSave(nav, key, res, text) {
+  try {
+    const old = (await nav.match(key)) || (await nav.match(navSibling(key)));
+    if (old) {
+      const ov = htmlVer(await old.clone().text());
+      const nv = htmlVer(text);
+      if (nv && ov && nv < ov) return false;
+    }
+  } catch (e) {}
+  saveNav(nav, key, res);
+  return true;
+}
+
 // 后台把新页引的那两件拉下来落进代码账本；**两件都齐了**才把新页本身写进导航账本。
 // 只齐一半就写新页＝下次导航又变成「新页＋缺件」，用户又得再等一趟；不齐则导航账本里仍是旧页，
 // 下次打开还是那一份完整能用的，直到哪一趟补满为止（补满即换，不需要用户再做任何事）。
-async function syncNew(key, freshRes, refs) {
-  const code = await caches.open(CODE_CACHE);
-  let all = true;
-  for (const r of refs) {
-    const abs = new URL(r, self.registration.scope).href;
-    const got = await fetch(abs).then((res) => {
-      if (!res || !res.ok) return false;
-      return res.clone().text().then((t) => {
-        if (t.length < SYNC_MIN) return false;   // 截断的不许落盘（mochi #134 同族）
-        try { code.put(canon(abs), res); } catch (e) {}
-        return true;
-      });
-    }).catch(() => false);
-    if (!got) all = false;
-  }
-  if (all) {
-    const nav = await caches.open(NAV_CACHE);
-    saveNav(nav, key, freshRes);
-  }
+// #614：同一套 refs 只准有一发在飞（旧写法每次导航都新起一发，弱网上两三个 3MB 抢同一条带宽＝谁也补不齐，
+// iOS 冻一次 SW 就永远回到起点）；两件并发下，串行那一版把补包时间翻了一倍。
+let _syncSig = '', _syncJob = null;
+async function syncNew(key, freshRes, refs, text) {
+  const sig = refs.join('|');
+  if (_syncJob && _syncSig === sig) { try { await _syncJob; } catch (e) {} return; }
+  _syncSig = sig;
+  _syncJob = (async () => {
+    const code = await caches.open(CODE_CACHE);
+    const got = await Promise.all(refs.map((r) => {
+      const abs = new URL(r, self.registration.scope).href;
+      return fetch(abs).then((res) => {
+        if (!res || !res.ok) return false;
+        return res.clone().text().then((t) => {
+          if (t.length < SYNC_MIN) return false;   // 截断的不许落盘（mochi #134 同族）
+          try { code.put(canon(abs), res); } catch (e) {}
+          return true;
+        });
+      }).catch(() => false);
+    }));
+    if (got.length && got.every(Boolean)) {
+      const nav = await caches.open(NAV_CACHE);
+      await navVerSave(nav, key, freshRes, text || '');
+    }
+  })();
+  try { await _syncJob; } catch (e) {}
+  _syncJob = null;
 }
 
 async function codeCacheFirst(request) {
@@ -335,7 +376,9 @@ self.addEventListener('message', (e) => {
   (async () => {
     const nav = await caches.open(NAV_CACHE);
     const code = await caches.open(CODE_CACHE);
-    const targets = [base, base + 'index.html'];
+    const targets = [base + '?ts=' + Date.now(), base + 'index.html?ts=' + Date.now()];
+    // #614：导航那两发带查询串＝绕开 github.io 那 10 分钟边缘缓存（canon 去查询串，账本键不变），
+    // 否则「预取到的仍是边缘吐回来的上一版」会把这一条救命的通道也一起废掉。
     try {
       const m = await fetch('./asset-manifest.json', { cache: 'reload' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
       if (m && Array.isArray(m.files)) for (const f of m.files) targets.push(base + f);
@@ -344,11 +387,12 @@ self.addEventListener('message', (e) => {
       if (!res || !res.ok) return false;
       // 完整性校验（mochi #134 同理）：把截断的新版固化进缓存＝用户永远卡残缺版。
       // #431 体积闸从 500KB 降到 50KB：入口从 2.7MB 单文件瘦成 ~0.25MB，旧阈值会把合法新入口误判成截断。
-      const isNav = /\.html$/.test(u);
-      return res.clone().text().then((t) => {
+      const isNav = /\.html(\?|$)/.test(u) || /\/$/.test(new URL(u, self.registration.scope).pathname);   // #614：带 ?ts= 的与根路径那一发都算导航页
+      return res.clone().text().then(async (t) => {
         if (t.length < SYNC_MIN) return false;
         if (isNav && !/<\/html>\s*$/i.test(t.trim())) return false;
-        try { (isNav ? nav : code).put(canon(u), res); } catch (x) {}
+        if (isNav) { await navVerSave(nav, canon(u), res, t); return true; }   // #614 与导航同一写手
+        try { code.put(canon(u), res); } catch (x) {}
         return true;
       });
     }).catch(() => false);
