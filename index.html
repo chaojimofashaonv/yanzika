@@ -206,7 +206,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v12.5.5.css','dist/app.v12.5.5.js'];
+      var BOOT_FILES = ['dist/app.v12.6.6.css','dist/app.v12.6.6.js'];
 
 
 
@@ -882,8 +882,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v12.5.5.css">
-  <script defer src="dist/app.v12.5.5.js"></script>
+  <link rel="stylesheet" href="dist/app.v12.6.6.css">
+  <script defer src="dist/app.v12.6.6.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1685,20 +1685,25 @@
         <!-- 桌面背景（原「桌面美化台」浮层面板 2026-10-15 按用户「把背景图入口放进外观页」改成内联一张折叠卡）：
              控件 id 与 js/desk.js 既有一切绑定逐字不改（背暗/缩放/取景/铺到/导航薄纱/上传/预设/还原），只是宿主
              从浮层面板搬到外观这一页；样式沿用 css/desk.css 那批 .ds-*（已登记在册）。预览：选「所有页面」时壁纸会直接
-             透在这页的卡片背后；只首页时靠下面预设缩略与状态行读数。#deskEntryState 仍由 js/mate.js 写卡头摘要。 -->
+             透在这页的卡片背后；只首页时靠下面预设缩略与状态行读数。#deskEntryState 仍由 js/mate.js 写卡头摘要。
+             2026-10-20 #901（用户「要能手动设置铺到底部导航那些页面」）：「铺到」由两档 chips 换成逐页勾选——
+             四枚主页多选（#deskBgPageRow，值是 DESK_PAGES 里的 view 名）＋「其它页面」两档（#deskBgRestRow），
+             数组与回显在 js/desk.js，属性串在 js/settings.js 的 applyAppearance，消费方在 css/theme.css 与 css/base.css。
+             这一族刻意不带 data-ap-set：那不是布尔/枚举字段，套进通用 chips 委托会被写成 'on'/'off' 字符串。 -->
         <div class="setting-card fold" data-tab="desk" data-fold="deskbg">
           <button type="button" class="fold-hd"><span class="fold-ti">桌面背景</span><span class="fold-sum" id="deskEntryState"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
             <div class="ds-sec-hd"><span>背景图</span><span class="ds-bg-state" id="deskBgState">未设置</span></div>
             <div class="ds-btns"><button type="button" class="soft-btn" id="deskBgUpload">选一张图</button><button type="button" class="soft-btn" id="deskBgClear">清除</button></div>
             <div class="ds-presets" id="deskPresets"></div>
-            <p class="ds-hint">预设壁纸是内置的渐变（由浅到深六款），点一枚就用，不用去相册找图；压暗、缩放、取景、铺到全站对预设同样生效。选了自定义照片后，预设自动让位。</p>
+            <p class="ds-hint">预设是内置的六款天光（晨雾／宣纸／远山／苔原／奶咖／石白），点一枚就用，不用去相册找图。只有一条极缓的明暗与两枚柔光，没有图形也没有纹路，所以放到大屏也不糊、也不会压过页面上的字。每款自带一个合适的压暗值（越浅的压得越轻），点下去会连它一起套上，之后仍可自己拖。<b>压暗、缩放、取景、铺到哪几页对预设同样生效</b>；选了自定义照片后，预设自动让位。</p>
+            <div class="ds-knob ds-size"><span>铺到</span><div class="contact-chip-row" id="deskBgPageRow"><button type="button" class="contact-chip" data-deskpage="chats">聊天</button><button type="button" class="contact-chip" data-deskpage="cards">字卡库</button><button type="button" class="contact-chip" data-deskpage="cjian">世界感知</button><button type="button" class="contact-chip" data-deskpage="more">更多</button></div></div>
+            <div class="ds-knob ds-size"><span>其它页面</span><div class="contact-chip-row" id="deskBgRestRow"><button type="button" class="contact-chip" data-deskrest="off">不铺</button><button type="button" class="contact-chip" data-deskrest="on">也铺</button></div></div>
+            <p class="ds-hint">上面四枚<b>可多选</b>：勾上哪页，这张图就透在哪页的卡片缝里（没选图时都不起作用）；四枚全不勾＝哪页都不铺，图还在。「其它页面」＝信箱·设置·统计·收藏·心愿·朋友圈·播放器·游戏这些不走底部导航的页。</p>
             <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
             <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
             <label class="ds-knob"><span>模糊</span><input type="range" id="deskBgBlur" min="0" max="40" step="1"><output id="deskBgBlurOut">0px</output></label>
             <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
-            <div class="ds-knob ds-size"><span>铺到</span><div class="contact-chip-row" data-ap-set="deskBgAll"><button type="button" class="contact-chip" data-v="off">只有首页</button><button type="button" class="contact-chip" data-v="on">所有页面</button></div></div>
-            <p class="ds-hint">「所有页面」把这张图透到字卡库、信箱那些面上；没选图时这一档不起作用。</p>
             <p class="ds-hint">「模糊」把壁纸<b>本体</b>糊开（0＝不糊）。单独用只在卡片缝隙里看得出一层软；配「卡片通透」（设置→外观）开时最明显——壁纸透到磨砂卡片后面，与卡片那根磨砂强度各糊一层、可叠加。</p>
             <label class="ds-knob"><span>导航条薄纱</span><input type="range" id="deskTabVeil" min="0" max="100" step="5"><output id="deskTabVeilOut">45%</output></label>
             <p class="ds-hint">底下那一行导航条压在这张图上要露多少：0＝完全透出壁纸，100＝与不挂图时一样实。</p>
