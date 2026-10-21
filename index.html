@@ -206,7 +206,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v13.2.1.css','dist/app.v13.2.1.js'];
+      var BOOT_FILES = ['dist/app.v13.3.7.css','dist/app.v13.3.7.js'];
 
 
 
@@ -882,8 +882,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v13.2.1.css">
-  <script defer src="dist/app.v13.2.1.js"></script>
+  <link rel="stylesheet" href="dist/app.v13.3.7.css">
+  <script defer src="dist/app.v13.3.7.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -994,6 +994,9 @@
       <div class="home-bar"><button type="button" class="home-search" id="searchTopBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="15.8" y2="15.8"></line></svg><span>搜索聊天记录</span></button><button type="button" class="home-add" id="addContactBtn" title="新会话 / 新群聊" aria-label="新会话或群聊"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
       <div class="sec-label">会话 <i>SESSIONS</i></div>
       <div class="chats-list" id="chatsList"></div>
+      <!-- 半框预览（#913；#964 起续在会话卡里）。容器静态写在卡外，但**DOM 归属由 js/chats.js 的
+           renderSoloPeek 独家管**：renderChatsList 每次重写 #chatsList 的 innerHTML 会把它摘掉，该函数
+           负责还回卡尾；不上屏时整枚移出卡外（.chats-list:empty 撤卡才照常）。别按静态位置推断它坐在哪儿。 -->
       <div class="solo-peek" id="soloPeek" hidden></div>
       <div class="chats-empty" id="chatsEmpty" hidden><p class="es-en">NO CHATS YET</p><p class="chats-empty-title">还没有会话</p><p class="chats-empty-hint">点「＋ 新会话」添加联系人或创建群聊</p></div>
       <div class="sheet-mask" id="addChatMask" hidden></div>
@@ -1143,7 +1146,7 @@
       </div>
     </div>
     <section class="view" id="chatView">
-      <div class="chat-head"><button type="button" class="icon-btn" data-view="chats" aria-label="返回聊天列表"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span class="chat-back-tx" id="chatBackTx">会话</span></button><div class="chat-head-name" id="chatHeadName"><span id="chatHeadNameText"></span></div><span class="typing-indicator" id="typingIndicator" hidden><span></span><span></span><span></span><em>TA正在想怎么回你</em></span><button type="button" class="cj-chip" id="cjChip" hidden aria-label="世界感知速览：TA的状态·心情与时间"></button><div class="chat-head-tools"><button type="button" class="icon-btn" id="callBtn" title="打电话" aria-label="打电话"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button type="button" class="icon-btn" id="chatApBtn" aria-label="会话外观"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="20" r="3"/></svg></button></div></div>
+      <div class="chat-head"><button type="button" class="icon-btn" data-view="chats" aria-label="返回聊天列表"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="chat-head-name" id="chatHeadName"><span id="chatHeadNameText"></span></div><span class="typing-indicator" id="typingIndicator" hidden><span></span><span></span><span></span><em>TA正在想怎么回你</em></span><button type="button" class="cj-chip" id="cjChip" hidden aria-label="世界感知速览：TA的状态·心情与时间"></button><div class="chat-head-tools"><button type="button" class="icon-btn" id="callBtn" title="打电话" aria-label="打电话"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button type="button" class="icon-btn" id="chatApBtn" aria-label="会话外观"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="20" r="3"/></svg></button></div></div>
             <!-- 世界感知速览小框（BUGS #486）：点昵称下面那行小字（#cjChip）在聊天页里开，不跳整页。
            贴聊天页头部下沿；遮罩透明＝点外面即关、不挡聊天内容；底部一条出口进整页。
            群聊没有唯一的 TA＝chip 整枚不显，小框无从打开（开关都在 js/cjian.js）。 -->
@@ -1643,6 +1646,26 @@
         <div class="setting-card fold" data-tab="notify" data-fold="solo">
           <button type="button" class="fold-hd"><span class="fold-ti">单人模式</span><span class="fold-sum" id="sumSolo"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd"><div class="ap-row"><span>开启单人模式<span style="display:block;font-size:11px;color:var(--muted)">打开 App、点底部「聊天」都直接进入选中的那一位；其他联系人不再主动发消息（你主动找他，他照常回）。通讯录里有几位都能开，群里不会自己冒话。</span></span><input type="checkbox" id="soloModeOn" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="setting-subhead">进哪一位</div><div class="contact-chip-row" id="soloModeRow" style="margin:0"></div><p class="data-note" id="soloModeHint"></p><div class="setting-subhead">搜索</div><div class="data-actions"><button type="button" class="soft-btn" id="soloSearchBtn">搜索聊天记录</button></div><p class="data-note">与首页那条搜索是同一屏：只搜聊天记录，命中点进去直达。</p></div>
+        </div>
+
+        <!-- 联系人在聊天里发牌面（2026-10-21 #966 用户点名）：TA 每一轮开口之后掷一次概率，命中就自己抽一手
+             牌发进聊天（塔罗／雷诺曼／两种都有，张数 1／3／5），点开那条消息是整页解析（与占卜页展开态
+             同一份读数）。默认**关闭**＝不点开这一格的话屏上没有第二条路径能产生这种消息。
+             字段住在 data.dvTa（js/utils.js 的 defaults），写手与回显在 js/settings.js（renderDvTa），
+             掷骰与抽牌在 js/divine.js（dvTaMaybeSend，出口挂在 js/chat.js 的两条开口路径尾部）。
+             这一格刻意不按联系人分：它管的是「TA 这类行为做不做」，不是某一位的性格。 -->
+        <div class="setting-card fold" data-tab="notify" data-fold="dvta">
+          <button type="button" class="fold-hd"><span class="fold-ti">联系人在聊天里发牌面</span><span class="fold-sum" id="sumDvTa"></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
+            <div class="ap-row"><span>开启<span style="display:block;font-size:11px;color:var(--muted)">开着时 TA 会在聊天里偶尔自己抽一手牌发给你，用来补一句说不清的话；默认关闭。</span></span><input type="checkbox" id="dvTaOn" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div>
+            <div class="setting-subhead">用哪一副</div>
+            <div class="contact-chip-row" id="dvTaDeckRow" style="margin:0"><button type="button" class="contact-chip" data-dvta-deck="tarot">塔罗</button><button type="button" class="contact-chip" data-dvta-deck="lenormand">雷诺曼</button><button type="button" class="contact-chip" data-dvta-deck="both">两种都有</button></div>
+            <div class="setting-subhead">抽几张</div>
+            <div class="contact-chip-row" id="dvTaNRow" style="margin:0"><button type="button" class="contact-chip" data-dvta-n="1">一张</button><button type="button" class="contact-chip" data-dvta-n="3">三张</button><button type="button" class="contact-chip" data-dvta-n="5">五张</button></div>
+            <div class="setting-subhead">概率</div>
+            <div class="field-row"><label>每轮开口时发牌的几率（%）<input type="text" id="dvTaProb" inputmode="numeric"></label></div>
+            <p class="data-note">牌是从与「占卜」页同一副牌里现抽的（塔罗分正逆位，雷诺曼不分），读数也是同一份——点开聊天里那条消息，看到的就是占卜页展开以后那几栏：每张的核心信息与情绪状态，末尾那段「TA 在表达什么」。<b>只在单聊里发生</b>：群里不抽（那一句是谁说的都定不下来）。每一轮 TA 开口（回你的话、或主动发来那一条）掷一次，掷中才多发一条，与正常回复那条不冲突。概率按这一轮算，填 0 等于关。</p>
+          </div>
         </div>
 
         <div class="setting-card fold" data-tab="notify" data-fold="sfx">
@@ -2823,6 +2846,21 @@
 
       <div class="dv-log" id="dvLog"></div>
     </section>
+
+    <!-- 整页解析（#966）：从聊天里点「查看完整解析」时铺开的那一页——牌面与读数由 js/divine.js 的
+         _dvDetailHTML 一处画（与上面占卜页展开态同一份输出），这里只放壳。
+         形制与读信页同族（.letter-page：absolute inset:0 ＋ z-index:16 往右推进），所以它排在
+         modal-letter 之后＝真正盖在信纸之上；关掉把内容清空＝下次点开不会先闪一眼上一卦。 -->
+    <div class="dv-page" id="dvPageMask" hidden>
+      <div class="dv-page-bar">
+        <button type="button" class="icon-btn dv-page-close" id="dvPageClose" aria-label="返回聊天">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="dv-page-t"><span class="dv-page-title" id="dvPageTitle">这一手牌</span><span class="dv-page-sub" id="dvPageSub"></span></div>
+        <button type="button" class="dv-page-act" id="dvPageCopy">复制</button>
+      </div>
+      <div class="dv-page-body" id="dvPageBody"></div>
+    </div>
     <!-- 游戏中心：合成 / 2048 / 星星 / 连连看 / 拼图 / 方块，独立整页（入口＝使用大全-互动组那一行）
          小鸟邮差那一族（在路上·站点·明信片）2026-10-12 随信箱一起退役＝本文件不再引它（BUGS #308）
          多联系人：chips 行切「一起玩的人」，技巧游戏按联系人各记一套成绩与 TA 挑战分 -->
