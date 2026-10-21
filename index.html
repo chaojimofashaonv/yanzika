@@ -206,7 +206,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v13.0.2.css','dist/app.v13.0.2.js'];
+      var BOOT_FILES = ['dist/app.v13.2.1.css','dist/app.v13.2.1.js'];
 
 
 
@@ -882,8 +882,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v13.0.2.css">
-  <script defer src="dist/app.v13.0.2.js"></script>
+  <link rel="stylesheet" href="dist/app.v13.2.1.css">
+  <script defer src="dist/app.v13.2.1.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1060,7 +1060,10 @@
              上面那句「自此三格」与「由四格改成三格」是当时的账，屏上那行小字已跟着回到**四格**（写在
              js/hub.js 那一行的 desc 与 more.d 里）。本批（2026-10-14 修「点了没反应·跳不到位置」）另把
              「数据备份」那一枚 #data 由「只切页签」改走 _hubGoFold('data','data')＝当场展开「数据管理」
-             那张折叠卡并滚到屏中，与 #install 那条直达走同一处实现，不再两份各写一遍。 -->
+             那张折叠卡并滚到屏中，与 #install 那条直达走同一处实现，不再两份各写一遍。
+         2026-10-21（用户点名）：这一列的顺序改成册子每行 more.o 的名次（设置 · 播放器 · 信箱 · 朋友圈 ·
+             收藏 · 头像昵称 · 游戏中心 · 纪念日 · 心愿 · 聊天情绪 · 占卜 · 聊天统计），与「使用大全」那四组的
+             分组顺序脱钩；「字卡库」那一行随与底部导航重复整行撤下（册子仍留着，使用大全查得到，见 #955）。 -->
     <section class="view" id="moreView">
       <div class="home-greet more-greet">
         <div>
@@ -1140,7 +1143,7 @@
       </div>
     </div>
     <section class="view" id="chatView">
-      <div class="chat-head"><button type="button" class="icon-btn" data-view="chats" aria-label="返回聊天列表"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span class="chat-back-tx" id="chatBackTx">会话</span></button><div class="chat-head-name" id="chatHeadName"><span id="chatHeadNameText"></span></div><span class="typing-indicator" id="typingIndicator" hidden><span></span><span></span><span></span><em>TA正在想怎么回你</em></span><button type="button" class="cj-chip" id="cjChip" hidden aria-label="世界感知速览：TA的状态·心情与时间"></button><div class="chat-head-tools"><button type="button" class="icon-btn" id="callBtn" title="打电话" aria-label="打电话"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button type="button" class="icon-btn" id="chatApBtn" aria-label="会话外观"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="20" r="3"/></svg></button><button type="button" class="icon-btn" id="chatSoloBtn" aria-label="单人模式" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.4"/><path d="M5.4 20c.8-3.7 3.4-5.7 6.6-5.7s5.8 2 6.6 5.7"/></svg></button></div></div>
+      <div class="chat-head"><button type="button" class="icon-btn" data-view="chats" aria-label="返回聊天列表"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg><span class="chat-back-tx" id="chatBackTx">会话</span></button><div class="chat-head-name" id="chatHeadName"><span id="chatHeadNameText"></span></div><span class="typing-indicator" id="typingIndicator" hidden><span></span><span></span><span></span><em>TA正在想怎么回你</em></span><button type="button" class="cj-chip" id="cjChip" hidden aria-label="世界感知速览：TA的状态·心情与时间"></button><div class="chat-head-tools"><button type="button" class="icon-btn" id="callBtn" title="打电话" aria-label="打电话"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button type="button" class="icon-btn" id="chatApBtn" aria-label="会话外观"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="20" r="3"/></svg></button></div></div>
             <!-- 世界感知速览小框（BUGS #486）：点昵称下面那行小字（#cjChip）在聊天页里开，不跳整页。
            贴聊天页头部下沿；遮罩透明＝点外面即关、不挡聊天内容；底部一条出口进整页。
            群聊没有唯一的 TA＝chip 整枚不显，小框无从打开（开关都在 js/cjian.js）。 -->
@@ -1829,7 +1832,7 @@
                  本来就在这（透明底粗体，看着像一行标题而不是输入框＝发现不了），补一枚铅笔钮把「可改」这件事说明白。
                  铅笔只是把焦点送进下面那枚输入框——不另开编辑面板，一处实现（改名的保存链仍是既有的 change→saveMateProfile） -->
             <div class="mate-name-row">
-              <label class="mate-name">名字<input id="nameInput" maxlength="16" aria-label="TA 的名字"></label>
+              <label class="mate-name">名字<input id="nameInput" maxlength="16" placeholder="名字" aria-label="TA 的名字"></label>
               <button type="button" class="mate-name-edit" id="mateNameEdit" aria-label="修改昵称"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
             </div>
             <!-- 固定昵称（2026-10-13 BUGS #346）：聊天以外的功能（字卡库/信箱/世界感知/纪念日/主动消息/写信统计/邀请/玩家按人设置）
@@ -1875,7 +1878,7 @@
              混在「TA 怎么回话」那一节里读不出归属。分组只管把卡按归属摆对，卡内读写与保存链一字未动：
              形象＝成员/我的形象/头像昵称库；回话＝节奏/拼句/夹带/情绪（TA 怎么接你这句话）；
              主动＝主动找你/TA 自己想起日子（TA 不等你开口做的事）；外观＝美化设置；声音＝TA 的声音/会话音效；
-             记录＝聊天记录（导出/追加，恒整本会话）。形制沿「更多」页那排组 tag（.more-tag 同族：
+             记录＝聊天记录（导出/导入，恒整本会话）。形制沿「更多」页那排组 tag（.more-tag 同族：
              布局在 css/mate.css，面与选中态由 css/mono.css ③ 全站名单供＝同一件事不画第二种样子）。
              四条节标 .sec-label 随 #334 口径摘净（tag 上已写着名字＝同一件事说两遍）。
              停留哪一档记本机 ordinal-mate-tab（同 ordinal-stats-tab∶ordinal-more-tab 那一族：不进 data、
@@ -2003,6 +2006,17 @@
               <div class="ap-dotrow"><span class="ap-dotlab">我的</span><div class="ap-dots" id="apMineText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随色板" aria-label="跟随色板">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
               <div class="ap-dotrow"><span class="ap-dotlab">对方</span><div class="ap-dots" id="apPartnerText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随气泡" aria-label="跟随气泡">随</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
             </div>
+            <!-- 引用消息三色（2026-10-21 #957，用户「边看边调里没有改引用消息的框和文字的地方」）：
+                 引用块（.reply-quote）此前只有一套写死的面——var(--surface) 底、var(--muted)/var(--ink) 字、
+                 var(--bar-ink) 竖条，聊天气泡配色怎么改它都是老样子。三枚色块各写一个变量，
+                 × ＝不写＝var() 兜底逐字回到改前；我方与对方的引用块一起吃这三枚。 -->
+            <div class="ap-sec">
+              <div class="ap-sec-t">引用消息</div>
+              <div class="ap-color-row"><span>框底色</span><input type="color" id="apQuoteBg" class="ap-color" value="#ffffff"><span class="ap-color-reset" id="apQuoteBgRst" title="恢复默认">×</span></div>
+              <div class="ap-color-row"><span>左侧竖条</span><input type="color" id="apQuoteBar" class="ap-color" value="#616162"><span class="ap-color-reset" id="apQuoteBarRst" title="恢复默认">×</span></div>
+              <div class="ap-color-row"><span>引用文字</span><input type="color" id="apQuoteInk" class="ap-color" value="#717174"><span class="ap-color-reset" id="apQuoteInkRst" title="恢复默认">×</span></div>
+              <p class="data-note">管消息里那块「引用：…」——它的底、左边那道竖条、块里的字。点 × 恢复默认。</p>
+            </div>
           </div>
         </div>
         <!-- 聊天气泡字体与字号（2026-10-15，用户「聊天设置美化里缺少修改聊天字号和字体的功能」）：
@@ -2028,11 +2042,26 @@
               <div class="ap-dotrow"><span class="ap-dotlab wide">时间颜色</span><div class="ap-dots" id="apMetaColor"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随主题" aria-label="跟随主题">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
               <div class="ap-dotrow"><span class="ap-dotlab wide">系统消息</span><div class="ap-dots" id="apSysStyle"><button type="button" class="ap-dot ap-dot-auto" data-v="auto" title="跟随主题" aria-label="跟随主题"></button><button type="button" class="ap-dot" data-v="white" style="--dot:#ffffff" title="白底" aria-label="白底"></button><button type="button" class="ap-dot" data-v="ink" style="--dot:#1a1c22" title="墨底" aria-label="墨底"></button><button type="button" class="ap-dot ap-dot-none" data-v="none" title="无底色" aria-label="无底色"></button></div><span class="ap-dotname"></span></div>
             </div>
-            <!-- 时间轴样式（2026-10-20 #881 二批）：四档只改外观。mochi 那七档里的
-                 「气泡内/头像下/上方居中」要改 render.js 的拼装顺序，不在本批。 -->
+            <!-- 系统消息 · 外框与字色（2026-10-21 #957，用户「边看边调里没有改系统消息外框和文字的地方」）：
+                 上面那枚「系统消息」色点只给四档底色，而且**连字色一起定**（白底配灰字／墨底配白字）。
+                 用户要的是三件能各自挑：外框什么颜色、外框是什么样式、文字什么颜色。
+                 三件与 sysStyle 同一个存储体（chatAppearance[activeChat]）、同一条 applyAppearance；
+                 × 与「无描边」都回出厂——不写变量／不写属性，css 那侧 var() 逐字回到改前。 -->
+            <div class="ap-sec">
+              <div class="ap-sec-t">系统消息 · 外框与字色</div>
+              <div class="ap-color-row"><span>外框颜色</span><input type="color" id="apSysBorder" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apSysBorderRst" title="不描边">×</span><em class="ap-bare-state" id="apSysBorderState">不描边</em></div>
+              <div class="ap-row"><span>外框样式</span><div class="contact-chip-row" style="margin:0" id="apSysBorderStyle"><button type="button" class="contact-chip" data-v="off">无描边</button><button type="button" class="contact-chip" data-v="solid">细线</button><button type="button" class="contact-chip" data-v="dashed">虚线</button><button type="button" class="contact-chip" data-v="thick">粗线</button></div></div>
+              <div class="ap-dotrow"><span class="ap-dotlab wide">文字颜色</span><div class="ap-dots" id="apSysText"><button type="button" class="ap-dot ap-txt" data-v="auto" title="跟随底色档" aria-label="跟随底色档">随</button><button type="button" class="ap-dot ap-txt" data-v="black" title="黑色" aria-label="黑色">A</button><button type="button" class="ap-dot ap-txt" data-v="white" style="background:#4a4a4a;color:#fff" title="白色" aria-label="白色">A</button><button type="button" class="ap-dot ap-txt" data-v="gold" style="color:var(--gold-ink)" title="金色" aria-label="金色">A</button></div><span class="ap-dotname"></span></div>
+              <p class="data-note">先挑样式再挑颜色：样式停在「无描边」时挑什么颜色都不描（避免一枚看着能调实则不变的控件）。文字颜色压过上面四档自带的字色，「随」＝跟着底色档走。</p>
+            </div>
+            <!-- 时间轴样式（2026-10-20 #881 二批立四档；2026-10-21 #957 补 mochi 那七档里缺的四档位置）：
+                 只改外观与时间那一行的摆法，不动消息行 DOM 顺序。mochi 的「头像下方／时间气泡／
+                 消息上方居中／时间分隔线」本轮补齐——四档全部走 .message-meta 的绝对定位，
+                 不碰 render.js 的拼装（时间仍是气泡之后那一行，只是被摆到别处）。 -->
             <div class="ap-sec">
               <div class="ap-sec-t">时间轴样式</div>
-              <div class="ap-row"><span>样式</span><div class="contact-chip-row" style="margin:0" id="apTimeStyle"><button type="button" class="contact-chip" data-v="under">气泡下方</button><button type="button" class="contact-chip" data-v="side">气泡外侧</button><button type="button" class="contact-chip" data-v="pill">胶囊底</button><button type="button" class="contact-chip" data-v="line">两侧短线</button></div></div>
+              <div class="ap-row"><span>样式</span><div class="contact-chip-row" style="margin:0" id="apTimeStyle"><button type="button" class="contact-chip" data-v="under">气泡下方</button><button type="button" class="contact-chip" data-v="side">气泡外侧</button><button type="button" class="contact-chip" data-v="pill">胶囊底</button><button type="button" class="contact-chip" data-v="line">两侧短线</button><button type="button" class="contact-chip" data-v="av">头像下方</button><button type="button" class="contact-chip" data-v="bubble">时间气泡</button><button type="button" class="contact-chip" data-v="center">消息上方居中</button><button type="button" class="contact-chip" data-v="divider">时间分隔线</button></div></div>
+              <p class="data-note">「头像下方」只对对方生效（我方消息没有头像，时间照旧在气泡下方）。「时间气泡」＝时间贴在气泡内侧、与气泡同一行垂直居中。「消息上方居中」与「时间分隔线」会在消息上方让出一行。位置微调用下面那两根杆。</p>
             </div>
             <!-- 时间位置（2026-10-20 #881）：mochi「微调」那节里的「时间轴 左右/上下」两杆。
                  只动 .message-meta 那一行（transform），不改气泡与签的位置——签那边言字卡没做偏移杆，
@@ -2318,7 +2347,7 @@
           </div>
         </div>
 
-        <!-- 这一本会话的记录：单独导出（JSON 能原样回灌、TXT 给人读）＋ 把外来的记录并进来（三级判同自动去重）。
+        <!-- 这一本会话的记录：单独导出（JSON 能原样回灌、TXT 给人读）＋ 导入外来的 JSON（三级判同自动去重）。
              恒为整本会话，不跟随顶部那排成员 chip；判同与插入的逻辑都在 js/chat-io.js
              （2026-10-14 #408 随分组重做住进「记录」组＝它管这本会话的记录进出，与声音不是一族）。 -->
         <div class="mate-grp" data-mate-grp="log" hidden>
@@ -2327,11 +2356,11 @@
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">聊天记录</span><span class="fold-sum" id="mateChatIoSum"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
             <div class="data-actions"><button type="button" class="soft-btn" id="chatIoJson">导出 JSON</button><button type="button" class="soft-btn" id="chatIoTxt">导出 TXT</button></div>
-            <div class="data-actions" style="margin-top:8px"><button type="button" class="soft-btn" id="chatIoPng">存成长图</button></div>
-            <div class="data-actions" style="margin-top:8px"><button type="button" class="soft-btn" id="chatIoAppend">追加记录到这一本</button></div>
+            <div class="data-actions" style="margin-top:8px"><button type="button" class="soft-btn" id="chatIoImport">导入聊天记录</button><button type="button" class="soft-btn" id="chatIoSearch">搜索聊天记录</button></div>
             <div class="data-actions" style="margin-top:8px"><button type="button" class="soft-btn danger" id="chatIoClear" hidden>清空聊天记录（TA 留着）</button></div>
             <input type="file" id="chatIoFile" accept=".json,application/json" hidden>
-            <p class="data-note">只带这一本，别人的会话一个字都不进去。JSON 是原样（含图片、撤回标记、问答卡），换设备或不小心清空了再点「追加记录」就能并回来；同一秒同一人说的同一句会自动认成一条，不会堆两份。TXT 给人读，图片只写「[图片]」。长图按聊天页的原生样子截取，太长会自动分成几张；只想要其中一段的话，回聊天里长按消息选「长图起点」更方便。</p>
+            <p class="data-note">只带这一本，别人的会话一个字都不进去。JSON 是原样（含图片、撤回标记、问答卡），换设备或不小心清空了再点「导入聊天记录」就能并回来；同一秒同一人说的同一句会自动认成一条，不会堆两份。TXT 给人读，图片只写「[图片]」。</p>
+            <p class="data-note">「搜索聊天记录」只在这一本里搜，命中点一下直达那条消息。</p>
             <p class="data-note">「清空聊天记录」只删这一本的消息、把 TA／这个群留着（外观、音效、信箱、主动消息、纪念日、专属字卡、草稿都不动），与首页长按会话那一条是同一件事；要连人一起删才用本页最底下那枚「删除」。这本还没有记录时那枚钮不出现。</p>
           </div>
         </div>
