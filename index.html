@@ -206,7 +206,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v14.2.0.css','dist/app.v14.2.0.js'];
+      var BOOT_FILES = ['dist/app.v14.4.2.css','dist/app.v14.4.2.js'];
 
 
 
@@ -882,8 +882,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v14.2.0.css">
-  <script defer src="dist/app.v14.2.0.js"></script>
+  <link rel="stylesheet" href="dist/app.v14.4.2.css">
+  <script defer src="dist/app.v14.4.2.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -988,10 +988,14 @@
       <div class="home-brand mono">言字卡</div>
       <!-- 页头四件形制沿 ui1 的 #sc-chats（用户 2026-10-13「按 ui1 的风格修改」）：品牌行 → 大字问候 ＋ 今日一句 ｜ 日号 ＋ 月周。
            静态文案「你好」不写「晚上好」＝那句要按钟点算，写死会在早上闪一下假话；几何由 js/chats.js 的 renderChatsList 当场填。 -->
-      <div class="home-greet">
-        <div class="g-left"><div class="g-hi" id="greetHi">你好</div><div class="g-today" id="greetToday"></div></div><div class="g-right"><div class="g-day" id="greetDay"></div><div class="g-sub" id="greetDate"></div></div>
+      <!-- #1014：问候与搜索条包进同一张页头面板（.home-head）。无壁纸时这个包裹零样式＝不开桌面
+           壁纸的用户屏上与改前逐字节相同；面板的面由 css/theme.css 只在壁纸铺到本页时给。 -->
+      <div class="home-head">
+        <div class="home-greet">
+          <div class="g-left"><div class="g-hi" id="greetHi">你好</div><div class="g-today" id="greetToday"></div></div><div class="g-right"><div class="g-day" id="greetDay"></div><div class="g-sub" id="greetDate"></div></div>
+        </div>
+        <div class="home-bar"><button type="button" class="home-search" id="searchTopBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="15.8" y2="15.8"></line></svg><span>搜索聊天记录</span></button><button type="button" class="home-add" id="addContactBtn" title="新会话 / 新群聊" aria-label="新会话或群聊"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
       </div>
-      <div class="home-bar"><button type="button" class="home-search" id="searchTopBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20.5" y1="20.5" x2="15.8" y2="15.8"></line></svg><span>搜索聊天记录</span></button><button type="button" class="home-add" id="addContactBtn" title="新会话 / 新群聊" aria-label="新会话或群聊"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
       <div class="sec-label">会话 <i>SESSIONS</i></div>
       <div class="chats-list" id="chatsList"></div>
       <!-- 半框预览（#913；#964 起续在会话卡里、#969 起是卡内嵌小组件）。容器静态写在卡外，但**DOM 归属由 js/chats.js 的
@@ -1303,7 +1307,7 @@
           <button type="button" class="home-add" id="cardsMoreBtn" aria-label="更多操作"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></svg></button>
         </div>
       </div>
-      <div class="group-search-wrap" id="cardsSearchRow"><input id="groupSearchInput" class="group-search" placeholder="搜索字卡或分组" autocomplete="off"></div>
+      <div class="group-search-wrap" id="cardsSearchRow"><input id="groupSearchInput" class="group-search" placeholder="搜索字卡" autocomplete="off"></div>
       <div class="group-list" id="groupList"></div>
       <div class="cards-batch-bar" id="cardsBatchBar" hidden><span class="batch-count" id="batchSelCount">已选 0 项</span><button class="soft-btn" id="batchSelectAll">全选</button><button class="soft-btn" id="batchMove">放入分组</button><button class="soft-btn" id="batchExportVoice" hidden>导出语音</button><button class="soft-btn" id="batchDelete">删除</button><button class="soft-btn" id="batchCancel">取消</button></div>
 
@@ -1462,14 +1466,23 @@
       </div>
     </section>
     <section class="view" id="mailboxView">
-      <!-- 页头收成一行：原先「信箱」下面还有一行「LETTERS · 见字如面」，而右上角统计又印一次「N LETTERS」＝
-           同一个英文装饰在一屏说两遍（2026-10-09 信箱观感批撤掉下面那行，统计改中文「共 N 封」） -->
+      <!-- 页头（2026-10-21 重设计，用户「【信箱设置】和【写信统计】的字删掉，只留矢量图……功能放的不美观」）：
+           旧版右列自上而下码三件（统计＋两枚文字药丸）＝题头一窄列／动作一宽列两列并排，视线落点散，
+           两枚入口还各带一遍文字＝与页题并排的两行小字。现在收成「左题头｜右图标钮」一行式（与字卡库∶
+           播放器页头同族）：统计降为标题下一行的副题（g-sub，全站页头副题五面共用那一份），两枚入口收成
+           36px 线稿图标钮（.mb-ico-btn，1px 发丝描边＋无底，与播放器 .pl-ico-btn 同族同档）——屏上不留字，
+           文字只住 aria-label（读屏与自动化门都认它）；写信统计在「使用大全」里仍有文字那一行（js/hub.js），
+           不是全站唯一入口被摘。
+           id 与 data-view 一字未动：js/mailbox.js 的 #mbSetBtn 绑定、settings.js 加载期那次
+           $$('[data-view]') 一次性绑定照旧接得上。 -->
       <div class="mb-head">
-        <div><div class="g-eyebrow">LETTERS</div><h2>信箱</h2></div>
-        <div class="mb-head-side">
-          <div class="mb-stat" id="mbStat"></div>
-          <button class="mailbox-set-btn" id="mbSetBtn" aria-label="信箱设置"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="5.5" y2="6"></line><line x1="10.5" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="12.5" y2="12"></line><line x1="17.5" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="7.5" y2="18"></line><line x1="12.5" y1="18" x2="21" y2="18"></line><circle cx="8" cy="6" r="2.5"></circle><circle cx="15" cy="12" r="2.5"></circle><circle cx="10" cy="18" r="2.5"></circle></svg>信箱设置</button>
-          <button class="mailbox-set-btn" data-view="letterstats" aria-label="写信统计"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V12M12 20V5M20 20V9"/></svg>写信统计</button>
+        <div>
+          <div class="g-eyebrow">LETTERS</div><h2>信箱</h2>
+          <div class="g-sub" id="mbStat"></div>
+        </div>
+        <div class="mb-head-btns">
+          <button type="button" class="mb-ico-btn" id="mbSetBtn" aria-label="信箱设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="5.5" y2="6"></line><line x1="10.5" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="12.5" y2="12"></line><line x1="17.5" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="7.5" y2="18"></line><line x1="12.5" y1="18" x2="21" y2="18"></line><circle cx="8" cy="6" r="2.5"></circle><circle cx="15" cy="12" r="2.5"></circle><circle cx="10" cy="18" r="2.5"></circle></svg></button>
+          <button type="button" class="mb-ico-btn" data-view="letterstats" aria-label="写信统计"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V12M12 20V5M20 20V9"/></svg></button>
         </div>
       </div>
       <!-- 页签按「这封信是谁起的头」分三册（2026-10-14 BUGS #402，用户「分类有缺陷……按 联系人主动来信／我的写信／
@@ -1690,7 +1703,7 @@
 
         <div class="setting-card fold" data-tab="notify" data-fold="night">
           <button type="button" class="fold-hd"><span class="fold-ti">夜间免打扰</span><span class="fold-sum" id="sumNight"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="contact-chip-row" style="margin:0" id="nightModeRow"><button type="button" class="contact-chip" data-v="ask">每晚问我</button><button type="button" class="contact-chip" data-v="auto">到点自动开</button><button type="button" class="contact-chip" data-v="off">不用了</button></div><p class="data-note" id="nightState"></p><p class="data-note">夜里 23:00 到早上 7:00 那一档：TA 不会主动发消息、不会主动打来、也不会在夜里自己发朋友圈。只管【TA 主动】那几条——你发一句话之后 TA 的那一轮照旧、你寄出去的信到站时刻也不改（信不攒在路上）、你点赞／评论之后 TA 的回应也照旧（那是回你的话，不是他主动）。到点被让过去的那几句、那几条圈不会在早上补回来。选「每晚问我」时那一问只在夜里 1 点之前弹（那一晚 1 点后才打开应用就不补问）。时间窗固定不可调。</p></div>
+          <div class="fold-bd"><div class="ap-row night-now-row"><span>现在开启</span><input type="checkbox" id="nightNow" class="night-now-check"><p class="night-now-sub">直接打开这一档，白天打开也会保持，今晚 23:00 起生效；关掉后回到下面三档自己决定</p></div><div class="contact-chip-row" style="margin:0" id="nightModeRow"><button type="button" class="contact-chip" data-v="ask">每晚问我</button><button type="button" class="contact-chip" data-v="auto">到点自动开</button><button type="button" class="contact-chip" data-v="off">不用了</button></div><p class="data-note" id="nightState"></p><p class="data-note">夜里 23:00 到早上 7:00 那一档：TA 不会主动发消息、不会主动打来、也不会在夜里自己发朋友圈。只管【TA 主动】那几条——你发一句话之后 TA 的那一轮照旧、你寄出去的信到站时刻也不改（信不攒在路上）、你点赞／评论之后 TA 的回应也照旧（那是回你的话，不是他主动）。到点被让过去的那几句、那几条圈不会在早上补回来。选「每晚问我」时那一问只在夜里 1 点之前弹（那一晚 1 点后才打开应用就不补问）。时间窗固定不可调。</p></div>
         </div>
 
         <!-- 主动消息管理（2026-10-12）：一行直达＋一句当前读数（形制沿用下面「桌面美化」那张 set-entry 卡，
@@ -1776,6 +1789,10 @@
           <button type="button" class="fold-hd"><span class="fold-ti">桌面背景</span><span class="fold-sum" id="deskEntryState"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
             <div class="ds-sec-hd"><span>背景图</span><span class="ds-bg-state" id="deskBgState">未设置</span></div>
+            <!-- 预览（2026-10-22）：当前这张图按「压暗／提亮／缩放／模糊／取景」现算出来的长相，三层叠加与
+                 css/theme.css 壁纸层逐字同源（白纱→墨纱→图），数字由 js/desk.js _deskPreviewEcho 现写，
+                 杆一动 _deskEcho 就跟着重算＝所见即所得；未设置时整块 hidden。 -->
+            <div class="ds-preview" id="deskBgPreview" hidden><i id="deskBgPreviewLayer" aria-hidden="true"></i><span class="ds-preview-tag">预览</span></div>
             <div class="ds-btns"><button type="button" class="soft-btn" id="deskBgUpload">选一张图</button><button type="button" class="soft-btn" id="deskBgClear">清除</button></div>
             <div class="ds-presets" id="deskPresets"></div>
             <p class="ds-hint">预设是内置的六款天光（晨雾／宣纸／远山／苔原／奶咖／石白），点一枚就用，不用去相册找图。只有一条极缓的明暗与两枚柔光，没有图形也没有纹路，所以放到大屏也不糊、也不会压过页面上的字。六款都<b>不垫纱也不压暗</b>（它们本来就是浅到能直接压墨字的一族，垫一层白或压一层黑都只会把它抹平），点一枚就是它本来的样子；上一张自传照片留在「压暗／提亮」两根杆上的值会被这两档一起归零。<b>缩放、取景、铺到哪几页对预设同样生效</b>；选了自定义照片后，预设自动让位。</p>
@@ -1784,7 +1801,7 @@
             <p class="ds-hint">上面四枚<b>可多选</b>：勾上哪页，这张图就透在哪页的卡片缝里（没选图时都不起作用）；四枚全不勾＝哪页都不铺，图还在。「其它页面」＝信箱·设置·统计·收藏·心愿·朋友圈·播放器·游戏这些不走底部导航的页。</p>
             <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
             <label class="ds-knob"><span>提亮</span><input type="range" id="deskBgWash" min="0" max="90" step="2"><output id="deskBgWashOut">0%</output></label>
-            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。自传照片时<b>按这张图自己的暗端自动定档</b>（浅图约 0~50%、深图与花图可到 85%，垫到刚好压得住字就停），之后随你拖。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。内置六款预设两样都不吃（点预设会归零）。</p>
+            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。自传照片时<b>按这张图自己的暗端自动定档</b>（浅图 0~45%、深图与花图 80% 上下——那一档照片会明显退成柔色，这是「字要读得出」的代价），之后随你拖。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。内置六款预设两样都不吃（点预设会归零）。</p>
             <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
             <label class="ds-knob"><span>模糊</span><input type="range" id="deskBgBlur" min="0" max="40" step="1"><output id="deskBgBlurOut">0px</output></label>
             <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
@@ -1851,6 +1868,14 @@
         <div class="setting-card fold" data-tab="data" data-fold="diag">
           <button type="button" class="fold-hd"><span class="fold-ti">诊断信息</span><span class="fold-sum" id="sumDiag"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd"><p class="diag-tip">这一屏是总报告（设备 · 存储 · 性能 · 视口都在里面）。<button type="button" class="diag-jump" data-view="screen">只看屏幕与键盘那一段 → 屏幕信息</button></p><div class="diag-out" id="diagOutput"></div><div class="diag-btns"><button type="button" class="soft-btn" id="diagCopy">复制诊断信息</button><button type="button" class="soft-btn" id="diagExport">导出 TXT</button><button type="button" class="soft-btn" id="diagRefresh">刷新</button></div></div>
+        </div>
+
+        <!-- 屏幕信息入口（2026-10-21 BUGS #1010）：用户「【屏幕信息】没有放到设置的【数据】里」——#965 那一版只给了
+             独立页＋「更多」页一行＋诊断卡里一枚小跳钮，数据格本身没有一张写着「屏幕信息」的卡＝按「设置 → 数据」
+             找它的用户找不到。这里补一张 set-entry 直达卡（形制沿用上面「主动消息管理」那张，零新 css），
+             点了走 showView('screen')＝与诊断卡那枚跳钮、更多页那一条同一个去处，读数仍由独立页一处现算，不抄第二份。 -->
+        <div class="setting-card set-entry" data-tab="data">
+          <button type="button" class="set-entry-row" id="screenEntry"><span class="set-entry-tx"><strong>屏幕信息</strong><small>视口 · 键盘 · 安全区：报屏幕问题时抄这一页</small></span><i class="set-entry-arrow" aria-hidden="true">›</i></button>
         </div>
 
         <div class="setting-card fold" data-tab="about" data-fold="about">
@@ -2030,6 +2055,21 @@
           <span class="tune-entry-tx"><span class="tune-entry-ti">边看边调</span><small class="tune-entry-sub">消息在上、控件在下，改哪看哪；按住标题行可整体上移让位</small></span>
           <i class="fold-ar">›</i>
         </button>
+        <!-- 外观档目录（2026-10-22 #1015，用户「现在设置还是太杂乱了，不好找」）：下面八张卡平铺在一页里，
+             想改哪一项得挨张点开找。这一排 chips 直接复用边看边调那七个分区名——分区→卡 的映射只有一份
+             ＝js/tune.js 的 TUNE_SECS，跳卡走 js/mate.js 的 _apGoFold＝同一套语言在两处通用，学一次会用两个地方。
+             点一枚＝展开那张卡、滚过去、卡头闪一下（同 #896 预览气泡→那张卡那条路，不另造弹层：
+             弹层一关就看不到预览）。形制用现成的 .contact-chip-row／.contact-chip：目录不是档位开关，
+             刻意不挂 .active（点完不会留下一枚「亮着」的误导态）。 -->
+        <div class="contact-chip-row ap-jump" id="apJump" aria-label="外观设置直达">
+          <button type="button" class="contact-chip" data-ap-jump="bubble" title="只改这一位 TA">气泡</button>
+          <button type="button" class="contact-chip" data-ap-jump="text" title="只改这一位 TA">文字</button>
+          <button type="button" class="contact-chip" data-ap-jump="time" title="只改这一位 TA">时间</button>
+          <button type="button" class="contact-chip" data-ap-jump="bg" title="只改这一位 TA">背景</button>
+          <button type="button" class="contact-chip" data-ap-jump="layout" title="全站一份 · 对所有 TA 生效">排版</button>
+          <button type="button" class="contact-chip" data-ap-jump="fx" title="全站一份 · 对所有 TA 生效">界面</button>
+          <button type="button" class="contact-chip" data-ap-jump="more" title="只改这一位 TA">更多</button>
+        </div>
         <div class="ap-grp"><span>这一位 TA</span><small>只改这一位，别的 TA 与全站设置都不动</small></div>
           <div class="mate-group">
         <!-- 「外观」档重排（2026-10-15 #449，用户「美化设置分类太杂太长不好操作」）：
@@ -2122,6 +2162,18 @@
               <div class="ap-sec-t">情绪字卡</div>
               <div class="ap-color-row"><span>词色</span><input type="color" id="apEmoInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apEmoInkRst" title="恢复自动">×</span><em class="ap-bare-state" id="apEmoInkState">自动</em></div>
               <p class="data-note">管气泡下方那一行情绪词（含「撤回了 N 张情绪字卡」与展开的明细）。点 × 回到自动——跟主题与深色壁纸的明暗走；这里选了色就以它为准。</p>
+            </div>
+            <!-- 气泡外文字色（2026-10-19 #612 二批）：消息时间／「主动」等签／情绪词／撤回钮／群署名这一族
+                 **没有气泡垫底**，壁纸上原本只能按明度自动翻白或留墨。这里给一枚自由色块＋一枚 ×（回到自动）；
+                 色块里显示的就是屏上此刻在用的色（auto 时按「亮度×(1−压暗)」算出来的白或墨），
+                 一动色块＝转自定义（不再跟壁纸走），点 × 交回自动。
+                 2026-10-22 #1015 由「聊天背景」卡搬进这张（用户「现在设置还是太杂乱了，不好找」）：它本质
+                 是一枚颜色，而用户找颜色只会开这一张＝颜色这件事从四张卡收成一张。× 回自动那一档仍按壁纸
+                 明度算（判据只有 js/settings.js 的 _bgtoneOf 一处，与宿主卡无关），id／写手／回显一字未动。 -->
+            <div class="ap-sec" id="apBareSec">
+              <div class="ap-sec-t">气泡外文字</div>
+              <div class="ap-color-row"><span>字色</span><input type="color" id="apBareText" class="ap-color" value="#ffffff"><span class="ap-color-reset" id="apBareTextRst" title="恢复自动">×</span><em class="ap-bare-state" id="apBareTextState">自动</em></div>
+              <p class="data-note">管气泡以外的那几行小字：时间、「主动」等签、撤回提示、群署名。情绪词在上一节「情绪字卡」可单独设色，设了以那一项为准。选色就固定用它；点 × 回到自动——深色壁纸翻白、浅色壁纸保持墨色。</p>
             </div>
           </div>
         </div>
@@ -2225,15 +2277,6 @@
               <div class="ap-row"><span>铺满方式</span><div class="contact-chip-row" style="margin:0" id="apBgFit"><button type="button" class="contact-chip" data-v="cover">铺满</button><button type="button" class="contact-chip" data-v="contain">整张</button><button type="button" class="contact-chip" data-v="repeat">平铺</button></div></div>
               <div class="ap-row"><span>铺到</span><div class="contact-chip-row" style="margin:0" id="apBgRange"><button type="button" class="contact-chip" data-v="page">整页</button><button type="button" class="contact-chip" data-v="bars">页 + 输入栏</button><button type="button" class="contact-chip" data-v="msg">只聊天页</button></div></div>
               <p class="data-note">整页＝顶栏和输入栏一起垫这张图，上下连成一片（原来的样子）；页 + 输入栏＝顶栏保持实白；只聊天页＝两条栏都不垫图。</p>
-            </div>
-            <!-- 气泡外文字色（2026-10-19 #612 二批）：消息时间／「主动」等签／情绪词／撤回钮／群署名这一族
-                 **没有气泡垫底**，壁纸上原本只能按明度自动翻白或留墨。这里给一枚自由色块＋一枚 ×（回到自动）；
-                 色块里显示的就是屏上此刻在用的色（auto 时按「亮度×(1−压暗)」算出来的白或墨），
-                 一动色块＝转自定义（不再跟壁纸走），点 × 交回自动。 -->
-            <div class="ap-sec" id="apBareSec">
-              <div class="ap-sec-t">气泡外文字</div>
-              <div class="ap-color-row"><span>字色</span><input type="color" id="apBareText" class="ap-color" value="#ffffff"><span class="ap-color-reset" id="apBareTextRst" title="恢复自动">×</span><em class="ap-bare-state" id="apBareTextState">自动</em></div>
-              <p class="data-note">管气泡以外的那几行小字：时间、「主动」等签、撤回提示、群署名。情绪词在「时间与提示 → 情绪字卡」可单独设色，设了以那一项为准。选色就固定用它；点 × 回到自动——深色壁纸翻白、浅色壁纸保持墨色。</p>
             </div>
           </div>
         </div>
@@ -2411,9 +2454,16 @@
             <div class="contact-chip-row" id="dvTaDeckRow" style="margin:0"><button type="button" class="contact-chip" data-dvta-deck="tarot">塔罗</button><button type="button" class="contact-chip" data-dvta-deck="lenormand">雷诺曼</button><button type="button" class="contact-chip" data-dvta-deck="both">两种都有</button></div>
             <div class="setting-subhead">抽几张</div>
             <div class="contact-chip-row" id="dvTaNRow" style="margin:0"><button type="button" class="contact-chip" data-dvta-n="mix">随机混合</button><button type="button" class="contact-chip" data-dvta-n="1">一张</button><button type="button" class="contact-chip" data-dvta-n="3">三张</button><button type="button" class="contact-chip" data-dvta-n="5">五张</button></div>
+            <!-- #1011「随机混合」的张数区间：两格只在那一档露（其余档整块 hidden，不留两枚改了不生效的框）。
+                 −／＋ 两枚复用全站唯一那一族 .stp-min/.stp-max（css/mate.css），框仍可手打；
+                 写入口只有 settings.js 的 _dvTaNumCommit → _dvTaWrite（含配平 min ≤ max），读侧夹取在 divine.js 的 dvTaCfg。 -->
+            <div id="dvTaRange" hidden>
+              <label class="mate-stp-row">最少抽几张<button type="button" class="stp-min" data-dvta-step="nMin" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMin" data-d="1" aria-label="多一张">＋</button></label>
+              <label class="mate-stp-row">最多抽几张<button type="button" class="stp-min" data-dvta-step="nMax" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMax" data-d="1" aria-label="多一张">＋</button></label>
+            </div>
             <div class="setting-subhead">概率</div>
             <div class="field-row"><label>每轮开口时发牌的几率（%）<input type="text" id="dvTaProb" inputmode="numeric"></label></div>
-            <p class="data-note">「随机混合」（出厂档）＝每一发现掷：一张／三张／五张都可能，不钉固定牌阵——牌本来就是自由的。牌是从与「占卜」页同一副牌里现抽的（塔罗分正逆位，雷诺曼不分），读数也是同一份——点开聊天里那条消息，看到的就是占卜页展开以后那几栏：每张的核心信息与情绪状态，末尾那段「TA 在表达什么」。<b>只在单聊里发生</b>：群里不抽（那一句是谁说的都定不下来）。每一轮 TA 开口（回你的话、或主动发来那一条）掷一次，掷中才多发一条，与正常回复那条不冲突。概率按这一轮算，填 0 等于关。</p>
+            <p class="data-note">「随机混合」（出厂档）＝张数在<b>下面那两格设的区间</b>里每次现掷（出厂 1~5 张，最多到 10 张），不钉固定牌阵——牌本来就是自由的；选「一张／三张／五张」＝每次都那个数。牌是从与「占卜」页同一副牌里现抽的（塔罗分正逆位，雷诺曼不分）；选<b>「两种都有」＝两副并成一副现抽</b>——同一手可能同时抽到雷诺曼与塔罗，牌副那一行会写「混合」，读数按副各报一段。读数与「占卜」页是同一份——点开聊天里那条消息，看到的就是占卜页展开以后那几栏：每张的核心信息与情绪状态，末尾那段「TA 在表达什么」。<b>只在单聊里发生</b>：群里不抽（那一句是谁说的都定不下来）。每一轮 TA 开口（回你的话、或主动发来那一条）掷一次，掷中才多发一条，与正常回复那条不冲突。概率按这一轮算，填 0 等于关。</p>
           </div>
         </div>
           </div>
@@ -2960,8 +3010,12 @@
         <div class="dv-decks" id="dvDecks"></div>
         <div class="dv-spreads" id="dvSpreads"></div>
         <div class="dv-mode-use" id="dvModeUse"></div>
-        <!-- #992 抽完自动发到聊天：勾选住库（data.dvAutoSend，出厂关），抽完当场弹「这一卦发给谁」那层 -->
-        <label class="dv-autosend"><span>抽完发到聊天<small>抽完这一把自动弹出「发给谁」，选一位把牌面投进那本会话。</small></span><input type="checkbox" id="dvAutoSend" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></label>
+        <!-- #992 抽完自动发到聊天：勾选住库（data.dvAutoSend，出厂关）＝抽完直接投进下面勾好的那几本。
+             #1013 按用户要求（「不用每次我都手动选择，而是直接勾选联系人」）加一行「发给谁」：
+             勾过的人记在 data.dvSendTo（出厂空），此后 dvCommit 不再弹挑人层；还没勾过人时那一发仍弹一次
+             挑人层＝首次设定。这一行只在勾选开着时显形（关着＝没有目标可言）。 -->
+        <label class="dv-autosend"><span>抽完发到聊天<small>开着＝抽完这一把直接投进勾好的会话，不再每次问你。</small></span><input type="checkbox" id="dvAutoSend" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></label>
+        <button type="button" class="dv-sendto" id="dvSendToBtn" hidden><span class="dv-sendto-k">发给谁</span><span class="dv-sendto-v" id="dvSendToVal"></span><i class="dv-sendto-go" aria-hidden="true">›</i></button>
         <button type="button" class="dv-go" id="dvStartBtn">开始抽牌</button>
       </div>
 
