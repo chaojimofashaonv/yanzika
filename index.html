@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v15.3.8.css','dist/app.v15.3.8.js'];
+      var BOOT_FILES = ['dist/app.v15.4.2.css','dist/app.v15.4.2.js'];
 
 
 
@@ -892,8 +892,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v15.3.8.css">
-  <script defer src="dist/app.v15.3.8.js"></script>
+  <link rel="stylesheet" href="dist/app.v15.4.2.css">
+  <script defer src="dist/app.v15.4.2.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -2532,8 +2532,8 @@
             <!-- 两枚步进钮全站只这一族（.stp-min/.stp-max，样式现已住 css/mate.css）＝
                  全站只有一种 −／＋；框仍可手打，钮只负责 ±1 并恒夹在 min~max 内（BUGS #211 二批）。
                  label 的第一个子节点必须留作文本节点（−／＋ 那两枚钮与框都排在它后面）：js/mate.js 群态改口靠 el.firstChild.nodeValue -->
-            <label id="replyMinLab" class="mate-stp-row">最少回复条数<button type="button" class="stp-min" data-stp="replyMin" data-d="-1" aria-label="少一条">−</button><input type="text" id="replyMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="replyMin" data-d="1" aria-label="多一条">＋</button></label>
-            <label id="replyMaxLab" class="mate-stp-row">最多回复条数<button type="button" class="stp-min" data-stp="replyMax" data-d="-1" aria-label="少一条">−</button><input type="text" id="replyMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="replyMax" data-d="1" aria-label="多一条">＋</button></label>
+            <label id="replyMinLab" class="mate-stp-row">最少回复条数<button type="button" class="stp-min" data-stp="replyMin" data-d="-1" aria-label="少一条">−</button><input type="text" id="replyMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="replyMin" data-d="1" aria-label="多一条">+</button></label>
+            <label id="replyMaxLab" class="mate-stp-row">最多回复条数<button type="button" class="stp-min" data-stp="replyMax" data-d="-1" aria-label="少一条">−</button><input type="text" id="replyMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="replyMax" data-d="1" aria-label="多一条">+</button></label>
             <p class="data-note">条数＝TA 一回话发几条气泡。一条气泡里拼几张字卡归下面「多字卡拼句」那一格，两件事各调各的。</p>
           </div>
         </div>
@@ -2554,8 +2554,8 @@
           <div class="fold-bd">
             <div class="check-row"><label class="check-item"><input type="checkbox" id="askReferOn"><span>「这句说谁」这枚签<span style="display:block;font-size:11px;color:var(--muted)">关着＝长按问也没有、TA 也不会自己标。这一枚是全站一份，对每位 TA 都生效（与「使用大全 → 互动」那一行是同一个开关）。</span></span></label></div>
             <div class="check-row"><label class="check-item"><input type="checkbox" id="askMeantOn"><span>「这句本意」这枚签<span style="display:block;font-size:11px;color:var(--muted)">同上，管的是同一颗签上的那第二段。</span></span></label></div>
-            <label id="referProbLab" class="mate-stp-row">「这句说谁」自己标的概率（%）<button type="button" class="stp-min" data-stp="referProb" data-d="-1" aria-label="少一点">−</button><input type="text" id="referProb" min="0" max="100" inputmode="numeric"><button type="button" class="stp-max" data-stp="referProb" data-d="1" aria-label="多一点">＋</button></label>
-            <label id="meantProbLab" class="mate-stp-row">「这句本意」自己标的概率（%）<button type="button" class="stp-min" data-stp="meantProb" data-d="-1" aria-label="少一点">−</button><input type="text" id="meantProb" min="0" max="100" inputmode="numeric"><button type="button" class="stp-max" data-stp="meantProb" data-d="1" aria-label="多一点">＋</button></label>
+            <label id="referProbLab" class="mate-stp-row">「这句说谁」自己标的概率（%）<button type="button" class="stp-min" data-stp="referProb" data-d="-1" aria-label="少一点">−</button><input type="text" id="referProb" min="0" max="100" inputmode="numeric"><button type="button" class="stp-max" data-stp="referProb" data-d="1" aria-label="多一点">+</button></label>
+            <label id="meantProbLab" class="mate-stp-row">「这句本意」自己标的概率（%）<button type="button" class="stp-min" data-stp="meantProb" data-d="-1" aria-label="少一点">−</button><input type="text" id="meantProb" min="0" max="100" inputmode="numeric"><button type="button" class="stp-max" data-stp="meantProb" data-d="1" aria-label="多一点">+</button></label>
             <p class="data-note">那两枚签本来只能你长按去问；这两格是让 TA 开口时也有概率自己标上——回你话那一轮与主动发来那一句都算，一轮只标第一条，两处共用这一份档。出厂各 10%＝大约十轮里冒一次，掷出来的签与你长按掷出来的是同一颗，再长按一次仍会重掷覆盖。填 0＝从不，TA 就不主动标了。这两格按人各一份，群聊里那份是本群共用的（每位单独设的那几格里没有它们）。上面那两枚开关是全站总闸：那里关着，这里填多少都不掷。</p>
           </div>
         </div>
@@ -2588,8 +2588,8 @@
                  但标签只写了「表情包」＝字卡库的【图片】那一类看着像不在机制里。标签改成两类都点名，
                  并按用户点名补上同一件事的另一半：一条气泡里放【几张】＝下面那两格张数区间。 -->
             <div class="check-row"><label class="check-item"><input type="checkbox" id="tsEnabled"><span>表情包／图片附带文字（同一气泡发送）</span></label></div>
-            <label id="tsMinLab" class="mate-stp-row">同一气泡附带图最少张数<button type="button" class="stp-min" data-stp="tsMin" data-d="-1" aria-label="少一张">−</button><input type="text" id="tsMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="tsMin" data-d="1" aria-label="多一张">＋</button></label>
-            <label id="tsMaxLab" class="mate-stp-row">同一气泡附带图最多张数<button type="button" class="stp-min" data-stp="tsMax" data-d="-1" aria-label="少一张">−</button><input type="text" id="tsMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="tsMax" data-d="1" aria-label="多一张">＋</button></label>
+            <label id="tsMinLab" class="mate-stp-row">同一气泡附带图最少张数<button type="button" class="stp-min" data-stp="tsMin" data-d="-1" aria-label="少一张">−</button><input type="text" id="tsMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="tsMin" data-d="1" aria-label="多一张">+</button></label>
+            <label id="tsMaxLab" class="mate-stp-row">同一气泡附带图最多张数<button type="button" class="stp-min" data-stp="tsMax" data-d="-1" aria-label="少一张">−</button><input type="text" id="tsMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-stp="tsMax" data-d="1" aria-label="多一张">+</button></label>
             <label>emoji 概率（%）<input type="text" id="emojiProb" min="0" max="100" inputmode="numeric"></label>
             <label>颜文字概率（%）<input type="text" id="kaomojiProb" min="0" max="100" inputmode="numeric"></label>
             <label>图片概率（%）<input type="text" id="imageProb" min="0" max="100" inputmode="numeric"></label>
@@ -2650,8 +2650,8 @@
                  （css/mate.css），框仍可手打；写入口只有 settings.js 的 _dvTaNumCommit → _dvTaWrite
                  （含配平 min ≤ max），读侧夹取在 divine.js 的 dvTaCfg。 -->
             <div id="dvTaRange" hidden>
-              <label class="mate-stp-row">最少抽几张<button type="button" class="stp-min" data-dvta-step="nMin" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMin" data-d="1" aria-label="多一张">＋</button></label>
-              <label class="mate-stp-row">最多抽几张<button type="button" class="stp-min" data-dvta-step="nMax" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMax" data-d="1" aria-label="多一张">＋</button></label>
+              <label class="mate-stp-row">最少抽几张<button type="button" class="stp-min" data-dvta-step="nMin" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMin" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMin" data-d="1" aria-label="多一张">+</button></label>
+              <label class="mate-stp-row">最多抽几张<button type="button" class="stp-min" data-dvta-step="nMax" data-d="-1" aria-label="少一张">−</button><input type="text" id="dvTaNMax" min="1" max="10" inputmode="numeric"><button type="button" class="stp-max" data-dvta-step="nMax" data-d="1" aria-label="多一张">+</button></label>
             </div>
             <div class="setting-subhead">概率</div>
             <div class="field-row"><label>每轮开口时发牌的几率（%）<input type="text" id="dvTaProb" inputmode="numeric"></label></div>
@@ -2887,10 +2887,14 @@
            选中态·锁定态·说明句全由 js/hub.js 的 renderTabbarPanel 一处现画；样式复用全站那族
            .fchips/.fchip（收藏∶搜索∶信箱∶头像库都在用）＝零新皮肤。左键那一格是选的哪一档、
            下面那一列跟着锁／放，两处同一份判据（_tbMode()）。 -->
-      <div class="fchips fs-sheet-who" id="tbModes" aria-label="底部栏布局">
-        <button type="button" class="fchip" data-tb-mode="classic" aria-pressed="false">原版</button>
-        <button type="button" class="fchip" data-tb-mode="custom" aria-pressed="false">自定义</button>
+      <div class="fchips fs-sheet-who" id="tbModes" aria-label="导航布局">
+        <button type="button" class="fchip" data-nav-mode="classic" aria-pressed="false">原版</button>
+        <button type="button" class="fchip" data-nav-mode="new" aria-pressed="false">新版</button>
       </div>
+      <!-- 顶上那条实时预览（2026-10-22 四批）：栏子只在特定几页画（聊天页压根不画底栏），用户在别处拨开关时
+           屏上什么都不动＝读成「按了没反应」。预览把「这条栏现在长什么样」搬进面板里（画手＝js/hub.js 的
+           _renderBarPreview，与顶栏那块共用一份）。 -->
+      <div class="tb-prev" id="tbPreview" aria-label="这条栏现在的样子"></div>
       <div class="fs-sheet-note" id="tbNote"></div>
       <div class="tb-list" id="tbList"></div>
     </div>
@@ -2934,6 +2938,13 @@
       <button type="button" class="fs-sheet-close" id="hbClose" aria-label="关闭">×</button>
     </div>
     <div class="fs-sheet-body">
+      <!-- 档位那排 chips：**与「底栏」那块是同一排、同一个档**（js/hub.js 的 _tbMode／_navModeSet）。
+           放这一排是为了让「回到原版」在顶栏这一面也能一键办到——用户「现在无法切换变回原布局」。 -->
+      <div class="fchips fs-sheet-who" id="hbModes" aria-label="导航布局">
+        <button type="button" class="fchip" data-nav-mode="classic" aria-pressed="false">原版</button>
+        <button type="button" class="fchip" data-nav-mode="new" aria-pressed="false">新版</button>
+      </div>
+      <div class="tb-prev" id="hbPreview" aria-label="这条栏现在的样子"></div>
       <div class="fs-sheet-note" id="hbNote"></div>
       <div class="tb-list" id="hbList"></div>
     </div>
@@ -3322,6 +3333,8 @@
      顶栏那两枚返回件与标题由全站那一套管（js/settings.js 的 topbarName 加了一行 'deal'），本件不画自己的头。
      「全部纸牌」＝本视图里的第二屏（absolute 盖满这一页），一张牌一张纸地摊开，不另立全局遮罩。 -->
 <section class="view" id="dealView" data-deal-screen="table">
+  <!-- 聊天壁纸那一层：与 #chatView 的 .chat-bg 同一手路（本页也吃用户那张聊天背景） -->
+  <div class="chat-bg" aria-hidden="true"></div>
   <div class="dl-modes" id="dealModes" role="group" aria-label="谁来抽">
     <button type="button" class="dl-mode" data-deal-mode="me" aria-pressed="true">我来抽</button>
     <button type="button" class="dl-mode" data-deal-mode="ta" aria-pressed="false">让 TA 抽</button>
