@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v15.6.7.css','dist/app.v15.6.7.js'];
+      var BOOT_FILES = ['dist/app.v16.2.1.css','dist/app.v16.2.1.js'];
 
 
 
@@ -892,8 +892,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v15.6.7.css">
-  <script defer src="dist/app.v15.6.7.js"></script>
+  <link rel="stylesheet" href="dist/app.v16.2.1.css">
+  <script defer src="dist/app.v16.2.1.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1095,21 +1095,16 @@
           <div class="g-eyebrow">MORE</div><div class="g-hi">更多</div>
           <div class="g-sub" id="moreVer"></div><!-- 版号由 js/app.js 启动时填 window.APP_VER（bump 三锚之一） -->
         </div>
-        <!-- 页头右侧三枚动作＝「顶栏」(#headBarEntry) ＋「底栏」(#tabbarEntry) ＋「使用大全」(#hubEntry)。
-             三枚并排裹在 .mg-acts 里：不裹的话 .home-greet 的 justify-content:space-between 会把先来的那枚推到页头正中
-             （左题头∶中按钮∶右按钮）。哨兵 #500 钉的是 id="tabbarEntry" 与这个包裹层，两样都没动。 -->
+        <!-- 页头右侧两枚动作＝「布局」(#layoutEntry) ＋「使用大全」(#hubEntry)。
+             两枚并排裹在 .mg-acts 里：不裹的话 .home-greet 的 justify-content:space-between 会把先来的那枚推到页头正中
+             （左题头∶中按钮∶右按钮）。 -->
         <div class="mg-acts">
-        <!-- 2026-10-22 新增：聊天页右上那一排快捷位自此也由用户自己定。与「底栏」并排＝**同一对**（一个是聊天页顶栏、
-             一个是底部导航），名字也对着改成了「顶栏／底栏」——原先那枚叫「自定义」，用户回「我没看到这个功能在哪里切换」，
-             两枚一个叫「自定义」一个叫「顶栏」时根本读不出它们是一对。
-             它同样不带 data-view、不是一行直达：点它开的是那一块贴底面板（#headBarMask，住在 html/sheet.html＝app-shell 末尾）。
-             名字·线稿·勾选全由 js/hub.js 的 renderHeadBarPanel 一处现画，本页只放这一枚壳。 -->
-        <button type="button" class="more-hub" id="headBarEntry">顶栏</button>
-        <!-- 2026-10-18 新增（本批把标签由「自定义」改成「底栏」，id 与哨兵 #500 一字未动）：底部导航那一条自此由用户自己定。
-             顶端那一枚「顶栏」＝聊天页右上那一排，两枚并排读作一对。
-             它不带 data-view、也不是一行直达：点它开的是那一块贴底面板（#tbMask，住在 html/sheet.html＝app-shell 末尾，
-             与 appModal／cardLinesMask 同址）。名字·线稿·勾选全在那一块面板里由 js/hub.js 一处现画，本页只放这一枚壳。 -->
-        <button type="button" class="more-hub" id="tabbarEntry">底栏</button>
+        <!-- 2026-10-23（用户「这两个功能……左右脑互搏」）：原先「顶栏」#headBarEntry 与「底栏」#tabbarEntry
+             是两枚并排的门，可它们底下其实是**同一个**布局档（ordinal-nav-mode）：切一次两条栏一起变。
+             分成两枚入口＝面上读成两个功能，而且版本开关只藏在那两块面板里、没有一处能直接切。
+             现在两枚并成一枚「布局」：点开同一块 #layoutMask，顶上就是那唯一一档（原版／新版），
+             下面分「底部导航」「聊天页顶栏」两段排。全站只有一份实现（js/hub.js 的 openLayoutPanel）。 -->
+        <button type="button" class="more-hub" id="layoutEntry">布局</button>
         <!-- 整册目录的入口（id 与 data-view 一字未动，仍是 #hubEntry ＋ data-view="hub"＝哨兵 #044 钉的那对）。
              2026-10-13 二批：它原先是这一列的**最后一行**（BUGS #300 那批由设置页那一格搬来），本批改成页头这一枚
              ＝目录不列它自己（前面每一行本身都是它的一项，目录与条目混摆一层＝读不出层级，这正是「太乱」的一半）。
@@ -1237,7 +1232,7 @@
               </div>
             </div>
       </div>
-      <div class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><div class="attach-list" id="attachList"></div><span class="attach-info" id="attachInfo">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除全部">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button type="button" class="compose-icon" id="voiceBtn" title="发送语音" aria-label="发送语音" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M8 21h8"/></svg></button><button class="send-btn" type="button" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div><div class="voice-rec" id="voiceRec" hidden><button type="button" class="voice-rec-x" id="voiceRecCancel" aria-label="取消录音">×</button><button type="button" class="voice-rec-wave" id="voiceRecWave" aria-label="试听这段录音"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><span class="voice-rec-t" id="voiceRecTime">0'00"</span><button type="button" class="voice-rec-go ghost" id="voiceRecRe" hidden>重录</button><button type="button" class="voice-rec-go" id="voiceRecGo">停止</button></div></div>
+      <div class="composer" id="composer"><div class="at-pick" id="atPick" hidden aria-label="选择要点名的人"><div class="member-pick-list" id="atPickList"></div></div><div class="reply-target" id="replyTarget" hidden><img class="reply-target-thumb" id="replyTargetThumb" hidden alt="引用的图片"><span id="replyTargetText"></span><button type="button" id="replyCancel" aria-label="取消回复">×</button></div><div class="composer-attach" id="composerAttach" hidden><div class="attach-list" id="attachList"></div><span class="attach-info" id="attachInfo">已插入图片/表情包，可继续输入文字一起发送</span><button type="button" class="attach-remove" id="attachRemove" aria-label="移除全部">×</button></div><div class="composer-row"><button type="button" class="compose-icon" id="askBtn" title="问问TA" aria-label="问问TA"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></button><button type="button" class="compose-icon" id="openStickers" title="表情包" aria-label="打开表情包"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5l.01.01M15 9.5l.01.01"/></svg></button><input id="messageInput" autocomplete="off" enterkeyhint="send" maxlength="500" placeholder=" "><button type="button" class="compose-icon" id="batchBtn" title="批量发送" aria-label="批量发送" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></button><button type="button" class="compose-icon" id="chatImageBtn" title="插入图片" aria-label="插入图片"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button><button type="button" class="compose-icon" id="chatVideoBtn" title="发送视频" aria-label="发送视频" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/></svg></button><input type="file" id="chatVideoInput" accept="video/*" hidden><button type="button" class="compose-icon" id="voiceBtn" title="发送语音" aria-label="发送语音" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M8 21h8"/></svg></button><button class="send-btn" type="button" aria-label="发送消息"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></button></div><div class="voice-rec" id="voiceRec" hidden><button type="button" class="voice-rec-x" id="voiceRecCancel" aria-label="取消录音">×</button><button type="button" class="voice-rec-wave" id="voiceRecWave" aria-label="试听这段录音"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><span class="voice-rec-t" id="voiceRecTime">0'00"</span><button type="button" class="voice-rec-go ghost" id="voiceRecRe" hidden>重录</button><button type="button" class="voice-rec-go" id="voiceRecGo">停止</button></div></div>
       <!-- 批量发送面板（FR 2026-10-11，复刻自家 mochi v3.11.x 同名功能）：TA 的设置「批量发送」开关打开后
            输入栏显示那枚钮；面板里逐项添加文字 / 表情包 / 图片（每一项就是一条消息，清单可删可清空），
            点「发送全部」按顺序逐条入账、整批只发起一次回复。壳用全站 .fs-sheet-* 贴底面板族；
@@ -1515,7 +1510,7 @@
             <p class="data-note" id="emoLibNote"></p>
             <div id="emoLibGroups"></div>
             <p class="emo-lib-foot"><button type="button" class="emo-restore" id="emoRestore">恢复出厂词表</button></p>
-            <p class="data-note">「停用」＝这张不再被抽到、词仍留在表里；「删」只给自己填进来的词——出厂那些要靠「恢复出厂词表」才回得来。恢复出厂会把停用一起取消，并把你自填的那几张清掉（它们只存在你这一本里）。</p>
+            <p class="data-note">「停用」＝这张不再被抽到、词仍留在表里；系统预设词不给「删」，只有你先前自己填过的那几张才有这一枚。恢复出厂会把停用一起取消，并把自填的那几张清掉（它们只存在你这一本里）。这一页不提供加词入口：预设页的口径是只读这套出厂词表。</p>
           </div>
           <p class="data-note">这套机制来自作者的两件前作：三级标签链（情绪 → 心意 → 交流意图）出自「星言」，逻辑连接词出自「Mochi 字卡」。同一账号 小红书 @言序。</p>
         </div>
@@ -1576,17 +1571,16 @@
           <div class="fs-sheet-note">这两个数是「一封信拼几张字卡」。这一位取不到的字卡不算进来（专属组没绑给他的、清空了的都不算），库里凑不满这个数就按库里那么多张写。</div>
           <label class="check-item fs-sheet-chk"><input type="checkbox" id="mbSetPunct"><span>拼接随机标点</span></label>
           <div class="fs-sheet-note">关＝各张字卡之间只用空格相连。开＝每两条中间随机抽一枚连接符，抽到「换行」就另起一段；抽的是这位 TA 聊天那套拼接符号（先在 TA 的设置里点亮「换行」才抽得到），与聊天页的开关互不影响。</div>
-          <div class="setting-subhead">主动写信</div>
+          <div class="check-row"><label class="check-item"><input type="checkbox" id="mbSetKao"><span>颜文字</span></label><label class="check-item"><input type="checkbox" id="mbSetEmoji"><span>emoji</span></label></div>
+          <div class="fs-sheet-note">颜文字和 emoji 是文本字卡，勾上的会拼进 TA 写的信的正文字。「表情包」不在这一组：它是图，管不了正文——图由下面那一组按张数管。</div>
+          <div class="setting-subhead">TA 主动写信</div>
           <label class="check-item fs-sheet-chk"><input type="checkbox" id="mbSetWriteEn"><span>TA 会主动写信</span></label>
           <div class="field-row"><label>每天最多（封）<input type="text" id="mbSetDaily" min="0" max="99" inputmode="numeric"></label><label>概率（%）<input type="text" id="mbSetWriteProb" min="0" max="100" inputmode="numeric"></label></div>
           <div class="field-row"><label>最短间隔（分钟）<input type="text" id="mbSetWriteMin" min="1" max="1440" inputmode="numeric"></label><label>最长间隔（分钟）<input type="text" id="mbSetWriteMax" min="1" max="1440" inputmode="numeric"></label></div>
           <div class="fs-sheet-note">「每天最多」默认 1 封，按这一位自己计，不占别人的额度；填 0＝这位不再自己寄信。TA 回你的信不算在这封数里。</div>
-          <div class="setting-subhead">回信</div>
+          <div class="setting-subhead">TA 回你的信</div>
           <div class="field-row"><label>回信概率（%）<input type="text" id="mbSetReplyProb" min="0" max="100" inputmode="numeric"></label><label>最快（分钟）<input type="text" id="mbSetReplyMin" min="1" max="1440" inputmode="numeric"></label></div>
           <div class="field-row"><label>最慢（分钟）<input type="text" id="mbSetReplyMax" min="1" max="1440" inputmode="numeric"></label></div>
-          <div class="setting-subhead">来信里用</div>
-          <div class="check-row"><label class="check-item"><input type="checkbox" id="mbSetKao"><span>颜文字</span></label><label class="check-item"><input type="checkbox" id="mbSetEmoji"><span>emoji</span></label></div>
-          <div class="fs-sheet-note">这两样是文本字卡，勾上的会拼进信的正文字。「表情包」不在这一排：它是图，管不了正文——图由下面那一组按张数管。</div>
           <div class="setting-subhead">信里夹的图</div>
           <div class="check-row"><label class="check-item"><input type="checkbox" id="mbSetImgSticker"><span>表情包</span></label><label class="check-item"><input type="checkbox" id="mbSetImgPhoto"><span>图片</span></label></div>
           <div class="field-row"><label>最少（张）<input type="text" id="mbSetImgMin" min="0" max="9" inputmode="numeric"></label><label>最多（张）<input type="text" id="mbSetImgMax" min="0" max="9" inputmode="numeric"></label></div>
@@ -1596,17 +1590,16 @@
     </div>
     <section class="view" id="momentsView">
       <!-- 朋友圈（按用户给的参考原型 ui1.html 那一屏）：首屏就是卡，不摆一块没有图的封面。
-           顶部只留一枚收起的「⋯」菜单（提醒∶设置都在里面）＝不再拿两枚方框钮压在页头右上。
-           筛到某人时才在左半给一句「看谁的全部 · 返回全部」。封面真传了图才出现在列表上方。 -->
+           顶栏＝参考原型那种把功能摆明的方式（用户 2026-10-23：「加号放右下角很突兀，提醒和设置不该收起来」）：
+           右侧三枚圆形图标钮「互动提醒∶朋友圈设置∶发布」平铺，发布不再沉在右下角当浮钮。
+           左半那行只在筛到某人时给一句「看谁的全部 · 返回全部」。封面真传了图才出现在列表上方。 -->
       <div class="mm-bar">
         <div class="mm-owners" id="mmOwners" hidden></div>
         <span class="mm-bar-sp"></span>
-        <div class="mm-more-wrap">
-          <button type="button" class="mc-more" id="mmMoreBtn" aria-label="朋友圈菜单" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>
-          <div class="mm-more-menu" id="mmMoreMenu" hidden>
-            <button type="button" class="mc-notice" id="mmNoticeBtn" hidden>互动提醒<span class="unread-badge" id="mmNoticeDot" hidden></span></button>
-            <button type="button" class="mc-set" id="mmSetBtn">朋友圈设置</button>
-          </div>
+        <div class="mm-acts">
+          <button type="button" class="mm-act" id="mmNoticeBtn" aria-label="互动提醒" title="互动提醒"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.4 19a1.8 1.8 0 0 0 3.2 0"/></svg><span class="unread-badge" id="mmNoticeDot" hidden></span></button>
+          <button type="button" class="mm-act" id="mmSetBtn" aria-label="朋友圈设置" title="朋友圈设置"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="5.5" y2="6"/><line x1="10.5" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="12.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="7.5" y2="18"/><line x1="12.5" y1="18" x2="21" y2="18"/><circle cx="8" cy="6" r="2.5"/><circle cx="15" cy="12" r="2.5"/><circle cx="10" cy="18" r="2.5"/></svg></button>
+          <button type="button" class="mm-act mm-act-add" id="newMoment" aria-label="发布朋友圈" title="发布朋友圈"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         </div>
       </div>
       <!-- 池空提示：「TA 怎么从来不发圈」的原因（那一本「主字卡」是空的）写在屏上并当场能办掉，
@@ -1618,7 +1611,6 @@
       </div>
       <div class="mm-buckets" id="mmBuckets" hidden></div>
       <div class="moments-list" id="momentsList"></div>
-      <button type="button" class="fab" id="newMoment" aria-label="发布朋友圈"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
     </section>
     <!-- 互动提醒簿：整枚可点（不画「去看看」这类引导字），点一条直达那条动态并闪一下 -->
     <div class="fs-sheet-mask" id="mmNoticeSheet" hidden>
@@ -1647,6 +1639,15 @@
           <div class="mm-scopes" id="mmOwnersSet"></div>
           <p class="fs-sheet-note" id="mmScopeNote"></p>
           <p class="fs-sheet-note" id="mmPendingNote" hidden></p>
+          <!-- 分类目录（2026-10-23 用户「分类不明显、看不懂」）：三枚大分类 chips 常驻面板顶部，
+               点一枚滚到对应那一组；分组本身也给一条大节头，让「TA 发圈／TA 回应你／提醒与外观」三条边界先立住。 -->
+          <div class="mm-set-jump" id="mmSetJump">
+            <button type="button" class="mm-jump" data-mm-jump="g1">TA 发圈</button>
+            <button type="button" class="mm-jump" data-mm-jump="g2">TA 回应你</button>
+            <button type="button" class="mm-jump" data-mm-jump="g3">提醒与外观</button>
+          </div>
+          <div class="mm-set-group" id="mmSetG1">
+            <div class="mm-set-gt" data-mm-group="g1" role="button" tabindex="0" aria-expanded="false"><b>TA 发圈</b><span>TA 自己发的那一条：多久发、里面放什么、评论区怎么写</span></div>
           <div class="mm-set-sec">
             <div class="mm-sec-h"><b>发圈节奏</b><span>TA 多久发一条、一天发几条</span></div>
             <label class="mm-set-row"><span class="mm-fl">会自己发动态</span><input type="checkbox" id="mmPostEnabled"></label>
@@ -1673,8 +1674,11 @@
             <div class="mm-set-row"><span class="mm-fl">带颜文字</span><input type="text" id="mmCommentKaomojiProb" min="0" max="100" inputmode="numeric"><span class="mm-fu">%</span></div>
             <div class="mm-set-row"><span class="mm-fl">带 emoji</span><input type="text" id="mmCommentEmojiProb" min="0" max="100" inputmode="numeric"><span class="mm-fu">%</span></div>
           </div>
+          </div>
+          <div class="mm-set-group" id="mmSetG2">
+            <div class="mm-set-gt" data-mm-group="g2" role="button" tabindex="0" aria-expanded="false"><b>TA 回应你</b><span>你发了动态、你评了论，TA 会怎么接</span></div>
           <div class="mm-set-sec">
-            <div class="mm-sec-h"><b>TA 来找你的动态</b><span>你发圈之后，TA 自发的动作</span></div>
+            <div class="mm-sec-h"><b>TA 对你的动态</b><span>你发圈之后，TA 自发的动作</span></div>
             <div class="mm-set-row"><span class="mm-fl">来点赞</span><input type="text" id="mmLikeProb" min="0" max="100" inputmode="numeric"><span class="mm-fu">%</span></div>
             <div class="mm-set-row"><span class="mm-fl">来点赞的间隔</span><input type="text" id="mmLikeMin" min="1" max="3600" inputmode="numeric"><span class="mm-fu">–</span><input type="text" id="mmLikeMax" min="1" max="3600" inputmode="numeric"><span class="mm-fu">秒</span></div>
             <div class="mm-set-row"><span class="mm-fl">来评论</span><input type="text" id="mmTaCommentPostProb" min="0" max="100" inputmode="numeric"><span class="mm-fu">%</span></div>
@@ -1689,6 +1693,9 @@
             <div class="mm-set-row"><span class="mm-fl">接话的间隔</span><input type="text" id="mmReplyMin" min="1" max="3600" inputmode="numeric"><span class="mm-fu">–</span><input type="text" id="mmReplyMax" min="1" max="3600" inputmode="numeric"><span class="mm-fu">秒</span></div>
             <div class="mm-set-row"><span class="mm-fl">你点赞后 TA 回赞</span><input type="text" id="mmReturnLikeProb" min="0" max="100" inputmode="numeric"><span class="mm-fu">%</span></div>
           </div>
+          </div>
+          <div class="mm-set-group" id="mmSetG3">
+            <div class="mm-set-gt" data-mm-group="g3" role="button" tabindex="0" aria-expanded="false"><b>提醒与外观</b><span>要不要提醒，以及这一面长什么样</span></div>
           <div class="mm-set-sec">
             <div class="mm-sec-h"><b>提醒</b><span>只此一份，对所有 TA 生效</span></div>
             <label class="mm-set-row"><span class="mm-fl">有新动静时提醒我</span><input type="checkbox" id="mmPopup"></label>
@@ -1703,6 +1710,7 @@
               <button type="button" class="mc-chip mc-danger" id="mcClearCover" hidden>恢复默认封面</button>
             </div>
             <div class="mm-set-row" id="mmWallNameRow"><span class="mm-fl">这一面的昵称</span><input type="text" id="mmWallName" maxlength="24" placeholder="留空＝跟随聊天里的名字"></div>
+          </div>
           </div>
         </div>
       </div>
@@ -1966,14 +1974,10 @@
           <div class="fold-bd"><div class="ap-row"><span>宽屏布局</span><div class="contact-chip-row" style="margin:0" data-ap-set="phoneFit" data-sum="sumPhoneFit"><button type="button" class="contact-chip" data-v="off">平板/电脑加宽</button><button type="button" class="contact-chip" data-v="on">手机窄栏</button></div></div><p class="data-note">在 <b>iPad 或电脑浏览器</b>上，本站默认把内容放宽成一栏（约 820px）用好大屏。想回到手机那种窄窄的一屏（480px 居中卡片），把上面切到「<b>手机窄栏</b>」即可。手机本身不受影响（本来就是窄栏）。点一下当场生效、重启仍记得。</p></div>
         </div>
 
-        <!-- 递牌页信纸（2026-10-23）：长按发送键开的抽牌页（#dealView）的独立美化档。
-             默认 off＝原样（跟聊天壁纸一张底＋素白牌）；on＝苔绿淡格信纸＋两角手绘小花＋双线细框圆角牌，
-             观感全在 css/deal.css 的 body[data-ap-dealpaper=on] 段（含墨黑主题的深绿变体）。 -->
-        <div class="setting-card fold" data-tab="desk" data-fold="dealpaper">
-          <button type="button" class="fold-hd"><span class="fold-ti">递牌页信纸</span><span class="fold-sum" id="sumDealPaper"></span><i class="fold-ar">›</i></button>
-          <div class="fold-bd"><div class="ap-row"><span>抽牌页风格</span><div class="contact-chip-row" style="margin:0" data-ap-set="dealPaper" data-sum="sumDealPaper"><button type="button" class="contact-chip" data-v="off">跟壁纸（原样）</button><button type="button" class="contact-chip" data-v="on">苔绿信纸</button></div></div><p class="data-note">管的是<b>长按发送键</b>开的那一页「抽牌」：<b>跟壁纸（原样）</b>＝这一页和聊天共用一张底（壁纸透上来），牌是素白小卡；<b>苔绿信纸</b>＝这一页自带一张独立的苔绿淡格信纸，两角一枝手绘小花，牌换成双线细框的圆角白笺，选牌钮与「收下」也换苔绿。只管抽牌这一页，聊天里发出去的纸牌卡不跟这一档走。点一下当场生效、重启仍记得。</p></div>
-        </div>
+        <!-- 递牌页那枚「打开方式」设置 2026-10-23 已下架：长按固定进半屏，全屏从半屏左上那枚「全屏」进
+             （用户「半屏和全屏是两种模式」「为什么长按发送按钮抽完牌，打开了全屏功能」）。 -->
 
+        <div class="setting-card fold" data-tab="desk" data-fold="avshape">
         <div class="setting-card fold" data-tab="desk" data-fold="avshape">
           <button type="button" class="fold-hd"><span class="fold-ti">头像形状</span><span class="fold-sum" id="sumAvShape"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd"><div class="ap-row"><span>形状</span><div class="avatar-shape-row" style="margin:0"><button type="button" class="shape-btn" data-shape="circle" aria-label="圆形" title="圆形"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="rounded" aria-label="圆角" title="圆角"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="square" aria-label="方形" title="方形"><i aria-hidden="true"></i></button></div></div><p class="data-note">全站头像一起换形状（会话列表、聊天气泡旁、信箱都算）：圆形／圆角／方形，点一下立即生效、重启仍在。</p></div>
@@ -2134,19 +2138,20 @@
             </div>
           </div>
         </div>
-        <!-- 两处「页头／底栏」的门（2026-10-22 三批，用户「聊天设置里也要可以直接开启啊」）：
-             这一页是聊天页右上 ⋮ 一按就到的地方，而先前那两处只能绕回「更多」页头才找得到——用户连问两轮
+        <!-- 界面布局那一枚门（2026-10-22 三批，用户「聊天设置里也要可以直接开启啊」；2026-10-23 两枚并成一枚）：
+             这一页是聊天页右上 ⋮ 一按就到的地方，而先前布局只能绕回「更多」页头才找得到——用户连问两轮
              「在哪里切换」，故把门补到这儿。**位置照「切换 TA」那张卡**：放在顶部分组 tag **之上**＝
              六个 tag 哪一档都看得见、一进页第一屏就有（放进某一档＝要再点一次 tag 才看得到，等于没解决）。
              行式沿用 .mate-jump 裸排进 .mate-group 白卡（与「切换 TA」「头像昵称库」「自定义气泡 CSS」同一族）
              ＝零新样式零新组件。
-             ⚠ 这两枚是**跳转**不是就地开关：点开的就是「更多」页头那两块同一块面板（js/hub.js 的
-             openHeadBarPanel ∶ openTabbarPanel），全站只有一份实现。
-             ⚠ 这两样**全站一份、不按人分**（与「外观·字号」那条不同）：摘要里点明「所有会话通用」，
+             ⚠ 2026-10-23：原先这里并排两行（顶栏快捷位 ∶ 底部导航布局），可它们底下是同一个布局档，
+             两行读起来像两个功能（用户「左右脑互搏」）——现在收成一行「界面布局」，点开同一块 #layoutMask，
+             顶上就是那唯一一档（原版／新版）。这是**跳转**不是就地开关：全站只有一份实现
+             （js/hub.js 的 openLayoutPanel）。
+             ⚠ 这一样**全站一份、不按人分**（与「外观·字号」那条不同）：摘要里点明「所有会话通用」，
              别让人以为它是这一位的专属档；摘要由 js/mate.js 的 renderMateChromeSums 进页现写。 -->
         <div class="mate-group" id="mateChromeCard">
-          <button type="button" class="mate-jump" id="mateHeadBarBtn"><span class="fold-tx"><span class="fold-ti">聊天页顶栏快捷位</span><small class="fold-sum" id="sumHeadBar">所有会话通用</small></span><i class="fold-ar">›</i></button>
-          <button type="button" class="mate-jump" id="mateTabbarBtn"><span class="fold-tx"><span class="fold-ti">底部导航布局</span><small class="fold-sum" id="sumTabbar">所有会话通用</small></span><i class="fold-ar">›</i></button>
+          <button type="button" class="mate-jump" id="mateLayoutBtn"><span class="fold-tx"><span class="fold-ti">界面布局</span><small class="fold-sum" id="sumLayout">所有会话通用</small></span><i class="fold-ar">›</i></button>
         </div>
         <!-- 群态才出现的一条成员分段：「本群」＝这一群共用的那份，点某一位＝整页换成他（他在本群那五格＋他自己的形象与声音）。
              导航只有这一处：下面「群成员」那张卡里的行是读数，不再兼作入口。 -->
@@ -2383,7 +2388,11 @@
             <div class="ap-sec">
               <div class="ap-sec-t">时间轴样式</div>
               <div class="ap-row"><span>样式</span><div class="contact-chip-row" style="margin:0" id="apTimeStyle"><button type="button" class="contact-chip" data-v="under">气泡下方</button><button type="button" class="contact-chip" data-v="side">气泡外侧</button><button type="button" class="contact-chip" data-v="pill">胶囊底</button><button type="button" class="contact-chip" data-v="line">两侧短线</button><button type="button" class="contact-chip" data-v="av">头像下方</button><button type="button" class="contact-chip" data-v="bubble">时间气泡</button><button type="button" class="contact-chip" data-v="center">消息上方居中</button><button type="button" class="contact-chip" data-v="divider">时间分隔线</button></div></div>
-              <p class="data-note">「头像下方」只对对方生效（我方消息没有头像，时间照旧在气泡下方）。「时间气泡」＝时间贴在气泡内侧、与气泡同一行垂直居中。「消息上方居中」与「时间分隔线」会在消息上方让出一行。位置微调用下面那两根杆。</p>
+              <!-- 「消息时间 显示/隐藏」2026-10-23 从「界面与磨砂」卡搬到这里：八种样式改的全是时间那行字，
+                   而那一行被关掉时八枚 chip 点了都不会有可见变化（.ft-time{display:none}）＝用户读成「点了没反应」。
+                   两件事挨着放，因与果才读得出来。写手仍是 settings.js 那条 [data-ap-set] 委托，零新实现。 -->
+              <div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div>
+              <p class="data-note">「头像下方」只对对方生效（我方消息没有头像，时间照旧在气泡下方）。「时间气泡」＝时间贴在气泡内侧、与气泡同一行垂直居中。「消息上方居中」与「时间分隔线」会在消息上方让出一行。位置微调用下面那两根杆。⚠「消息时间」停在「隐藏」时，这八种样式全都没有可见效果（改的就是那行字）——先调回「显示」。</p>
             </div>
             <!-- 时间位置（2026-10-20 #881）：mochi「微调」那节里的「时间轴 左右/上下」两杆。
                  只动 .message-meta 那一行（transform），不改气泡与签的位置——签那边言字卡没做偏移杆，
@@ -2507,7 +2516,7 @@
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">界面与磨砂</span><span class="fold-sum" id="sumChatFx"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd"><!-- 栏位位置（2026-10-20 #881 二批）：mochi 「栏位」节里的顶栏/底栏位置两杆。
                只挪绘制、不占布局（transform），所以消息区不会被这两杆挤缩。 -->
-<div class="ap-sec"><div class="ap-sec-t">栏位位置</div><label class="ap-knob"><span>顶栏</span><input type="range" id="apHeadDy" min="-40" max="40" step="1" value="0" aria-label="顶栏位置"><output id="apHeadDyOut">0px</output></label><label class="ap-knob"><span>输入栏</span><input type="range" id="apCompDy" min="-40" max="40" step="1" value="0" aria-label="输入栏位置"><output id="apCompDyOut">0px</output></label><p class="data-note">正值往下、负值往上。只挪这两条栏本身，消息区大小不变。</p></div><div class="ap-row"><span>消息时间</span><div class="contact-chip-row" style="margin:0" data-ap-set="showTime"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-sec"><div class="ap-sec-t">按钮颜色</div><div class="ap-color-row"><span>发送键底</span><input type="color" id="apSendBg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apSendBgRst" title="清除">×</span></div><div class="ap-color-row"><span>发送键字</span><input type="color" id="apSendFg" class="ap-color" value="#ffffff"><span class="ap-color-reset" id="apSendFgRst" title="清除">×</span></div><div class="ap-color-row"><span>回底键底</span><input type="color" id="apScrollBg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apScrollBgRst" title="清除">×</span></div><div class="ap-color-row"><span>回底键图</span><input type="color" id="apScrollFg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apScrollFgRst" title="清除">×</span></div><label class="ap-knob"><span>透明度</span><input type="range" id="apBtnAlpha" min="10" max="100" step="1" value="100" aria-label="按钮透明度"><output id="apBtnAlphaOut">100%</output></label><p class="data-note">点色块选颜色，点 × 恢复默认（不覆盖）。透明度同时作用于两枚钮。</p><div class="ap-color-row"><span>正在输入</span><input type="color" id="apTypingInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apTypingInkRst" title="清除">×</span></div><div class="ap-color-row"><span>提示文字</span><input type="color" id="apPhInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apPhInkRst" title="清除">×</span></div><p class="data-note">「正在输入」是 TA 写字那行小字（含三个跳动点）；「提示文字」是输入框里空着时那句灰字。点 × 交回主题灰。</p></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">「省电磨砂」＝顶栏与输入栏不再做实时采样（手机发烫的大头），观感是底纱更实。觉得烫或滚动掉帧时开。</p><p class="data-note">发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
+<div class="ap-sec"><div class="ap-sec-t">栏位位置</div><label class="ap-knob"><span>顶栏</span><input type="range" id="apHeadDy" min="-40" max="40" step="1" value="0" aria-label="顶栏位置"><output id="apHeadDyOut">0px</output></label><label class="ap-knob"><span>输入栏</span><input type="range" id="apCompDy" min="-40" max="40" step="1" value="0" aria-label="输入栏位置"><output id="apCompDyOut">0px</output></label><p class="data-note">正值往下、负值往上。只挪这两条栏本身，消息区大小不变。</p></div><div class="ap-row"><span>发送按钮</span><div class="contact-chip-row" style="margin:0" data-ap-set="sendBtn"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div><div class="ap-sec"><div class="ap-sec-t">按钮颜色</div><div class="ap-color-row"><span>发送键底</span><input type="color" id="apSendBg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apSendBgRst" title="清除">×</span></div><div class="ap-color-row"><span>发送键字</span><input type="color" id="apSendFg" class="ap-color" value="#ffffff"><span class="ap-color-reset" id="apSendFgRst" title="清除">×</span></div><div class="ap-color-row"><span>回底键底</span><input type="color" id="apScrollBg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apScrollBgRst" title="清除">×</span></div><div class="ap-color-row"><span>回底键图</span><input type="color" id="apScrollFg" class="ap-color" value="#1c1917"><span class="ap-color-reset" id="apScrollFgRst" title="清除">×</span></div><label class="ap-knob"><span>透明度</span><input type="range" id="apBtnAlpha" min="10" max="100" step="1" value="100" aria-label="按钮透明度"><output id="apBtnAlphaOut">100%</output></label><p class="data-note">点色块选颜色，点 × 恢复默认（不覆盖）。透明度同时作用于两枚钮。</p><div class="ap-color-row"><span>正在输入</span><input type="color" id="apTypingInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apTypingInkRst" title="清除">×</span></div><div class="ap-color-row"><span>提示文字</span><input type="color" id="apPhInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apPhInkRst" title="清除">×</span></div><p class="data-note">「正在输入」是 TA 写字那行小字（含三个跳动点）；「提示文字」是输入框里空着时那句灰字。点 × 交回主题灰。</p></div><div class="ap-row"><span>顶栏与输入栏</span><div class="contact-chip-row" style="margin:0" data-ap-set="glass"><button type="button" class="contact-chip" data-v="on">磨砂玻璃</button><button type="button" class="contact-chip" data-v="off">完全透出</button></div></div><div class="ap-row"><span>省电磨砂</span><div class="contact-chip-row" style="margin:0" data-ap-set="glassLite"><button type="button" class="contact-chip" data-v="on">开</button><button type="button" class="contact-chip" data-v="off">关</button></div></div><p class="data-note">「省电磨砂」＝顶栏与输入栏不再做实时采样（手机发烫的大头），观感是底纱更实。觉得烫或滚动掉帧时开。</p><p class="data-note">发送钮关掉后仍可用回车或输入法上的发送键。</p></div>
         </div>
           </div>
         </div>
@@ -2527,6 +2536,7 @@
             <!-- #1731（2026-10-22 用户「聊天底部栏默认不开启用户发送语音的功能，需要在聊天设置里手动开启」）：
                  出厂＝关，此处是唯一开关；打开才会在输入栏长出那枚麦克风。 -->
             <div class="check-row"><label class="check-item"><input type="checkbox" id="voiceSend"><span>发送语音<span style="display:block;font-size:11px;color:var(--muted)">默认关着。打开后聊天输入栏多一枚麦克风：点一下开始录音，停止后能试听／重录，确认才发出去；关掉＝那枚钮整族不画。<b>这一枚对所有人生效</b>。浏览器不支持录音时这枚钮不画。</span></span></label></div>
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="videoSend"><span>发送视频<span style="display:block;font-size:11px;color:var(--muted)">默认关着。打开后聊天输入栏多一枚视频钮：选一段 30MB 以内的视频，独立成条发出（自动抓首帧当封面）；关掉＝那枚钮整族不画。<b>这一枚对所有人生效</b>。</span></span></label></div>
             <div class="setting-subhead">已读不回与回复速度</div>
             <div class="check-row"><label class="check-item"><input type="checkbox" id="rnOn"><span>允许「已读不回」<span style="display:block;font-size:11px;color:var(--muted)">关掉＝TA 每一轮都会回你正文，下面那格概率不再生效（与把它填 0 一样，只是这里按一下就行）。</span></span></label></div>
             <label id="rnProbLab">已读不回概率（%）<input type="text" id="rnProb" min="0" max="100" inputmode="numeric"></label>
@@ -2604,7 +2614,7 @@
             <label>语音概率（%）<input type="text" id="voiceProb" min="0" max="100" inputmode="numeric"></label>
             <label>引用概率（%）<input type="text" id="quoteProb" min="0" max="100" inputmode="numeric"></label>
             <p class="data-note">每格管一类：TA 决定带一张图时先掷「图片概率」、没中再掷「表情包概率」，一条气泡只带一种；那一类库里取不到就自动跳过，不占这一次掷。上面那两格张数是「同一气泡里放几张」（1~10，出厂 1~3：最少一张、最多三张）：先掷中的那一类是图片就几张图片、是表情包就几张表情包，两张以上在气泡里并排成网格，同一条气泡里不重复同一张。文字附带归那枚开关，张数归这两格，各管各的。</p>
-            <p class="data-note">「语音概率」按 TA 手里**能发出的不同语音条数**折算：只有一两段录音时，填 10 实际只会发 4% 左右（同一个 10% 每次都是那一段，听感比数字高）；录音多到五段以上才贴近填的数。绑了 MiniMax 音色、开着「TA 的声音 → 文字字卡也念成语音发」时，可念的主字卡也进这一池，折算就不再压它。</p>
+            <p class="data-note">「语音概率」按 TA 手里**能发出的不同语音条数**折算：只有一两段录音时，填 10 实际只会发 4% 左右（同一个 10% 每次都是那一段，听感比数字高）；录音多到五段以上才贴近填的数。绑了 MiniMax 音色、开着「TA 的声音 → 文字字卡也念成语音发」时，可念的主字卡也进这一池（录音与文字卡同池抽），折算就不再压它，也不会反复只播那一两段录音。</p>
             <div class="setting-subhead">撤回与补发</div>
             <label>撤回概率（%）<input type="text" id="rcProb" min="0" max="100" inputmode="numeric"></label>
             <label>撤回补发概率（%）<input type="text" id="rcRefix" min="0" max="100" inputmode="numeric"></label>
@@ -2725,9 +2735,12 @@
             <!-- 2026-10-22 用户「当用户添加了 minimax 语音后，应该默认可以开启，联系人将文字字卡也当成语音发，
                  并且显示为正常播放语音的样式，让我可以点击播放语音；这个功能也可以手动关闭」：
                  勾上＝「语音概率」抽中的那几轮可以把主字卡现合成成一条正常语音气泡（屏上走 render.js 的 m.voice
-                 波形分支，点波形就播）；没绑音色/全局 MiniMax 关着时这一项不生效。字段落在这位联系人身上
-                 （mmTtsCards === false 才叫关，没设过＝开），回显见 js/render.js 的 renderProfile。 -->
-            <div class="check-row"><label class="check-item"><input type="checkbox" id="mxTtsCards"><span>文字字卡也念成语音发<span style="display:block;font-size:11px;color:var(--muted)">开着＝按「语音概率」抽中的那几轮，如果字卡库里还没有这位的语音录音，就抽一张主字卡用这枚音色念出来，发成一条正常的语音气泡（点波形就播放）；有录音时仍先播录音。没绑音色或全局 MiniMax 关着时不生效；这一项随时可以关掉。</span></span></label></div>
+                 波形分支，点波形才播）；没绑音色/全局 MiniMax 关着时这一项不生效。字段落在这位联系人身上
+                 （mmTtsCards === false 才叫关，没设过＝开），回显见 js/render.js 的 renderProfile。
+                 2026-10-23 用户「开启了这个功能，但是还是没有触发，因为我的字卡库只上传了几个语音」：
+                 旧文案与旧取法是「有录音就只播录音、一段都没有才念文字卡」，有录音的人永远看不到这一支；
+                 现在两来源同池对半（js/chat.js 的 _voicePick），文案跟着改成两来源都说。 -->
+            <div class="check-row"><label class="check-item"><input type="checkbox" id="mxTtsCards"><span>文字字卡也念成语音发<span style="display:block;font-size:11px;color:var(--muted)">开着＝按「语音概率」抽中的那几轮，录音与文字卡同池抽（录音少时文字卡会补得多一些）：抽中可以念的主字卡就用这枚音色念出来，发成一条正常的语音气泡——字幕照常显示，不点波形就不出声。录音只有一两段时文字卡会补上，不再反复播同一段。没绑音色或全局 MiniMax 关着时不生效；这一项随时可以关掉。</span></span></label></div>
             <p class="data-note">填了这位 TA 才有自己的声音：对方文字消息旁出现小喇叭，点它就按这枚 voice_id 朗读，合成的语音自动存进 TA 的专属字卡库。留空则这位的消息不显示播放按钮——不会借用别人的音色，也没有全局默认可退。API Key 在「设置 → 玩法 → MiniMax 语音」里填（#1083 起那格正面就一个 Key，账户组／地址／模型／语速都收进了「高级」）。</p>
           </div>
         </div>
@@ -2876,35 +2889,49 @@
   </div>
 </div>
 
-<!-- tbMask：「自定义底部栏」面板（2026-10-18）。入口＝「更多」页页头那枚 #tabbarEntry（与「使用大全」并排）。
+<!-- layoutMask：「界面布局」面板（2026-10-23 合并）。入口＝「更多」页页头那枚 #layoutEntry
+     与聊天设置页那枚 #mateLayoutBtn；聊天页「会话」面板页头那枚宫格（#csHeadBarBtn）也落这里、直接站到顶栏那一段。
+     2026-10-23 之前是两块面板（#tbMask∶#headBarMask）各藏一份同一个布局档（原版／新版），面上两个入口
+     读起来像两个功能（用户「左右脑互搏」）——现在收成一块：顶上那一排是唯一那档，下面按 data-lay-sec
+     分「底部导航」「聊天页顶栏」两段，一屏只铺一段。
      壳复用全站那族贴底面板 .fs-sheet-*（信箱设置∶收藏设置∶添加昵称∶加字卡四面已在用）＝一处只有一份贴底壳；
-     挂在这里（app-shell 末尾）＝与 appModal／backupRemind／cardLinesMask 同址，不为第二个入口再画一块。
-     这里只放壳：候选名单·名字·线稿·勾选状态·上限与「更多恒在」全由 js/hub.js 的 renderTabbarPanel 一处现画
+     挂在这里（app-shell 末尾）＝与 appModal／backupRemind／cardLinesMask 同址。
+     这里只放壳：候选名单·名字·线稿·勾选状态·上限全由 js/hub.js 的 renderLayoutPanel 一处现画
      （名字与线稿的唯一来源是 HUB_GROUPS 与栏子里出厂那四枚，本文件不抄第三份）。
      行样式 .tb-* 在 css/more.css（这一块归「更多」页那一家）。 -->
-<div class="fs-sheet-mask" id="tbMask" hidden>
+<div class="fs-sheet-mask" id="layoutMask" hidden>
   <div class="fs-sheet">
     <div class="fs-sheet-bar">
-      <div class="fs-sheet-t"><span class="fs-sheet-ti">底部栏</span><span class="fs-sheet-en">TABBAR</span></div>
-      <button type="button" class="fs-sheet-close" id="tbClose" aria-label="关闭">×</button>
+      <div class="fs-sheet-t"><span class="fs-sheet-ti">界面布局</span><span class="fs-sheet-en">LAYOUT</span></div>
+      <button type="button" class="fs-sheet-close" id="layoutClose" aria-label="关闭">×</button>
     </div>
     <div class="fs-sheet-body">
-      <!-- 布局档那排 chips（2026-10-22 二批）：底栏两档＝「原版」＝出厂四枚写死∶「自定义」＝按名单排。
-           用户「无法开启这两种。布局模式」说的就是这一格——在这之前只有「一枚一枚手工勾」，
-           想回出厂四枚得自己把四枚再勾回来＝没有「切回去」这件事。
-           选中态·锁定态·说明句全由 js/hub.js 的 renderTabbarPanel 一处现画；样式复用全站那族
-           .fchips/.fchip（收藏∶搜索∶信箱∶头像库都在用）＝零新皮肤。左键那一格是选的哪一档、
-           下面那一列跟着锁／放，两处同一份判据（_tbMode()）。 -->
-      <div class="fchips fs-sheet-who" id="tbModes" aria-label="导航布局">
+      <!-- 唯一那档布局版本（原版／新版）：两条栏共用，不再在两块面板里各存一份。
+           选中态·锁定态·说明句全由 js/hub.js 的 renderLayoutPanel 一处现画；样式复用全站那族
+           .fchips/.fchip（收藏∶搜索∶信箱∶头像库都在用）＝零新皮肤。 -->
+      <div class="fchips fs-sheet-who" id="layoutModes" aria-label="布局版本">
         <button type="button" class="fchip" data-nav-mode="classic" aria-pressed="false">原版</button>
         <button type="button" class="fchip" data-nav-mode="new" aria-pressed="false">新版</button>
       </div>
-      <!-- 顶上那条实时预览（2026-10-22 四批）：栏子只在特定几页画（聊天页压根不画底栏），用户在别处拨开关时
-           屏上什么都不动＝读成「按了没反应」。预览把「这条栏现在长什么样」搬进面板里（画手＝js/hub.js 的
-           _renderBarPreview，与顶栏那块共用一份）。 -->
-      <div class="tb-prev" id="tbPreview" aria-label="这条栏现在的样子"></div>
-      <div class="fs-sheet-note" id="tbNote"></div>
-      <div class="tb-list" id="tbList"></div>
+      <div class="fs-sheet-note" id="layoutNote"></div>
+      <!-- 两段的切换：一屏只铺一段（候选各有十几行，叠着要滚很久）。 -->
+      <div class="fchips fs-sheet-who" id="layoutTabs" aria-label="选择要排的那一条">
+        <button type="button" class="fchip" data-lay-sec="tabbar" aria-pressed="false">底部导航</button>
+        <button type="button" class="fchip" data-lay-sec="head" aria-pressed="false">聊天页顶栏</button>
+      </div>
+      <div class="lay-sec" data-lay-sec-body="tabbar">
+        <!-- 顶上那条实时预览（2026-10-22 四批）：栏子只在特定几页画（聊天页压根不画底栏），用户在别处拨开关时
+             屏上什么都不动＝读成「按了没反应」。预览把「这条栏现在长什么样」搬进面板里（画手＝js/hub.js 的
+             _renderBarPreview，两段共用一份）。 -->
+        <div class="tb-prev" id="tbPreview" aria-label="底部导航现在的样子"></div>
+        <div class="fs-sheet-note" id="tbNote"></div>
+        <div class="tb-list" id="tbList"></div>
+      </div>
+      <div class="lay-sec" data-lay-sec-body="head" hidden>
+        <div class="tb-prev" id="hbPreview" aria-label="聊天页顶栏现在的样子"></div>
+        <div class="fs-sheet-note" id="hbNote"></div>
+        <div class="tb-list" id="hbList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2933,31 +2960,6 @@
   </div>
 </div>
 
-<!-- headBarMask：「顶栏快捷位」面板（2026-10-22）。入口＝「会话」面板页头那枚宫格小钮（#csHeadBarBtn）。
-     名单·名字·线稿·勾选全由 js/hub.js 的 renderHeadBarPanel 一处现画：与底栏那套 #tbMask 同一族、
-     同一张候选表（_tbCandidates）、同一批 .tb-* 行样式＝零新壳零新皮肤。
-     出厂两枚＝js/hub.js 的 HEADBAR_DEFAULT「打电话 · 会话外观」，与今天屏上逐字相同。
-     ⚠ 那两枚是**搬**不是删：js/call.js 与 js/mate.js 都在加载期对 id 硬绑，节点进 _hbPool 留着，
-       绑定不丢——详见 js/hub.js 那一段注释。 -->
-<div class="fs-sheet-mask" id="headBarMask" hidden>
-  <div class="fs-sheet">
-    <div class="fs-sheet-bar">
-      <div class="fs-sheet-t"><span class="fs-sheet-ti">顶栏快捷位</span><span class="fs-sheet-en">HEAD SLOTS</span></div>
-      <button type="button" class="fs-sheet-close" id="hbClose" aria-label="关闭">×</button>
-    </div>
-    <div class="fs-sheet-body">
-      <!-- 档位那排 chips：**与「底栏」那块是同一排、同一个档**（js/hub.js 的 _tbMode／_navModeSet）。
-           放这一排是为了让「回到原版」在顶栏这一面也能一键办到——用户「现在无法切换变回原布局」。 -->
-      <div class="fchips fs-sheet-who" id="hbModes" aria-label="导航布局">
-        <button type="button" class="fchip" data-nav-mode="classic" aria-pressed="false">原版</button>
-        <button type="button" class="fchip" data-nav-mode="new" aria-pressed="false">新版</button>
-      </div>
-      <div class="tb-prev" id="hbPreview" aria-label="这条栏现在的样子"></div>
-      <div class="fs-sheet-note" id="hbNote"></div>
-      <div class="tb-list" id="hbList"></div>
-    </div>
-  </div>
-</div>
     <div class="search-mask" id="searchMask" hidden>
       <div class="search-sheet">
         <div class="search-head">
@@ -3139,6 +3141,8 @@
         <div class="moment-compose-row">
           <button type="button" class="mp-tool" id="momentImageBtn" aria-label="添加图片"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4.5 17.5 10 12l4.5 4.5 2.5-2 3 3"/></svg><span>图片</span></button>
           <button type="button" class="mp-tool" id="momentStickerBtn" aria-label="表情包"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1" fill="currentColor" stroke="none"/></svg><span>表情包</span></button>
+          <button type="button" class="mp-tool" id="momentVideoBtn" aria-label="添加视频"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10.5 6-3.5v10l-6-3.5"/></svg><span>视频</span></button>
+          <input type="file" id="momentVideoInput" accept="video/*" hidden>
           <button type="button" class="mp-send" id="momentModalSubmit">发布</button>
         </div>
       </div>
@@ -3351,16 +3355,35 @@
       <div class="dx-none" id="dxNone" hidden>没有对上这一句的牌，换个词试试。</div>
       <div class="dx-detail" id="dxDetail" hidden></div>
     </section>
-<!-- 递牌（2026-10-22）：从 TA 那一叠主字卡里现抽，抽到的落进聊天当他说的话。
+<!-- 递牌（2026-10-22；2026-10-23 按用户定档重做两种模式）
      入口＝聊天输入栏那枚发送键（输入框空着时按住 500ms，长按那一手与 js/cards.js 的字卡长按同一手路，
-     接线在 js/deal.js 末尾那一支）。一屏三件：
-       ① 上面那一排＝这一把已经抽到的牌（小纸片＋整句正文，抽到就当场读得到内容）；
+     接线在 js/deal.js 末尾那一支）。**长按固定开半屏**；全屏从半屏左上那枚「全屏」进——
+     两档是两种模式，不再是一个「打开方式」设置二选一：
+       半屏＝面板盖在聊天页上半截、下半截还是聊天。**默认让 TA 抽**：他抽完这一轮就自动发进聊天，
+         每轮一条消息；发完面板不收，钮变「再抽一轮」（它就是聊天里各轮的区分点）。
+         面板开着＝TA 不打字回话（partnerReply 挂闸），他的回应由抽牌给。
+       全屏＝整页牌桌＋「这一场」记录。抽到的牌、在场里打的字都只记在「这一场」里，
+         **结束（返回／结束并发送）才整场按顺序落进聊天**；聊天里的牌卡逐张带卡片外框。
+         全屏里可以抽很多轮：每轮点「收进这一场」记下，钮再变「再抽一轮」。
+     两档共用这一套 DOM：
+       ① 半屏那排＝当前这一轮已经抽到的牌（全屏里另有「这一场」那一段记整场）；
        ② 中间＝一把撒在桌上的牌（每次进来现掷落点·角度·远近；点哪张哪张被拎到中间翻开，牌位留虚线空壳）；
-       ③ 底下＝「收下这 N 张」：这一把抽到的全部收进**同一条**「抽到的牌」。
-     想抽几张抽几张（封顶见 js/deal.js 的 DEAL_MAX），没有「抽一张就自动发出去」那回事。
+       ③ 底下＝这一轮怎么收：半屏「发送至聊天」／全屏「收进这一场」，旁边「结束并发送」。
+     想抽几张抽几张（封顶见 js/deal.js 的 DEAL_MAX）。
      顶栏那两枚返回件与标题由全站那一套管（js/settings.js 的 topbarName 加了一行 'deal'），本件不画自己的头。
      「全部纸牌」＝本视图里的第二屏（absolute 盖满这一页），一张牌一张纸地摊开，不另立全局遮罩。 -->
 <section class="view" id="dealView" data-deal-screen="table">
+  <!-- 半屏那层「壁纸＋磨砂」（只在半屏露面）：面板自己铺当前聊天壁纸会被裁成另一份取景、
+       与底下的聊天页拼不上（用户 2026-10-23 报「看不到图／接缝」）——改成糊一层同源壁纸，
+       面板只压薄纱，图看得见又与聊天连成一片。（旧的信纸美化档已下架，这层只服务默认那一档。） -->
+  <i class="dl-half-veil" aria-hidden="true"></i>
+  <!-- 半屏左上角那枚快切（只在半屏露面）：全屏＝这一把带到整页去接着抽（不重新撒）。
+       旧的「苔绿信纸」那枚随信纸美化档整族下架（2026-10-23 用户「删掉，只要默认」）。 -->
+  <div class="dl-half-bar" id="dealHalfBar">
+    <button type="button" class="dl-half-b" data-deal-full="1">全屏</button>
+  </div>
+  <!-- 半屏那枚收起钮：只半屏露面（css/deal.css ⑤），收起＝牌照旧自动收下 -->
+  <button type="button" id="dealHalfX" class="dl-half-x" aria-label="收起抽牌">×</button>
   <div class="dl-modes" id="dealModes" role="group" aria-label="谁来抽">
     <button type="button" class="dl-mode" data-deal-mode="me" aria-pressed="true">我来抽</button>
     <button type="button" class="dl-mode" data-deal-mode="ta" aria-pressed="false">让 TA 抽</button>
@@ -3372,10 +3395,23 @@
 
   <!-- ② 牌桌：一把牌撒在这儿，牌由 js/deal.js 现建 -->
   <div class="dl-table" id="dealTable" aria-label="摊在桌上的一把牌"></div>
+  <!-- ②.5 全屏「这一场」：抽到的每一轮＋我在场里打的字都先记在这儿，结束才整场落进聊天。
+       半屏不画这一段（半屏一轮一条＝每轮当场就进聊天）。 -->
+  <div class="dl-session" id="dealSession">
+    <div class="dl-session-hd"><b>这一场</b><span id="dealSessionN"></span></div>
+    <div class="dl-session-body" id="dealSessionBody"></div>
+  </div>
   <p class="dl-note" id="dealNote" aria-live="polite">撒牌中…</p>
-  <!-- ③ 收下＝这一把进同一条消息 -->
+  <!-- ②.6 想说的话（全屏才露；半屏说话走底下聊天输入栏）：
+       回车＝把这句话记进「这一场」，和当前这一轮的牌一起排队，结束才发出去。 -->
+  <div class="dl-msgbar" id="dealMsgBar">
+    <input type="text" id="dealMsgInput" class="dl-msg-in" maxlength="300" autocomplete="off"
+           placeholder="在场里说一句？（结束才发出去）" aria-label="在场里说一句">
+  </div>
+  <!-- ③ 这一轮怎么收：半屏＝发送至聊天；全屏＝收进这一场。全屏旁边另有「结束并发送」。 -->
   <div class="dl-takebar" id="dealTakeBar" hidden>
     <button type="button" class="dl-take" id="dealTake">收下这张</button>
+    <button type="button" class="dl-end" id="dealEnd" hidden>结束并发送</button>
   </div>
 
   <!-- 全部纸牌：这一把摊开看（一张牌一张纸） -->
@@ -3569,7 +3605,7 @@
       <div class="check-row"><label class="check-item"><input type="checkbox" id="bubcssDivine" checked><span>聊天里的占卜牌卡也吃上面那段 CSS</span></label></div>
       <div class="check-row"><label class="check-item"><input type="checkbox" id="bubcssListen" checked><span>聊天里邀请听歌的卡片也吃上面那段 CSS</span></label></div>
       <div class="check-row"><label class="check-item"><input type="checkbox" id="bubcssLyric" checked><span>聊天里「摘一句」那张卡也吃上面那段 CSS</span></label></div>
-      <div class="check-row"><label class="check-item"><input type="checkbox" id="bubcssDeal" checked><span>聊天里递牌的纸牌卡也吃上面那段 CSS</span></label></div>
+      <div class="check-row"><label class="check-item"><input type="checkbox" id="bubcssDeal"><span>聊天里递牌的纸牌卡也吃上面那段 CSS</span></label></div>
       <p class="data-note">五枚都<b>出厂勾上</b>＝问问TA／TA 想问你那两张卡、聊天里的占卜牌卡、邀请听歌的卡、「摘一句」与递牌那张纸牌卡都跟着你这段气泡 CSS 一起改，卡里那些小字跟着你写的气泡字色走（黑底自动白字 · 白底自动黑字——这层自动美化随开关一起开合）。不勾任意一枚＝那一族回到自己的卡面（问问TA 那两张卡面永远走中性白，纸牌卡回到宣纸原样）。要单独管卡里的哪一格，直写 .ask-card · .taask-card · .dv-card · .cl-card · .lc-card · .dl-card 也说得过。上面那段 CSS 空着时这五枚不动任何东西。</p>
       <p class="data-note">旧版本这两张互动卡是「绕开」的出厂档，<b>现在改成默认一起吃</b>——老存档由 js/db.js 的一次性迁移翻上来，回头想不吃就点掉这一枚。</p>
     </div>
@@ -3653,46 +3689,71 @@
       <div class="pl-now" id="plNow" hidden></div>
     </section>
 
-    <!-- 整屏播放页：从曲单页那枚正在播放卡点开吃满一屏，左上那枚收回 -->
+    <!-- 整屏播放页：从曲单页那枚正在播放卡点开吃满一屏，左上那枚收回。
+         2026-10-23（BUGS #1773·用户「一点设计感也没有」）按「唱片内页」重排。这一版只做版式，不动功能与 id：
+           ① **一页只留两枚形状**——封面（唯一的面）与播放键（唯一的实心墨）；旧那两枚描边药丸、白卡分段条全撤，
+              其余一律退成字与发丝线。顶部只留「收回 ＋ 右上两枚纯文字」。
+           ② 「正在播放」从顶栏中点降到封面之上那行 kicker——顶栏的居中轴与正文的居中轴不再各说各的。
+           ③ 「在陪你听」从胶囊改成**两条发丝线之间的一条 byline**（头像／名／在陪你听／跳动记／›）：
+              这是本站跟别的播放器不一样的那件事，值得占一条线，而不是缩成一枚标签。
+           ④ 新增「接下来 · 下一首」（#plfNext）：队列里有歌才画，点它＝开队列面板。
+              原来那 130px 死白落在内容与控件之间＝读作「没排完」；补了这一行 + 控件整组下沉，空白才读作留白。
+           ⑤ 音量（#558）收进底部副控：默认只留一条横向轴线（进度），点「音量」就地展开音量条。
+           ⑥ 封面换成 2px 近方角 + 一圈发丝线：唱片封套是方的，圆角一大就读作卡片。
+         id 一个不改：js/player.js 的绑定与常驻门 G 组仍按原 id/类认。 -->
     <div class="pl-full" id="playerFull" hidden>
       <header class="pl-full-bar">
         <button type="button" class="pl-ico" id="plfBack" aria-label="收回播放条">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"></path></svg>
         </button>
-        <span class="pl-full-ti">正在播放</span>
-        <button type="button" class="pl-txt-btn" id="plfLrcBtn" data-on="0">歌词</button>
-        <button type="button" class="pl-txt-btn" id="plfFav" data-on="0" aria-label="收藏这一首">收藏</button>
+        <span class="pl-f-bargap"></span>
+        <button type="button" class="pl-tlink" id="plfLrcBtn" data-on="0">歌词</button>
+        <!-- 收藏（#1769）：用户「播放器里还缺少收藏的功能。收藏到播放器的收藏里」——旧版是一枚灰字，
+             点完只是字变墨，读不出「收到了哪儿」。改成心形线稿＋字：没收藏＝空心，收藏＝实心墨
+             （`data-on="1"`），点完另给一句 toast 说清去处（播放器 →「收藏」那一页）。 -->
+        <button type="button" class="pl-tlink pl-tlink-fav" id="plfFav" data-on="0" aria-label="收藏这一首" aria-pressed="false">
+          <svg class="i-fav" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.6c0 4.6-8.8 9.9-8.8 9.9S3.2 13.2 3.2 8.6a4.7 4.7 0 0 1 8.8-2.2 4.7 4.7 0 0 1 8.8 2.2z"></path></svg><span>收藏</span>
+        </button>
       </header>
+      <div class="pl-f-kicker">正在播放</div>
       <div class="pl-cover" aria-hidden="true">
         <div class="pl-cover-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
       </div>
       <!-- 歌词（#330）：开着「歌词」＝上面那块封面换下、这一块上；逐句高亮在 js/player.js 的 _plLrcFollow -->
       <div class="pl-f-lrc" id="plfLrc" hidden></div>
       <div class="pl-f-tx"><b id="plfName"></b><small id="plfArtist"></small></div>
-      <!-- 「谁在陪你听」（#335 起就是一行小字；#608 升格成一枚可点胶囊——这是本站区别于普通播放器的那件事，不该埋着）。
-           有人时 JS 画胶囊（头像∶名∶「在陪你听」），无人时是一行淡字；点整枚＝结束一起听（data-pl-endco 钩子不变）。 -->
+      <!-- 「谁在陪你听」：两条发丝线之间的 byline 带（#608 胶囊 → #1773 byline）。
+           有人＝双头像＋名＋「在陪你听」＋跳动记（暂停时停拍）＋›，点整条＝结束一起听（data-pl-endco 不变）；
+           无人＝同一副骨架，第二枚头像留虚线空位，文案「邀 TA 一起听」（data-pl-invitenow 不变）。
+           两态同高＝有人没人进页不会跳一下。 -->
       <div class="pl-f-who" id="plfWith"></div>
-      <div class="pl-f-prog" id="plProgFull"><i id="plFillFull"></i><em id="plKnobFull"></em></div>
-      <div class="pl-f-time"><span id="plTimeFull">0:00</span><span id="plLeft"></span></div>
-      <!-- 音量（#558）：全站此前一处 volume 都没有，只能调系统音量。iOS 的 audio.volume 写了不算数，
-           那一路由 JS 探测到就当场说明，不画一道推不动的假进度 -->
-      <div class="pl-f-vol">
-        <button type="button" class="pl-ico sm" id="plVolBtn" data-on="1" aria-label="静音开关">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z"></path><path d="M15.4 9.3a4 4 0 0 1 0 5.4"></path><path d="M18 6.7a7.6 7.6 0 0 1 0 10.6"></path></svg>
-        </button>
-        <input type="range" id="plVol" min="0" max="100" step="1" value="80" aria-label="音量">
-      </div>
-      <div class="pl-f-acts">
-        <button type="button" class="pl-ico" id="plPrevBtn" aria-label="上一首"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 5.5v13L9 12zM6 5v14"></path></svg></button>
-        <button type="button" class="pl-pri" id="plPlayFull" data-on="0" aria-label="播放或暂停"><svg class="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.6 19.5 12 7 19.4z"></path></svg><svg class="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg></button>
-        <button type="button" class="pl-ico" id="plNextBtn" aria-label="下一首"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5.5v13L15 12zM18 5v14"></path></svg></button>
-      </div>
-      <!-- 副控三钮（#608）：模式∶队列∶定时。模式那枚的图标由 js/player.js 的 _plModeSvg 按模式现算，
-           队列与定时两枚的图标是静态的；计数（#plfQueue）与剩余时间（#plfSleepTx）在 renderPlayerFull 里写回 -->
-      <div class="pl-f-foot">
-        <button type="button" class="pl-f-fbtn" id="plfMode" aria-label="播放模式"></button>
-        <button type="button" class="pl-f-fbtn" id="plfQueueBtn" aria-label="播放队列"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".9" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r=".9" fill="currentColor" stroke="none"/></svg><span>队列</span><span class="pl-f-fq" id="plfQueue" hidden></span></button>
-        <button type="button" class="pl-f-fbtn" id="plfSleepBtn" data-on="0" aria-label="定时停止"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span id="plfSleepTx">定时</span></button>
+      <!-- 接下来（#1773）：队列第一首；队列空时整行收起（不编一个「下一首」出来）。点它＝开播放队列 -->
+      <button type="button" class="pl-f-next" id="plfNext" hidden></button>
+      <!-- 控件整组（副控－进度－主控－底排）沉到底：空白只落在上面一处，这是这一页唯一的「留白」 -->
+      <div class="pl-f-ctl">
+        <!-- 音量（#558）：收进副控，点底排「音量」才展开（iOS 的 audio.volume 写了不算数，那一路由 JS 探测到就当场说明） -->
+        <div class="pl-f-vol" id="plfVolRow" hidden>
+          <button type="button" class="pl-ico sm" id="plVolBtn" data-on="1" aria-label="静音开关">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z"></path><path d="M15.4 9.3a4 4 0 0 1 0 5.4"></path><path d="M18 6.7a7.6 7.6 0 0 1 0 10.6"></path></svg>
+          </button>
+          <input type="range" id="plVol" min="0" max="100" step="1" value="80" aria-label="音量">
+        </div>
+        <div class="pl-f-prog" id="plProgFull"><i id="plFillFull"></i><em id="plKnobFull"></em></div>
+        <div class="pl-f-time"><span id="plTimeFull">0:00</span><span id="plLeft"></span></div>
+        <div class="pl-f-acts">
+          <button type="button" class="pl-ico" id="plPrevBtn" aria-label="上一首"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 5.5v13L9 12zM6 5v14"></path></svg></button>
+          <button type="button" class="pl-pri" id="plPlayFull" data-on="0" aria-label="播放或暂停"><svg class="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.6 19.5 12 7 19.4z"></path></svg><svg class="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg></button>
+          <button type="button" class="pl-ico" id="plNextBtn" aria-label="下一首"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5.5v13L15 12zM18 5v14"></path></svg></button>
+        </div>
+        <!-- 底排四枚（#1773）：模式∶队列∶定时∶音量。**无容器**——旧版那是三块白卡拼成的分段条，
+             长得就是设置页的控件；现在只是四枚图标＋11px 字，主次靠墨色（有状态的那枚转墨字）。
+             模式那枚的图标由 js/player.js 的 _plModeSvg 按模式现算；计数（#plfQueue）与剩余时间（#plfSleepTx）在 renderPlayerFull 里写回。 -->
+        <div class="pl-f-util">
+          <button type="button" class="pl-f-ubtn" id="plfMode" aria-label="播放模式"></button>
+          <button type="button" class="pl-f-ubtn" id="plfQueueBtn" aria-label="播放队列"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".9" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r=".9" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r=".9" fill="currentColor" stroke="none"/></svg><span class="pl-f-ubtx">队列<span class="pl-f-fq" id="plfQueue" hidden></span></span></button>
+          <button type="button" class="pl-f-ubtn" id="plfSleepBtn" data-on="0" aria-label="定时停止"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="pl-f-ubtx" id="plfSleepTx">定时</span></button>
+          <button type="button" class="pl-f-ubtn" id="plfVolOpen" data-on="1" aria-label="音量" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z"></path><path d="M15.4 9.3a4 4 0 0 1 0 5.4"></path><path d="M18 6.7a7.6 7.6 0 0 1 0 10.6"></path></svg><span class="pl-f-ubtx">音量</span></button>
+        </div>
       </div>
     </div>
 
@@ -3806,7 +3867,7 @@
           <textarea id="taqQ" class="taq-input taq-q" rows="2" maxlength="40" placeholder="比如：要不要休息一下"></textarea>
           <div class="taq-fl">选项<span class="taq-fl-note">两到四个，每个一行</span></div>
           <div class="taq-opts" id="taqOpts"></div>
-          <button type="button" class="taq-addopt" id="taqOptAdd">＋ 再加一个选项</button>
+          <button type="button" class="taq-addopt" id="taqOptAdd">＋再加一个选项</button>
           <div class="taq-fl">给谁看</div>
           <div class="taq-scopes" id="taqScopes">
             <button type="button" class="taq-fchip on" data-taq-scope="public">公用 · 谁都能抽到</button>
