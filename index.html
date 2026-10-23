@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v16.2.1.css','dist/app.v16.2.1.js'];
+      var BOOT_FILES = ['dist/app.v16.3.9.css','dist/app.v16.3.9.js'];
 
 
 
@@ -892,8 +892,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v16.2.1.css">
-  <script defer src="dist/app.v16.2.1.js"></script>
+  <link rel="stylesheet" href="dist/app.v16.3.9.css">
+  <script defer src="dist/app.v16.3.9.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1908,9 +1908,11 @@
         </div>
 
         <!-- 桌面背景（原「桌面美化台」浮层面板 2026-10-15 按用户「把背景图入口放进外观页」改成内联一张折叠卡）：
-             控件 id 与 js/desk.js 既有一切绑定逐字不改（背暗/缩放/取景/铺到/导航薄纱/上传/预设/还原），只是宿主
+             控件 id 与 js/desk.js 既有一切绑定逐字不改（背暗/缩放/取景/铺到/导航薄纱/上传/还原），只是宿主
              从浮层面板搬到外观这一页；样式沿用 css/desk.css 那批 .ds-*（已登记在册）。预览：选「所有页面」时壁纸会直接
-             透在这页的卡片背后；只首页时靠下面预设缩略与状态行读数。#deskEntryState 仍由 js/mate.js 写卡头摘要。
+             透在这页的卡片背后；只首页时靠预览块与状态行读数。#deskEntryState 仍由 js/mate.js 写卡头摘要。
+             2026-10-23：内置六款预设壁纸整族下架（用户「把设置里桌面背景的系统预设背景图片删掉」）＝
+             预设缩略格与那条预设说明一起摘，屏上只剩选图／清除两条路。
              2026-10-20 #901（用户「要能手动设置铺到底部导航那些页面」）：「铺到」由两档 chips 换成逐页勾选——
              四枚主页多选（#deskBgPageRow，值是 DESK_PAGES 里的 view 名）＋「其它页面」两档（#deskBgRestRow），
              数组与回显在 js/desk.js，属性串在 js/settings.js 的 applyAppearance，消费方在 css/theme.css 与 css/base.css。
@@ -1937,14 +1939,12 @@
               </div>
               <span class="ds-preview-tag">预览</span></div>
             <div class="ds-btns"><button type="button" class="soft-btn" id="deskBgUpload">选一张图</button><button type="button" class="soft-btn" id="deskBgClear">清除</button></div>
-            <div class="ds-presets" id="deskPresets"></div>
-            <p class="ds-hint">预设是内置的六款天光（晨雾／宣纸／远山／苔原／奶咖／石白），点一枚就用，不用去相册找图。只有一条极缓的明暗与两枚柔光，没有图形也没有纹路，所以放到大屏也不糊、也不会压过页面上的字。六款都<b>不垫纱也不压暗</b>（它们本来就是浅到能直接压墨字的一族，垫一层白或压一层黑都只会把它抹平），点一枚就是它本来的样子；上一张自传照片留在「压暗／提亮」两根杆上的值会被这两档一起归零。<b>缩放、取景、铺到哪几页对预设同样生效</b>；选了自定义照片后，预设自动让位。</p>
             <div class="ds-knob ds-size"><span>铺到</span><div class="contact-chip-row" id="deskBgPageRow"><button type="button" class="contact-chip" data-deskpage="chats">聊天</button><button type="button" class="contact-chip" data-deskpage="cards">字卡库</button><button type="button" class="contact-chip" data-deskpage="cjian">世界感知</button><button type="button" class="contact-chip" data-deskpage="more">更多</button></div></div>
             <div class="ds-knob ds-size"><span>其它页面</span><div class="contact-chip-row" id="deskBgRestRow"><button type="button" class="contact-chip" data-deskrest="off">不铺</button><button type="button" class="contact-chip" data-deskrest="on">也铺</button></div></div>
             <p class="ds-hint">上面四枚<b>可多选</b>：勾上哪页，这张图就透在哪页的卡片缝里（没选图时都不起作用）；四枚全不勾＝哪页都不铺，图还在。「其它页面」＝信箱·设置·统计·收藏·朋友圈·播放器·游戏这些不走底部导航的页。</p>
             <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
             <label class="ds-knob"><span>提亮</span><input type="range" id="deskBgWash" min="0" max="90" step="2"><output id="deskBgWashOut">0%</output></label>
-            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。自传照片时<b>按这张图自己的暗端自动定档</b>（浅图 0~45%、深图与花图 80% 上下——那一档照片会明显退成柔色，这是「字要读得出」的代价），之后随你拖。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。内置六款预设两样都不吃（点预设会归零）。</p>
+            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。自传照片时<b>按这张图自己的暗端自动定档</b>（浅图 0~45%、深图与花图 80% 上下——那一档照片会明显退成柔色，这是「字要读得出」的代价），之后随你拖。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。</p>
             <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
             <label class="ds-knob"><span>模糊</span><input type="range" id="deskBgBlur" min="0" max="40" step="1"><output id="deskBgBlurOut">0px</output></label>
             <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
@@ -3690,7 +3690,7 @@
     </section>
 
     <!-- 整屏播放页：从曲单页那枚正在播放卡点开吃满一屏，左上那枚收回。
-         2026-10-23（BUGS #1773·用户「一点设计感也没有」）按「唱片内页」重排。这一版只做版式，不动功能与 id：
+         2026-10-23（BUGS #1768·用户「一点设计感也没有」）按「唱片内页」重排。这一版只做版式，不动功能与 id：
            ① **一页只留两枚形状**——封面（唯一的面）与播放键（唯一的实心墨）；旧那两枚描边药丸、白卡分段条全撤，
               其余一律退成字与发丝线。顶部只留「收回 ＋ 右上两枚纯文字」。
            ② 「正在播放」从顶栏中点降到封面之上那行 kicker——顶栏的居中轴与正文的居中轴不再各说各的。
@@ -3714,6 +3714,11 @@
         <button type="button" class="pl-tlink pl-tlink-fav" id="plfFav" data-on="0" aria-label="收藏这一首" aria-pressed="false">
           <svg class="i-fav" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.6c0 4.6-8.8 9.9-8.8 9.9S3.2 13.2 3.2 8.6a4.7 4.7 0 0 1 8.8-2.2 4.7 4.7 0 0 1 8.8 2.2z"></path></svg><span>收藏</span>
         </button>
+        <!-- 「这一首」菜单（#1780）：收藏/下一首播/收进歌单/从曲库删掉 这四件事原先只在曲库行的 ⋯ 里，
+             正在听的时候要做这些得退出整屏回曲库找那一行。这里开的是同一张 #plMenuMask，不另造第二张。 -->
+        <button type="button" class="pl-tlink pl-tlink-more" id="plfMore" aria-label="这一首的更多操作">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg>
+        </button>
       </header>
       <div class="pl-f-kicker">正在播放</div>
       <div class="pl-cover" aria-hidden="true">
@@ -3722,12 +3727,12 @@
       <!-- 歌词（#330）：开着「歌词」＝上面那块封面换下、这一块上；逐句高亮在 js/player.js 的 _plLrcFollow -->
       <div class="pl-f-lrc" id="plfLrc" hidden></div>
       <div class="pl-f-tx"><b id="plfName"></b><small id="plfArtist"></small></div>
-      <!-- 「谁在陪你听」：两条发丝线之间的 byline 带（#608 胶囊 → #1773 byline）。
+      <!-- 「谁在陪你听」：两条发丝线之间的 byline 带（#608 胶囊 → #1768 byline）。
            有人＝双头像＋名＋「在陪你听」＋跳动记（暂停时停拍）＋›，点整条＝结束一起听（data-pl-endco 不变）；
            无人＝同一副骨架，第二枚头像留虚线空位，文案「邀 TA 一起听」（data-pl-invitenow 不变）。
            两态同高＝有人没人进页不会跳一下。 -->
       <div class="pl-f-who" id="plfWith"></div>
-      <!-- 接下来（#1773）：队列第一首；队列空时整行收起（不编一个「下一首」出来）。点它＝开播放队列 -->
+      <!-- 接下来（#1768）：队列第一首；队列空时整行收起（不编一个「下一首」出来）。点它＝开播放队列 -->
       <button type="button" class="pl-f-next" id="plfNext" hidden></button>
       <!-- 控件整组（副控－进度－主控－底排）沉到底：空白只落在上面一处，这是这一页唯一的「留白」 -->
       <div class="pl-f-ctl">
@@ -3745,7 +3750,7 @@
           <button type="button" class="pl-pri" id="plPlayFull" data-on="0" aria-label="播放或暂停"><svg class="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.6 19.5 12 7 19.4z"></path></svg><svg class="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 5v14M15 5v14"></path></svg></button>
           <button type="button" class="pl-ico" id="plNextBtn" aria-label="下一首"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5.5v13L15 12zM18 5v14"></path></svg></button>
         </div>
-        <!-- 底排四枚（#1773）：模式∶队列∶定时∶音量。**无容器**——旧版那是三块白卡拼成的分段条，
+        <!-- 底排四枚（#1768）：模式∶队列∶定时∶音量。**无容器**——旧版那是三块白卡拼成的分段条，
              长得就是设置页的控件；现在只是四枚图标＋11px 字，主次靠墨色（有状态的那枚转墨字）。
              模式那枚的图标由 js/player.js 的 _plModeSvg 按模式现算；计数（#plfQueue）与剩余时间（#plfSleepTx）在 renderPlayerFull 里写回。 -->
         <div class="pl-f-util">
