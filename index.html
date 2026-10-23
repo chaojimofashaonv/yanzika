@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v15.4.2.css','dist/app.v15.4.2.js'];
+      var BOOT_FILES = ['dist/app.v15.6.7.css','dist/app.v15.6.7.js'];
 
 
 
@@ -892,8 +892,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v15.4.2.css">
-  <script defer src="dist/app.v15.4.2.js"></script>
+  <link rel="stylesheet" href="dist/app.v15.6.7.css">
+  <script defer src="dist/app.v15.6.7.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1966,6 +1966,14 @@
           <div class="fold-bd"><div class="ap-row"><span>宽屏布局</span><div class="contact-chip-row" style="margin:0" data-ap-set="phoneFit" data-sum="sumPhoneFit"><button type="button" class="contact-chip" data-v="off">平板/电脑加宽</button><button type="button" class="contact-chip" data-v="on">手机窄栏</button></div></div><p class="data-note">在 <b>iPad 或电脑浏览器</b>上，本站默认把内容放宽成一栏（约 820px）用好大屏。想回到手机那种窄窄的一屏（480px 居中卡片），把上面切到「<b>手机窄栏</b>」即可。手机本身不受影响（本来就是窄栏）。点一下当场生效、重启仍记得。</p></div>
         </div>
 
+        <!-- 递牌页信纸（2026-10-23）：长按发送键开的抽牌页（#dealView）的独立美化档。
+             默认 off＝原样（跟聊天壁纸一张底＋素白牌）；on＝苔绿淡格信纸＋两角手绘小花＋双线细框圆角牌，
+             观感全在 css/deal.css 的 body[data-ap-dealpaper=on] 段（含墨黑主题的深绿变体）。 -->
+        <div class="setting-card fold" data-tab="desk" data-fold="dealpaper">
+          <button type="button" class="fold-hd"><span class="fold-ti">递牌页信纸</span><span class="fold-sum" id="sumDealPaper"></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd"><div class="ap-row"><span>抽牌页风格</span><div class="contact-chip-row" style="margin:0" data-ap-set="dealPaper" data-sum="sumDealPaper"><button type="button" class="contact-chip" data-v="off">跟壁纸（原样）</button><button type="button" class="contact-chip" data-v="on">苔绿信纸</button></div></div><p class="data-note">管的是<b>长按发送键</b>开的那一页「抽牌」：<b>跟壁纸（原样）</b>＝这一页和聊天共用一张底（壁纸透上来），牌是素白小卡；<b>苔绿信纸</b>＝这一页自带一张独立的苔绿淡格信纸，两角一枝手绘小花，牌换成双线细框的圆角白笺，选牌钮与「收下」也换苔绿。只管抽牌这一页，聊天里发出去的纸牌卡不跟这一档走。点一下当场生效、重启仍记得。</p></div>
+        </div>
+
         <div class="setting-card fold" data-tab="desk" data-fold="avshape">
           <button type="button" class="fold-hd"><span class="fold-ti">头像形状</span><span class="fold-sum" id="sumAvShape"></span><i class="fold-ar">›</i></button>
           <div class="fold-bd"><div class="ap-row"><span>形状</span><div class="avatar-shape-row" style="margin:0"><button type="button" class="shape-btn" data-shape="circle" aria-label="圆形" title="圆形"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="rounded" aria-label="圆角" title="圆角"><i aria-hidden="true"></i></button><button type="button" class="shape-btn" data-shape="square" aria-label="方形" title="方形"><i aria-hidden="true"></i></button></div></div><p class="data-note">全站头像一起换形状（会话列表、聊天气泡旁、信箱都算）：圆形／圆角／方形，点一下立即生效、重启仍在。</p></div>
@@ -2342,7 +2350,7 @@
           <button type="button" class="fold-hd"><span class="fold-tx"><span class="fold-ti">气泡文字</span><span class="fold-sum" id="sumApText"></span></span><i class="fold-ar">›</i></button>
           <div class="fold-bd">
             <div class="ap-sec">
-              <div class="ap-row"><span>气泡字体</span><div class="contact-chip-row" style="margin:0" id="apChatFont"><button type="button" class="contact-chip" data-v="inherit">跟随全局</button><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div>
+              <div class="ap-row"><span>气泡字体</span><div class="contact-chip-row" style="margin:0" id="apChatFont"><button type="button" class="contact-chip" data-v="inherit">跟随全局</button><button type="button" class="contact-chip" data-v="custom">字体文件</button><button type="button" class="contact-chip" data-v="system">系统</button><button type="button" class="contact-chip" data-v="serif">衬线</button><button type="button" class="contact-chip" data-v="round">圆体</button></div></div>
               <div class="ap-row"><span>气泡字号</span><div class="contact-chip-row" style="margin:0" id="apChatFontSize"><button type="button" class="contact-chip" data-v="small">小</button><button type="button" class="contact-chip" data-v="medium">标准</button><button type="button" class="contact-chip" data-v="large">大</button></div></div>
               <p class="data-note">只管<b>这一位 TA 聊天气泡里的字</b>：别的页面、顶栏与输入栏、别位 TA 都不动。「跟随全局」＝沿用设置 → 外观里的全站字族，选别的字族只覆盖这一本。字号标准＝出厂，小 13px、大 17px。全站文字整体缩放在设置 → 外观的「字号」里。</p>
             </div>
@@ -3160,6 +3168,26 @@
         </div>
       </div>
     </div>
+
+    <!-- 字卡预览（2026-10-23 用户直派「点卡片看全文/大图」）：字卡库与系统预设字卡两面共用这一块壳，
+         挂在 app-shell 末尾（与 cardsAddMask 同址＝不为第二个入口再画一块）。⚠ 遮罩必须是 fixed 不是
+         .cards-modal-mask 那种 absolute：用户是从列表深处点开的，页面已滚过一屏，absolute 会贴到文档
+         顶上去＝点开什么都看不见（那族 absolute 壳都住在各自 .view 顶上，住处不同、定位就该不同）。
+         动作只留「编辑」（非预置的文字/语音卡，由 js/cards.js 按卡型收放）；删除仍在卡面小钮上不重复养。 -->
+    <div class="cards-pv-mask" id="cardsPvMask" hidden>
+      <div class="cards-modal" role="dialog" aria-label="字卡预览">
+        <div class="cards-modal-head">
+          <strong>字卡预览</strong>
+          <button class="cards-menu-close" id="cardsPvClose" aria-label="关闭">×</button>
+        </div>
+        <div class="cards-pv-body" id="cardsPvBody"></div>
+        <div class="cards-pv-meta" id="cardsPvMeta"></div>
+        <div class="cards-modal-row">
+          <button type="button" class="soft-btn" id="cardsPvCancel">关闭</button>
+          <button type="button" class="primary-btn" id="cardsPvEdit">编辑</button>
+        </div>
+      </div>
+    </div>
     <!-- 头像和昵称互动（移植自家 mochi）：全屏独立页，顶部「我的 + 每个联系人」胶囊行按会话区分池子 -->
     <section class="view" id="avatarlibView">
       <div class="av-page">
@@ -3333,8 +3361,6 @@
      顶栏那两枚返回件与标题由全站那一套管（js/settings.js 的 topbarName 加了一行 'deal'），本件不画自己的头。
      「全部纸牌」＝本视图里的第二屏（absolute 盖满这一页），一张牌一张纸地摊开，不另立全局遮罩。 -->
 <section class="view" id="dealView" data-deal-screen="table">
-  <!-- 聊天壁纸那一层：与 #chatView 的 .chat-bg 同一手路（本页也吃用户那张聊天背景） -->
-  <div class="chat-bg" aria-hidden="true"></div>
   <div class="dl-modes" id="dealModes" role="group" aria-label="谁来抽">
     <button type="button" class="dl-mode" data-deal-mode="me" aria-pressed="true">我来抽</button>
     <button type="button" class="dl-mode" data-deal-mode="ta" aria-pressed="false">让 TA 抽</button>
@@ -3570,7 +3596,7 @@
     <div class="setting-card">
       <div class="setting-subhead">字体文件</div>
       <div class="ap-frow"><input type="file" id="customFontInput" accept=".ttf,.otf,.woff,.woff2" hidden><button type="button" class="ap-btn" id="customFontUpload">上传字体文件</button><span class="ap-status" id="customFontStatus">未加载</span><button type="button" class="ap-btn sm" id="customFontRemove">移除</button></div>
-      <p class="data-note">上传的字体文件<b>连字体本体一起</b>存进数据里＝重启、导出再导入都带着走；传上之后「TA 的设置 → 外观 → 气泡文字」里「气泡字体」那一档以文件为准。一枚字体文件限 5MB（全站上传同一条上限）：中文字体常见 5~15MB，超了会当场挡下并说明原因——这份存档要整个读进内存，塞一枚过大的字体＝每次开机都慢一截、导出的文件也撑爆。</p>
+      <p class="data-note">上传的字体文件<b>连字体本体一起</b>存进数据里＝重启、导出再导入都带着走；传上之后「TA 的设置 → 外观 → 气泡文字」里「气泡字体」那一档以文件为准。格式按<b>文件头</b>识别、不看扩展名——微信／文件管理里转过几手、改了名的字体也认得出；认不出的会当场说明原因，不会闷着不生效。一枚字体文件限 5MB（全站上传同一条上限）：中文字体常见 5~15MB，超了会当场挡下并说明原因——这份存档要整个读进内存，塞一枚过大的字体＝每次开机都慢一截、导出的文件也撑爆。</p>
     </div>
 
     <div class="setting-card">
@@ -3801,7 +3827,10 @@
       <button class="tab-item active" data-view="chats" title="聊天" aria-label="聊天"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
       <button class="tab-item" data-view="cards" title="字卡库" aria-label="字卡库"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="13" height="13" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2"/></svg></button>
       <button class="tab-item" data-view="cjian" title="世界感知" aria-label="世界感知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></button>
-      <button class="tab-item" data-view="more" title="更多" aria-label="更多"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="2.4"/><circle cx="17.5" cy="6.5" r="2.4"/><circle cx="6.5" cy="17.5" r="2.4"/><circle cx="17.5" cy="17.5" r="2.4"/></svg></button>
+      <!-- 「更多」线稿 2026-10-23 二轮定稿：四角星芒（用户从两批共 8 个候选里选定 A）。
+           一轮的四点空心圆 2×2 在 22px 下圆孔糊成墨点已废；二轮三星/礼盒/星月落选。
+           画法＝四段凹弧贝塞尔闭合（12 3.2 → 四尖角），stroke 家族不加 fill，选中变主色同款吃色。 -->
+      <button class="tab-item" data-view="more" title="更多" aria-label="更多"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2C12.9 8.1 15.9 11.1 20.8 12 15.9 12.9 12.9 15.9 12 20.8 11.1 15.9 8.1 12.9 3.2 12 8.1 11.1 11.1 8.1 12 3.2Z"/></svg></button>
     </nav>
   </main>
 </body>
