@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v17.4.9.css','dist/app.v17.4.9.js'];
+      var BOOT_FILES = ['dist/app.v17.5.8.css','dist/app.v17.5.8.js'];
 
 
 
@@ -892,8 +892,8 @@
 
   </style>
 
-  <link rel="stylesheet" href="dist/app.v17.4.9.css">
-  <script defer src="dist/app.v17.4.9.js"></script>
+  <link rel="stylesheet" href="dist/app.v17.5.8.css">
+  <script defer src="dist/app.v17.5.8.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -1191,8 +1191,9 @@
            图与墨纱整套在 css/theme.css 的 #1734 块，宿主判断（data-ap-bg）也在那边，这里只留空盒。 -->
       <div class="chat-bg" id="chatBg" aria-hidden="true"></div>
       <!-- 聊天页顶栏左槽（2026-10-22）：原来是「直回会话列表」的一枚静态键（data-view="chats"，
-           走 js/settings.js 那条加载期 [data-view] 绑定）。现在它由 js/chats.js 的 updateChatHeadSlot()
-           按「有几个能切的对象」现算改形：>1 → 宫格线稿，点开「会话」面板；≤1 → 箭头，一步回列表（＝旧行为）。
+           走 js/settings.js 那条加载期 [data-view] 绑定）。2026-10-24 起形态**只认用户那一格设置**
+           （「界面布局 → 聊天页顶栏 → 左上角那枚」，ordinal-chatleft；缺省＝箭头回列表，选「切换会话」
+           才是三横线开面板）；#1872 把上一版「通话收起就强制回三横线」的兜底也撤了＝这一格永远生效。
            判据不认单人模式（那管的是开机落点与谁能主动开口，见 js/chats.js 那一段注释）。
            ⚠ 这枚键的 svg 与其收尾**一个字都不许动**：FIX-REGRESSION #963 钉着「svg 之后直接闭 button
            ＝键里只有那一枚箭头、没有第二个子元素」（用户 2026-10-21 两次改判后的定档）。改形只由 JS 在
@@ -2986,7 +2987,7 @@
         <div class="rh-foot mono">言字卡 · REPLY RHYTHM</div>
       </div>
     </section>
-    <input type="file" id="chatImageInput" accept="image/*" multiple hidden><input type="file" id="avatarInput" accept="image/*" hidden><input type="file" id="chatBgInput" accept="image/*" hidden><input type="file" id="deskBgInput" accept="image/*" hidden><input type="file" id="xnBgInput" accept="image/*" hidden><input type="file" id="momentImageInput" accept="image/*" multiple hidden><input type="file" id="momentsCoverInput" accept="image/*" hidden><input type="file" id="momentsAvatarInput" accept="image/*" hidden><input type="file" id="cardsImgInput" accept="image/*" multiple hidden><input type="file" id="cardsAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm" multiple hidden><input type="file" id="cardsInput" accept="application/json,.json" hidden><input type="file" id="txtCardsInput" accept=".txt,text/plain" hidden><input type="file" id="dataInput" accept="application/json,.json" hidden>
+    <input type="file" id="chatImageInput" accept="image/*" multiple hidden><input type="file" id="avatarInput" accept="image/*" hidden><input type="file" id="chatBgInput" accept="image/*" hidden><input type="file" id="deskBgInput" accept="image/*" hidden><input type="file" id="xnBgInput" accept="image/*" hidden><input type="file" id="xnCardInput" accept="image/*" hidden><input type="file" id="momentImageInput" accept="image/*" multiple hidden><input type="file" id="momentsCoverInput" accept="image/*" hidden><input type="file" id="momentsAvatarInput" accept="image/*" hidden><input type="file" id="cardsImgInput" accept="image/*" multiple hidden><input type="file" id="cardsAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm" multiple hidden><input type="file" id="cardsInput" accept="application/json,.json" hidden><input type="file" id="txtCardsInput" accept=".txt,text/plain" hidden><input type="file" id="dataInput" accept="application/json,.json" hidden>
 <!-- sheet.html：撤回内容改为消息内联展开，原撤回弹窗已移除；本 Part 保留以防 html_order 引用 -->
 
 <!-- appModal：全站唯一的通用输入弹窗。壳由 js/utils.js 的 openModal 驱动（填一行文字∶点确定回一句），
@@ -3091,8 +3092,9 @@
         <!-- 左上角那枚（2026-10-24 BUGS #1839）。用户「返回按钮怎么不见了，直接变成了切换会话的按钮／
              切换会话的按钮也要自己设置才更换」：形态不再「联系人多就自己变」，改由这一格决定（缺省＝返回列表）。
              写手＝js/chats.js 的 chatLeftSet（落 ordinal-chatleft，改完当场 updateChatHeadSlot）。
-             唯一会不理这一格的情况：通话已从顶栏收起——那时「会话」面板是通话在屏上唯一的路，
-             左槽强制回三横线（判据见 chatSwitchMode 上面那段注释）。 -->
+             **这一格永远生效，没有任何兜底改形**（BUGS #1872：上一版「通话收起就强制回三横线」被用户
+             第二次报上来——他设了返回列表、收起「打电话」之后键又变了）。通话收起而这一格是返回列表时，
+             聊天页确实没有打电话的入口；这件事由下面 #hbNote 末尾那句如实说明，不靠抢这枚键来保命。 -->
         <div class="lay-left">
           <span class="lay-left-t">左上角那枚</span>
           <span class="fchips" id="chatLeftChips">
@@ -3620,7 +3622,7 @@
 <!-- 心讯（2026-10-24）
      入口＝更多 → 互动 → 心讯。独立模式，不进聊天：正常聊天页那一面叫「传讯」，这一面叫「心讯」。
      字卡库只读不复制：文字 / emoji / 颜文字 / 表情包 / 图片 / 语音 / 拍一拍七类都从 data.groups 现取；
-     卡册落 data.xinxun.sessions，一场收成一页、现抽现记（落牌即写回同一页，收起只是定稿），
+     卡册落 data.xinxun.sessions，一场收成一页、现抽现记（落牌即写回同一页），
      不写聊天消息、不接 AI、不发世界感知。
      顶栏由 css/xinxun.css 整条隐藏，本页自己画「‹ 传讯 / 心讯 / 美化 · 卡册」那一行。
      背景（2026-10-24 二批）＝本页自己的「美化」面板：预设/上传/压暗/虚化/放大，落 data.xinxun.bg，
@@ -3634,7 +3636,19 @@
      牌桌底栏只留「你 出／TA 递」，组名改成长按牌面 420ms 在底栏原位亮出（.xn-gpeek，松手收回）；
      长按「你 出」小签仍是收回。字卡抽屉与卡册那两处照旧常驻显示来源。
      2026-10-24 四批（用户「心讯的【牌册】应该修改为【卡册】」）：屏上文案一律改「卡册」，
-     data.xinxun.sessions 与全部函数名照旧（内部标识不动，老存档照常认）。 -->
+     data.xinxun.sessions 与全部函数名照旧（内部标识不动，老存档照常认）。
+     2026-10-24 八批（用户「圈起来的页面的需要有【折叠】按钮，方便折叠这个半屏页面功能，
+     方便截图聊天记录」）：标题行右侧加 #xnPanelFold，折起只收 .xn-wbody，
+     牌桌吃满剩余高度。
+     2026-10-24 十批（用户「心讯里【收起】和【重来】的按钮删掉，没有作用」）：底栏两枚撤掉——
+     记录本就是现抽现记，重开/换人都摊回上一场；底栏只在有牌被收回时露出「放回去」。
+     2026-10-24 九批（用户「心讯 的顶部美化的矢量图需要重新设计」＋「顶部栏 底部栏 都可以透出背景图片」
+     ＋「这个页面发出卡片的卡片，也需要可以美化」）：
+     ①顶栏「美化」由画笔换成 24×24 线稿调色板（旧画笔在 15px 下读成钢笔尖）；
+     ②有背景图时顶栏与底栏改成真的玻璃条（46%~60% 底纱＋18px 背景虚化），壁纸透得出来；
+     ③美化面板新增「牌面」＝四种卡底色／自己的牌面图＋浓度／圆角，落 data.xinxun.card，
+       牌桌、手牌、心愿、卡册四处一起换，不影响传讯聊天气泡；
+     ④面板顶部那块预览不再只是一块色板：顶栏／一张牌／底栏同屏，换什么当场看得到。 -->
 <section class="view" id="xinxunView">
   <!-- 背景层（2026-10-24 二批）：只画心讯这一页。图片、预设与三根杆都落 data.xinxun.bg，
        不碰聊天背景与桌面壁纸；没有图时这层不占屏（class 由 js/xinxun.js 的 xnApplyLook 挂）。 -->
@@ -3656,13 +3670,20 @@
         </svg>
       </button>
       <!-- 美化／卡册（2026-10-24）：与切换联系人同一形制的矢量图标钮，不再用纯文字。
-           美化＝画笔（这一页的背景与三根杆），卡册＝书册；卡册右上那枚小圆点报页数，
-           由 js/xinxun.js 的 xnSyncBars 写 #xnAlbumN（不占图标本身的宽）。 -->
+           美化＝调色板（2026-10-24 九批重画：旧画笔的笔身与笔头在 15px 下读成一支钢笔/笔尖；
+           这一枚现在管背景与牌面两族，调色板才是「美化」；圆点用 fill=currentColor、
+           描边仍走 24×24 线稿 1.8）。卡册＝书册，只画图标本身：右上角那枚报页数的
+           小圆点 2026-10-24 按用户定档「不用显示数字」撤净，页数进卡册页里看。 -->
       <button type="button" class="xn-ico-btn" id="xnLookBtn" aria-label="美化" title="美化">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M8.2 15.8 17 7a2.1 2.1 0 0 0-3-3L5.2 12.8"/>
-          <path d="M3 21c2.2 0 3.5-1.3 3.5-3.5 0-1.1-.9-2-2-2s-2 .9-2 2c0 1-.5 1.5-1.5 1.5C2.5 19 3 21 3 21z"/>
+          <path d="M12 3a9 9 0 0 0 0 18c1.04 0 1.88-.84 1.88-1.88 0-.49-.19-.93-.5-1.26-.29-.31-.47-.72-.47-1.17 0-.95.77-1.72 1.72-1.72h1.72A5.65 5.65 0 0 0 22 9.35C22 5.84 17.52 3 12 3Z"/>
+          <g fill="currentColor" stroke="none">
+            <circle cx="7.5" cy="12" r="1.15"/>
+            <circle cx="9.6" cy="7.6" r="1.15"/>
+            <circle cx="14.4" cy="7.2" r="1.15"/>
+            <circle cx="17" cy="11.2" r="1.15"/>
+          </g>
         </svg>
       </button>
       <button type="button" class="xn-ico-btn" id="xnAlbumBtn" aria-label="卡册" title="卡册">
@@ -3671,7 +3692,6 @@
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
-        <span class="xn-ico-n" id="xnAlbumN" hidden></span>
       </button>
     </div>
   </div>
@@ -3693,24 +3713,45 @@
   <div class="xn-mine">
     <div class="xn-whead">
       <b id="xnWishHead">TA在想什么</b>
-      <button class="xn-refresh" id="xnWishBtn" type="button" aria-label="换一手">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0114.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
+      <div class="xn-wtools">
+        <!-- 折叠（2026-10-24 用户「圈起来的页面的需要有【折叠】按钮，方便折叠这个半屏页面功能，
+             方便截图聊天记录」）：只收下面 .xn-wbody 那一块（四枚看法／三张牌／字卡入口），
+             牌桌顺势吃满余下高度。
+             折起后钮改口「展开」，箭头翻转；状态只活本页，不进 data。 -->
+        <button type="button" class="xn-foldbtn" id="xnPanelFold" aria-expanded="true"
+          aria-controls="xnWBody" title="折叠「他在想什么」面板">
+          <span class="xn-fold-t">折叠</span>
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+        </button>
+        <!-- 换牌两档（2026-10-24 用户定档）：点一下在「自动换」与「已暂停」之间切。
+             自动换＝每切一次看法就换一手（旧行为）；已暂停＝切看法不动牌，方便来回对照
+             四种想法，换手只点右边那枚刷新；TA 真落牌时「想说／实际发出」仍自动跟。 -->
+        <button type="button" class="xn-modebtn" id="xnWishMode" aria-pressed="false"
+          title="切换看法时自动换牌 · 点一下暂停">自动换</button>
+        <button class="xn-refresh" id="xnWishBtn" type="button" aria-label="换一手">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0114.9-3.4L23 10"/><path d="M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="xn-wbody" id="xnWBody">
+      <div class="xn-wchips" id="xnWishChips" role="group" aria-label="选一种看法"></div>
+      <div class="xn-wcap" id="xnWishCap">点一张推过去 · 不满意就换一手</div>
+      <div class="xn-wishrow" id="xnWishRow"></div>
+      <button type="button" class="xn-libbar" id="xnLibBtn">
+        <span class="xn-libname">你的字卡</span>
+        <span class="xn-libn" id="xnLibCount">0 张</span>
+        <span class="xn-libgo">打开字卡抽屉 ›</span>
       </button>
     </div>
-    <div class="xn-wchips" id="xnWishChips" role="group" aria-label="选一种看法"></div>
-    <div class="xn-wcap" id="xnWishCap">点一张推过去 · 不满意就换一手</div>
-    <div class="xn-wishrow" id="xnWishRow"></div>
-    <button type="button" class="xn-libbar" id="xnLibBtn">
-      <span class="xn-libname">你的字卡</span>
-      <span class="xn-libn" id="xnLibCount">0 张</span>
-      <span class="xn-libgo">打开字卡抽屉 ›</span>
-    </button>
   </div>
 
-  <div class="xn-bar">
+  <!-- 底栏（2026-10-24 十批）：旧写法常驻「收起」「重来」两枚，用户判「没有作用」撤掉。
+       记录本来就是现抽现记（见 js/xinxun.js 的 xnSyncSession），不需要「收起」定稿；
+       新的一场由重进页面/换联系人时摊回上一场，也不需要「重来」清桌。
+       现在这一条只在有牌被收回时露出「放回去」，平时整条不占屏（hidden 由 xnUpdateUndo 写）。 -->
+  <div class="xn-bar" id="xnBar" hidden>
     <button class="xn-ghost" id="xnUndo" type="button" hidden>放回去</button>
-    <button class="xn-ghost" id="xnFold" type="button" title="收起这一场，变成卡册里的一页" hidden>收起</button>
-    <button class="xn-ghost" id="xnReset" type="button">重来</button>
   </div>
 
   <!-- 字卡抽屉（2026-10-24）：主屏不再平铺整本库；搜索/分类/分组/多选都在这里，
@@ -3764,6 +3805,9 @@
   <!-- 心讯美化（2026-10-24 二批）：入口＝本页顶栏「美化」。只改这一页的背景——
        预设与聊天/桌面共用 js/bgpresets.js 那一份名单；上传走全站同一取数口 fileData＋_bgUploadEdge；
        三根杆落 data.xinxun.bg（压暗/虚化/放大），选图时按平均亮度自动定一档压暗、预设不压暗。
+       九批（2026-10-24）：再加「牌面」一组（底色/牌面图/浓度/圆角，落 data.xinxun.card）——
+       牌桌、手牌、心愿、卡册四处一起换；旧档缺 card 由 defaults 递归补齐，读侧 xnCardView 夹脏值。
+       预览也不再只是一块色板：顶栏／一张牌／底栏同屏，换什么当场看得到。
        贴底壳复用 .fs-sheet-*，面板挂在 #xinxunView 里＝切页即随视图一起收，不用另找地方关。 -->
   <div class="fs-sheet-mask" id="xnLookMask" hidden>
     <div class="fs-sheet" id="xnLookSheet">
@@ -3774,9 +3818,24 @@
       <div class="fs-sheet-body xn-look">
         <div class="xn-lookprev" id="xnLookPrev">
           <div class="xn-lookprev-bg" id="xnLookPrevBg"></div>
-          <span class="xn-lookprev-void" id="xnLookVoid">未设置背景图</span>
+          <div class="xn-lookprev-ui" aria-hidden="true">
+            <div class="xn-pv-nav"><span>‹ 传讯</span><b>心讯</b><span class="xn-pv-dot"></span></div>
+            <div class="xn-pv-card"><p>夜里的风很轻</p><span>你 出</span></div>
+            <div class="xn-pv-bar"><span>放回去</span></div>
+          </div>
         </div>
         <div class="fs-sheet-note" id="xnLookState">这一页现在跟主题走（没有背景图）</div>
+        <!-- 时间轴开关（2026-10-24 用户「时间轴功能可以在心讯页面的美化里，自由设置开启或关闭」）：
+             只影响显示：日期条与秒级时间照旧在 DOM 里，关掉由 .xn-no-timeline 收起，打开当场回来；
+             记录（data.xinxun.sessions）一个字不动。开关面复用全站 .hub-tg 那一枚岛形。 -->
+        <div class="ap-sec">
+          <div class="ap-sec-t">显示</div>
+          <button type="button" class="xn-lookrow" id="xnTimelineRow" role="switch" aria-checked="true">
+            <span class="xn-lookrow-t">时间轴</span>
+            <span class="hub-tg" id="xnTimelineTg" aria-hidden="true"></span>
+          </button>
+          <p class="data-note">开着＝牌桌与卡册显示「今天／昨天／M月D日」和每张牌的秒级时间；关掉只收起显示，记录照旧。</p>
+        </div>
         <div class="ap-sec">
           <div class="ap-sec-t">预设背景</div>
           <div class="ap-bg-presets" id="xnBgPresets"></div>
@@ -3794,6 +3853,24 @@
             <label class="ap-knob"><span>放大</span><input type="range" id="xnBgZoom" min="100" max="200" step="5" value="100" aria-label="心讯背景放大"><output id="xnBgZoomOut">100%</output></label>
             <p class="data-note">选图时会按平均亮度自动定一档压暗；预设不压暗。三根杆只动背景，牌面与字不跟着变。</p>
           </div>
+        </div>
+        <!-- 牌面（2026-10-24 九批，用户「这个页面发出卡片的卡片，也需要可以美化」）：
+             底色四款（素白/米白/雾蓝/浅灰）＋自己的牌面图（浓度）＋圆角。
+             与背景一样只服务心讯这一页；卡里的墨字仍走全站 --ink，不另造第二套字色。
+             「墨色」刻意不列：本站实心墨只留给第一下（导航/横幅一律淡墨面），
+             一整面深卡在这里会读成另一套主题；想要深底就传一张深色牌面图，用浓度压。 -->
+        <div class="ap-sec">
+          <div class="ap-sec-t">牌面</div>
+          <div class="xn-skins" id="xnCardSkins" role="group" aria-label="牌面底色"></div>
+          <div class="ap-btnrow">
+            <button type="button" class="ap-btn" id="xnCardUpload">选择牌面图</button>
+            <button type="button" class="ap-btn" id="xnCardImgClear" disabled>清除</button>
+          </div>
+          <div id="xnCardImgKnobs" hidden>
+            <label class="ap-knob"><span>图浓度</span><input type="range" id="xnCardConc" min="0" max="100" step="1" value="55" aria-label="牌面图浓度"><output id="xnCardConcOut">55%</output></label>
+          </div>
+          <label class="ap-knob"><span>圆角</span><input type="range" id="xnCardR" min="0" max="14" step="1" value="3" aria-label="牌面圆角"><output id="xnCardROut">3px</output></label>
+          <p class="data-note">牌桌、手牌、心愿、卡册四处一起换。牌面图只铺卡面（浓度调低一点，字更清楚），不改传讯聊天的气泡与字卡库。</p>
         </div>
         <p class="data-note">背景只铺心讯这一页：传讯聊天、字卡库和桌面都不受影响。</p>
       </div>
