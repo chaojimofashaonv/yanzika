@@ -216,7 +216,7 @@
 
 
 
-      var BOOT_FILES = ['dist/app.v17.5.8.css','dist/app.v17.5.8.js'];
+      var BOOT_FILES = ['dist/app.v18.0.3.css','dist/app.v18.0.3.js'];
 
 
 
@@ -228,7 +228,7 @@
 
 
 
-      var _bfGot = {}, _bfDone = 0, _bfSeg = _bfT0, _bfPct = 0, _bfEl = {}, _bfHook = 0, _bfState = '';
+      var _bfGot = {}, _bfDone = 0, _bfSeg = _bfT0, _bfPct = 0, _bfEl = {}, _bfHook = 0, _bfState = '', _bfT = 0;
 
 
 
@@ -422,6 +422,14 @@
 
         // 排障读数（本站口径：失败不许静默）：这三枚让人在控制台一眼看出「卡在第几件∶条子画到几」
         try { window.__bootPct = Math.round(_bfPct); window.__bootDone = _bfDone; window.__bootTotal = BOOT_FILES.length; } catch (_bfe0) {}
+
+        // FIX 2026-10-25 #1912 载入到齐＋公告已接管＝这条 300ms 钟的活干完了，当场停掉。
+        // 旧写法 setInterval 没留句柄、也从不 clear：进站后永久每 300ms 醒一次（_bfQ 找三枚元素、
+        // 写 window.__boot*、再给两枚已经藏起来的条子写 width）＝手机上一个常驻唤醒源，观感零收益。
+        // 只停钟、不删读数：__bootPct／__bootDone 留在最后那一发的值，排障照旧看得到。
+        // 不看 _bfState==='wait'：它只由本文件那枚「还在载入…」临时文案设置（外部件接管后那条路已 return），
+        // 这里再拿它当判据只会让停止时刻随文案抖动。
+        if (_bfT && _bfDone >= BOOT_FILES.length && window.__ageGateBound) { clearInterval(_bfT); _bfT = 0; }
 
 
         _bfPaint();
@@ -752,7 +760,7 @@
 
 
 
-      setInterval(_bfTick, TICK_MS);
+      _bfT = setInterval(_bfTick, TICK_MS);
 
 
 
@@ -890,10 +898,21 @@
 
   .ag-load-btn{display:block;width:100%;min-height:44px;margin-top:9px;padding:10px 12px;border-radius:15px;border:1px solid #cdcbc9;background:#fff;color:#1c1917;font-size:12.5px;line-height:1.5}
 
+
+
+  /* 目录那五行（2026-10-25 重排）在外置件没到那一帧是五枚 <button>：不给这四条，
+     它们会按浏览器默认样式画成五个灰底凸起的小方块，在这张「o 与正文同素的纸」里格外扎眼。
+     这里只做一件事——把按钮外观摁回一行字；点状引导线与五节分栏全留给外置件。
+     同样只用最古老的属性，且与外置件同名选择器（源序在后＝到齐后逐条覆盖）。 */
+
+  .ag-toc-row{display:block;width:100%;padding:8px 0;border:0;background:none;color:inherit;font:inherit;text-align:left}
+
+  .ag-toc-lead{display:none}
+
   </style>
 
-  <link rel="stylesheet" href="dist/app.v17.5.8.css">
-  <script defer src="dist/app.v17.5.8.js"></script>
+  <link rel="stylesheet" href="dist/app.v18.0.3.css">
+  <script defer src="dist/app.v18.0.3.js"></script>
 </head>
 <body>
   <div id="ageGate" aria-hidden="true">
@@ -905,37 +924,87 @@
         <div class="ag-head"><div class="ag-brand">言字卡</div><div class="ag-ver" id="ageGateVer"></div></div><!-- 版号由 js/app.js 启动时填 window.APP_VER -->
         <h2 class="ag-title">开屏公告</h2>
         <p class="ag-sub">免责声明 · 每次进入前都读一遍</p>
+        <!-- 目录（2026-10-25 重排）：十一条平铺时整页没有一个落点，先在页首给一张「这本书有哪几节」的页。
+             ⚠ 五行的序号是**汉字**（一二三四五），条款编号仍是 01~11 两位数字：两套数字分工，
+             扫一眼不会把「三」与「03」读成同一层。
+             每行是 <button data-ag-sec="N">＝点了滚到 #agSecN（绑定在 js/age-gate.js）；
+             外置件没到、JS 没跑的那一帧，它们只是五行字，不会装成「点了会动」的控件。 -->
+        <nav class="ag-toc" aria-label="目录">
+          <button type="button" class="ag-toc-row" data-ag-sec="1"><span class="ag-toc-no">一</span><span class="ag-toc-t">红线</span><span class="ag-toc-lead" aria-hidden="true"></span><span class="ag-toc-r">01–02</span></button>
+          <button type="button" class="ag-toc-row" data-ag-sec="2"><span class="ag-toc-no">二</span><span class="ag-toc-t">内容</span><span class="ag-toc-lead" aria-hidden="true"></span><span class="ag-toc-r">03–04</span></button>
+          <button type="button" class="ag-toc-row" data-ag-sec="3"><span class="ag-toc-no">三</span><span class="ag-toc-t">责任</span><span class="ag-toc-lead" aria-hidden="true"></span><span class="ag-toc-r">05–07</span></button>
+          <button type="button" class="ag-toc-row" data-ag-sec="4"><span class="ag-toc-no">四</span><span class="ag-toc-t">数据与素材</span><span class="ag-toc-lead" aria-hidden="true"></span><span class="ag-toc-r">08–09</span></button>
+          <button type="button" class="ag-toc-row" data-ag-sec="5"><span class="ag-toc-no">五</span><span class="ag-toc-t">出处与条款</span><span class="ag-toc-lead" aria-hidden="true"></span><span class="ag-toc-r">10–11</span></button>
+        </nav>
         <div class="ag-upd" id="ageGateUpd" hidden>
           <button type="button" class="ag-update" id="ageGateUpdate"></button>
           <div class="ag-upd-note">刷完还是这一版＝这次没拿到新包（网络慢），彻底关掉浏览器再重开一次</div>
         </div>
-        <div class="ag-warn">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-          <div>
-            <div class="ag-warn-t">未满 18 周岁，禁止使用本站</div>
-            <p><strong>点击「确认进入」即视为你确认已年满 18 周岁</strong>，并已阅读、理解并同意本页全文。这份确认只在你本次打开里有效，下次进入会再请你读一遍；它不会上传，不属于数据收集。</p>
-          </div>
-        </div>
         <div class="ag-list">
-          <div class="ag-row hot"><span class="ag-no">01</span><div class="ag-rowc"><h4>红线 · 未成年人禁入</h4><p>本站禁止未满 18 周岁的未成年人使用；未成年人违规使用的，相关责任由其本人及监护人承担。</p></div></div>
-          <div class="ag-row hot ban"><span class="ag-no">02</span><div class="ag-rowc"><h4>红线 · 内测中禁止二传与搬运</h4><p>言字卡内测中<strong>禁止二传链接</strong>。禁止搬运网站代码与文件、禁止二改网站本体、禁止商用倒卖、禁止抹除署名。允许参考借鉴思路与功能，<strong>禁止整站复制、禁止套用代码与界面</strong>。以上行为违规者将<strong>拉黑并公开声明</strong>。</p></div></div>
-          <div class="ag-row"><span class="ag-no">03</span><div class="ag-rowc"><h4>虚构娱乐，不构成承诺</h4><p>所有对话与来信均为<strong>你保存的字卡随机触发</strong>，纯属虚构娱乐，不代表任何真实人物，不构成任何承诺、建议或专业意见，不产生任何法律效力。</p></div></div>
-          <div class="ag-row"><span class="ag-no">04</span><div class="ag-rowc"><h4>不替代真实关系与专业帮助</h4><p>情绪困境请及时求助家人朋友，或拨打心理援助热线 12356；<strong>如遇紧急或危险情形，请立即拨打 110 / 120</strong>。</p></div></div>
-          <div class="ag-row"><span class="ag-no">05</span><div class="ag-rowc"><h4>自愿使用，后果自担</h4><p>使用本站的一切后果（包括但不限于情绪影响、时间消耗、数据丢失、设备问题、纠纷与损失）均由使用者本人自行承担；本站完全免费，作者未因你的使用收取任何费用，在法律法规允许的最大范围内不承担任何直接、间接、附带或后果性的责任。</p></div></div>
-          <div class="ag-row"><span class="ag-no">06</span><div class="ag-rowc"><h4>按「现状」提供</h4><p>本站不作任何形式的明示或默示保证；因网络、设备、系统或浏览器等非作者可控原因导致的无法访问、显示异常或损失，作者亦不承担责任。</p></div></div>
-          <div class="ag-row"><span class="ag-no">07</span><div class="ag-rowc"><h4>纯本地数据，请定期备份</h4><p>无后端服务器、无账号体系，所有数据仅保存在你自己的设备浏览器中，<strong>不会上传至任何网络</strong>。清除浏览器数据即丢失，请务必定期导出备份，作者无法找回。</p></div></div>
-          <div class="ag-row"><span class="ag-no">08</span><div class="ag-rowc"><h4>导入素材版权自负</h4><p>你自行导入或保存的音乐、图片、表情、字卡等素材，其版权与合法性由你本人负责。</p></div></div>
-          <div class="ag-row"><span class="ag-no">09</span><div class="ag-rowc"><h4>违法违规，责任自负</h4><p>禁止利用本站从事任何违法违规活动，包括但不限于骚扰、辱骂、诈骗、传播违法信息等，违者自行承担全部法律责任。</p></div></div>
-          <div class="ag-row"><span class="ag-no">10</span><div class="ag-rowc"><h4>署名 · 设计与参考</h4>
-            <div class="ag-ref">
-              <div class="ag-ref-item"><span class="ag-ref-k">设计与制作</span><span class="ag-ref-v">小红书 @言序（1842523578）。</span></div>
-              <div class="ag-ref-item"><span class="ag-ref-k">参考</span><span class="ag-ref-v">言字卡部分功能，参考了我自己 7 月时做的字卡星言和 8 月时做的字卡 mochi。</span></div>
-              <div class="ag-ref-item"><span class="ag-ref-k">灵感</span><span class="ag-ref-v">除随机回复的基础逻辑、基础框架外，灵感来源为 milk 字卡 · 小红书 @milk（2777299956）。</span></div>
-              <div class="ag-ref-item"><span class="ag-ref-k">借鉴</span><span class="ag-ref-v"><ul class="ag-ref-list"><li>公用字卡＋专享字卡模式，借鉴自小红书 @默玉（8012400317）</li><li>需正确回答问卷才能进入使用网站的模式，借鉴自小红书 @小狗咖啡猫（5435843310）</li></ul></span></div>
-              <div class="ag-ref-item"><span class="ag-ref-k">网络已有想法</span><span class="ag-ref-v">以下功能源于网络上已有的类似想法，但设计均由我独立完成：<ul class="ag-ref-list"><li>情绪字卡，源于早期网络上的类似提议（有人建议在聊天中加入情绪字卡以方便交流，小红书 @心汋是颗彩虹多宝糖（9725312970）也提过这个模式）</li><li>换头像，灵感来自看到网络上有人提议小手机想要 chat 自己换头像</li></ul></span></div>
+
+          <section class="ag-sec" id="agSec1">
+            <div class="ag-sec-h">
+              <div class="ag-sec-top"><span class="ag-sec-no">一</span><span class="ag-sec-t">红线</span><span class="ag-sec-rule" aria-hidden="true"></span><span class="ag-sec-range">01–02</span></div>
+              <p class="ag-sec-d">未满 18 禁入 · 内测禁止二传与搬运</p>
             </div>
-          </div></div>
-          <div class="ag-row"><span class="ag-no">11</span><div class="ag-rowc"><h4>条款可分割 · 最后更新 2026-10-13</h4><p>本页任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。</p></div></div>
+            <div class="ag-warn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <div>
+                <div class="ag-warn-t">未满 18 周岁，禁止使用本站</div>
+                <p><strong>点击「确认进入」即视为你确认已年满 18 周岁</strong>，并已阅读、理解并同意本页全文。这份确认只在你本次打开里有效，下次进入会再请你读一遍；它不会上传，不属于数据收集。</p>
+              </div>
+            </div>
+            <div class="ag-row"><span class="ag-no">01</span><div class="ag-rowc"><h4>未成年人使用的责任</h4><p>本站禁止未满 18 周岁的未成年人使用；未成年人违规使用的，相关责任由其本人及监护人承担。</p></div></div>
+            <div class="ag-row hot ban"><span class="ag-no">02</span><div class="ag-rowc"><h4>内测中禁止二传与搬运</h4><p>言字卡内测中<strong>禁止二传链接</strong>。禁止搬运网站代码与文件、禁止二改网站本体、禁止商用倒卖、禁止抹除署名。允许参考借鉴思路与功能，<strong>禁止整站复制、禁止套用代码与界面</strong>。以上行为违规者将<strong>拉黑并公开声明</strong>。</p></div></div>
+          </section>
+
+          <section class="ag-sec" id="agSec2">
+            <div class="ag-sec-h">
+              <div class="ag-sec-top"><span class="ag-sec-no">二</span><span class="ag-sec-t">内容</span><span class="ag-sec-rule" aria-hidden="true"></span><span class="ag-sec-range">03–04</span></div>
+              <p class="ag-sec-d">虚构娱乐 · 不替代真实关系与专业帮助</p>
+            </div>
+            <div class="ag-row"><span class="ag-no">03</span><div class="ag-rowc"><h4>虚构娱乐，不构成承诺</h4><p>所有对话与来信均为<strong>你保存的字卡随机触发</strong>，纯属虚构娱乐，不代表任何真实人物，不构成任何承诺、建议或专业意见，不产生任何法律效力。</p></div></div>
+            <div class="ag-row"><span class="ag-no">04</span><div class="ag-rowc"><h4>不替代真实关系与专业帮助</h4><p>情绪困境请及时求助家人朋友，或拨打心理援助热线 12356；<strong>如遇紧急或危险情形，请立即拨打 110 / 120</strong>。</p></div></div>
+          </section>
+
+          <section class="ag-sec" id="agSec3">
+            <div class="ag-sec-h">
+              <div class="ag-sec-top"><span class="ag-sec-no">三</span><span class="ag-sec-t">责任</span><span class="ag-sec-rule" aria-hidden="true"></span><span class="ag-sec-range">05–07</span></div>
+              <p class="ag-sec-d">后果自担 · 按「现状」提供 · 违法违规自负</p>
+            </div>
+            <div class="ag-row"><span class="ag-no">05</span><div class="ag-rowc"><h4>自愿使用，后果自担</h4><p>使用本站的一切后果（包括但不限于情绪影响、时间消耗、数据丢失、设备问题、纠纷与损失）均由使用者本人自行承担；本站完全免费，作者未因你的使用收取任何费用，在法律法规允许的最大范围内不承担任何直接、间接、附带或后果性的责任。</p></div></div>
+            <div class="ag-row"><span class="ag-no">06</span><div class="ag-rowc"><h4>按「现状」提供</h4><p>本站不作任何形式的明示或默示保证；因网络、设备、系统或浏览器等非作者可控原因导致的无法访问、显示异常或损失，作者亦不承担责任。</p></div></div>
+            <div class="ag-row"><span class="ag-no">07</span><div class="ag-rowc"><h4>违法违规，责任自负</h4><p>禁止利用本站从事任何违法违规活动，包括但不限于骚扰、辱骂、诈骗、传播违法信息等，违者自行承担全部法律责任。</p></div></div>
+          </section>
+
+          <section class="ag-sec" id="agSec4">
+            <div class="ag-sec-h">
+              <div class="ag-sec-top"><span class="ag-sec-no">四</span><span class="ag-sec-t">数据与素材</span><span class="ag-sec-rule" aria-hidden="true"></span><span class="ag-sec-range">08–09</span></div>
+              <p class="ag-sec-d">纯本地存储 · 导入素材版权自负</p>
+            </div>
+            <div class="ag-row"><span class="ag-no">08</span><div class="ag-rowc"><h4>纯本地数据，请定期备份</h4><p>无后端服务器、无账号体系，所有数据仅保存在你自己的设备浏览器中，<strong>不会上传至任何网络</strong>。清除浏览器数据即丢失，请务必定期导出备份，作者无法找回。</p></div></div>
+            <div class="ag-row"><span class="ag-no">09</span><div class="ag-rowc"><h4>导入素材版权自负</h4><p>你自行导入或保存的音乐、图片、表情、字卡等素材，其版权与合法性由你本人负责。</p></div></div>
+          </section>
+
+          <section class="ag-sec" id="agSec5">
+            <div class="ag-sec-h">
+              <div class="ag-sec-top"><span class="ag-sec-no">五</span><span class="ag-sec-t">出处与条款</span><span class="ag-sec-rule" aria-hidden="true"></span><span class="ag-sec-range">10–11</span></div>
+              <p class="ag-sec-d">署名与参考 · 条款效力</p>
+            </div>
+            <div class="ag-row"><span class="ag-no">10</span><div class="ag-rowc"><h4>署名 · 设计与参考</h4>
+            <div class="ag-ref">
+              <div class="ag-ref-item"><div class="ag-ref-k">设计与制作</div><div class="ag-ref-v">小红书 @言序（1842523578）。</div></div>
+              <div class="ag-ref-item"><div class="ag-ref-k">前作</div><div class="ag-ref-v">言字卡是作者自己两件前作的续作：7 月做的字卡「星言」、8 月做的字卡「mochi」。以下机制与前作相同（两作同为作者本人作品）：<ul class="ag-ref-list"><li><b class="ag-ref-n">聊天情绪字卡</b>：三级标签链（情绪 → 心意 → 交流意图）<span class="ag-ref-s">来自「星言」</span></li><li><b class="ag-ref-n">逻辑连接词</b>：<span class="ag-ref-s">来自「mochi」</span>，在「系统预设字卡」里有单独一档</li><li><b class="ag-ref-n">聊天内联系人单独撤回某几个字卡</b>：<span class="ag-ref-s">来自「mochi」</span></li><li><b class="ag-ref-n">世界感知里的世界感知时间</b>：<span class="ag-ref-s">来自「mochi」的「此间」与「星言」的联系人顶部栏</span></li><li><b class="ag-ref-n">朋友圈贴纸</b>：<span class="ag-ref-s">来自「mochi」</span>，在动态配图上贴一张贴纸</li><li><b class="ag-ref-n">联系人收藏消息</b>：<span class="ag-ref-s">来自「mochi」</span>，联系人按概率把你发出的消息、信件、朋友圈动态收进「TA 的收藏」</li><li><b class="ag-ref-n">问问TA</b>：<span class="ag-ref-s">来自「mochi」</span></li><li><b class="ag-ref-n">播放器的邀请听歌与控制歌单</b>：<span class="ag-ref-s">来自「星言」和「mochi」的音乐功能</span></li></ul></div>
+                <p class="ag-ref-note">注：以上是能明确对上的部分，可能还有没写全的；言字卡中仍有功能是在前作基础上的优化。</p>
+              </div>
+              <div class="ag-ref-item"><div class="ag-ref-k">灵感</div><div class="ag-ref-v">除随机回复的基础逻辑、基础框架外，灵感来源为 milk 字卡 · 小红书 @milk（2777299956）。</div></div>
+              <div class="ag-ref-item"><div class="ag-ref-k">借鉴</div><div class="ag-ref-v"><ul class="ag-ref-list"><li><b class="ag-ref-n">公用字卡＋专享字卡模式</b>，<span class="ag-ref-s">借鉴自小红书 @默玉（8012400317）</span></li><li><b class="ag-ref-n">需正确回答问卷才能进入使用网站的模式</b>，<span class="ag-ref-s">借鉴自小红书 @小狗咖啡猫（5435843310）</span></li><li><b class="ag-ref-n">「问问TA」的单选题与多选题</b>，<span class="ag-ref-s">借鉴自小红书 @FelixFelicis（9416318007）的「帮我决定」「多人决定」功能</span></li></ul></div></div>
+              <div class="ag-ref-item"><div class="ag-ref-k">网络已有想法</div><div class="ag-ref-v">以下功能源于网络上已有的类似想法，但设计均由我独立完成：<ul class="ag-ref-list"><li><b class="ag-ref-n">情绪字卡这个形式</b>，早期网络上已有人提过（有人建议在聊天中加入情绪字卡以方便交流，小红书 @心汋是颗彩虹多宝糖（9725312970）也提过这个模式）；本站实际使用的机制来自作者前作，见上方「前作」那一条</li><li><b class="ag-ref-n">换头像</b>，灵感来自看到网络上有人提议小手机想要 chat 自己换头像</li></ul></div></div>
+            </div>
+            </div></div>
+            <div class="ag-row"><span class="ag-no">11</span><div class="ag-rowc"><h4>条款可分割 · 最后更新 2026-10-25</h4><p>本页任何条款被认定全部或部分无效的，不影响其余条款的效力，其余条款继续有效。</p></div></div>
+          </section>
+
         </div>
         <div class="ag-foot">
           <!-- #545 开屏加载进度（纸尾状态块）：由 html/head.html 那段首屏前置脚本直接写（不依赖外置 js），
@@ -1140,7 +1209,7 @@
           <div><span class="fav-en mono">KEPT</span><h2>收藏</h2></div>
           <div class="fav-head-acts">
             <button type="button" class="fav-tools-btn" id="favToolsBtn" aria-label="在这页收藏里查找" title="在这页收藏里查找"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
-            <button type="button" class="fav-tools-btn" id="colSetBtn" aria-label="收藏设置" title="收藏设置"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg></button>
+            <button type="button" class="fav-tools-btn" id="colSetBtn" aria-label="收藏设置" title="收藏设置"><svg viewBox="0 0 24 24" width="17" height="17" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button>
           </div>
         </div>
         <div class="fav-seg" id="collectTabs">
@@ -1522,13 +1591,13 @@
       <div class="group-list" id="sysCardList"></div>
       <!-- 聊天情绪（2026-10-21 用户定档：「聊天情绪字卡怎么也放在系统预设字卡里？……而且这个本来也是系统预设字卡」）。
            它原先是一张独立视图（html/view-emotion.html 的 #emotionView），现在只是这一页里的一档：
-           分类 tab 行多一枚固定的「聊天情绪」（js/utils.js 的 PRESET_EMO_TAB），#sysCardList 落在这一档时
+           分类 tab 行多两枚固定的「聊天情绪」「逻辑连接词」（js/utils.js 的 PRESET_EMO_TAB ∶ PRESET_CONN_TAB），#sysCardList 落在这一档时
            只画那行 tab，面板本体接在下面。选择器与读写一字未动（#emoModes／#emoModeNote／#emoProbs／
            #emoTabs／#emoLibNote／#emoLibGroups／#emoRestore 全部原样），主门 _smoke_emotion_chain.js 照它量。
            这一面管的是**全局默认**那一份；每一位自己那本（只存被改过的格）在「TA 的设置 → 聊天情绪」那一格。 -->
       <div class="emo-pane" id="sysEmoPane" hidden>
         <div class="emo-page">
-          <p class="emo-lead">TA 回话时挂的标签 · 逻辑连接词</p>
+          <p class="emo-lead">TA 回话时挂的标签</p>
 
           <div class="setting-card">
             <div class="setting-subhead">机制</div>
@@ -1547,7 +1616,23 @@
             <p class="emo-lib-foot"><button type="button" class="emo-restore" id="emoRestore">恢复出厂词表</button></p>
             <p class="data-note">「停用」＝这张不再被抽到、词仍留在表里；系统预设词不给「删」，只有你先前自己填过的那几张才有这一枚。恢复出厂会把停用一起取消，并把自填的那几张清掉（它们只存在你这一本里）。这一页不提供加词入口：预设页的口径是只读这套出厂词表。</p>
           </div>
-          <p class="data-note">这套机制来自作者的两件前作：三级标签链（情绪 → 心意 → 交流意图）出自「星言」，逻辑连接词出自「Mochi 字卡」。同一账号 小红书 @言序。</p>
+          <p class="data-note">三级标签链（情绪 → 心意 → 交流意图）出自作者的前作「星言」；逻辑连接词另有单独一档（上方「逻辑连接词」）。同一账号 小红书 @言序。</p>
+        </div>
+      </div>
+      <!-- 逻辑连接词（2026-10-25 用户定档：要单独开一个窗口放在系统预设字卡里，不并进聊天情绪）：
+           这一面只管连接词词表；用不用、整条替换还是末尾追加，仍由「聊天情绪」那一档的机制与概率决定。
+           读写与停用/启用走同一本 data.emotionLib.connect / data.emotionOff.connect（js/emotion.js）。 -->
+      <div class="emo-pane" id="sysConnPane" hidden>
+        <div class="emo-page">
+          <p class="emo-lead">TA 回话时追加或替换的那一句</p>
+          <div class="setting-card">
+            <div class="setting-subhead">词表</div>
+            <p class="data-note" id="connLibNote"></p>
+            <div id="connLibGroups"></div>
+            <p class="emo-lib-foot"><button type="button" class="emo-restore" id="connRestore">恢复出厂词表</button></p>
+            <p class="data-note">「停用」＝这张不再被抽到、词仍留在表里；系统预设词不给「删」，只有你先前自己填过的那几张才有这一枚。恢复出厂只把连接词这一本带回出厂，不动三级链。这一页不提供加词入口：预设页的口径是只读这套出厂词表。</p>
+          </div>
+          <p class="data-note">这一族来自作者的前作「Mochi 字卡」；用不用、整条替换还是末尾追加，由「聊天情绪」那一档决定。同一账号 小红书 @言序。</p>
         </div>
       </div>
     </section>
@@ -1567,7 +1652,11 @@
           <div class="g-sub" id="mbStat"></div>
         </div>
         <div class="mb-head-btns">
-          <button type="button" class="mb-ico-btn" id="mbSetBtn" aria-label="信箱设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"></path><path d="M1 14h6M9 8h6M17 16h6"></path></svg></button>
+          <!-- 设置图标（2026-10-25）：旧「三竖滑杆」在 24 网格里占 22px 宽（旁边写信统计那三根柱只有 12px）、
+               六笔在 18px 显示下交叉成一团。改用**心讯右上角同一枚**三实心点（html/view-xinxun.html 的 #xnLookBtn），
+               总宽 17.8px。内联 style 顶掉 svg 自身的 fill:none/stroke —— 不顶＝实心点被画成空心小环。
+               同批同款：朋友圈 #mmSetBtn · 收藏 #colSetBtn · 播放器 #plPermBtn（四处一模一样，别只改一处）。 -->
+          <button type="button" class="mb-ico-btn" id="mbSetBtn" aria-label="信箱设置"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="1.9"></circle><circle cx="12" cy="12" r="1.9"></circle><circle cx="19" cy="12" r="1.9"></circle></svg></button>
           <button type="button" class="mb-ico-btn" data-view="letterstats" aria-label="写信统计"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20v-6M12 20V8M18 20v-9"/></svg></button>
         </div>
       </div>
@@ -1633,7 +1722,12 @@
         <span class="mm-bar-sp"></span>
         <div class="mm-acts">
           <button type="button" class="mm-act" id="mmNoticeBtn" aria-label="互动提醒" title="互动提醒"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 20a2 2 0 01-3.4 0"/></svg><span class="unread-badge" id="mmNoticeDot" hidden></span></button>
-          <button type="button" class="mm-act" id="mmSetBtn" aria-label="朋友圈设置" title="朋友圈设置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg></button>
+          <!-- 设置图标（2026-10-25）：旧「三竖滑杆」在 24 网格里占 22px 宽（铃铛 18／加号 14）、六笔在 20px
+               显示下交叉成一团，三枚钮并排时只有它发重。改用**心讯右上角同一枚**三实心点（#xnLookBtn 的画法：
+               r 1.9·cx 5/12/19，见 html/view-xinxun.html），总宽 17.8px 与铃铛齐；点自身够中性，不与铃铛的
+               曲线和加号的粗直线打架。内联 style 顶掉 `.mm-act svg` 那条 fill:none＋stroke —— 不顶＝实心点
+               被画成空心小环。同款四处：信箱 #mbSetBtn · 收藏 #colSetBtn · 播放器 #plPermBtn（别只改一处）。 -->
+          <button type="button" class="mm-act" id="mmSetBtn" aria-label="朋友圈设置" title="朋友圈设置"><svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg></button>
           <button type="button" class="mm-act mm-act-add" id="newMoment" aria-label="发布朋友圈" title="发布朋友圈"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
         </div>
       </div>
@@ -1920,6 +2014,22 @@
           <div class="fold-bd"><div class="ap-row"><span>游戏中出声<span style="display:block;font-size:11px;color:var(--muted)">只在有结果的一刻响：合上了、消掉了、推倒了、这一局结束了。滑动、点选、落子这些「每一下」不出声</span></span><input type="checkbox" id="gameSfxOn" style="width:18px;height:18px;flex:none;margin:0;accent-color:var(--ink)"></div><div class="ap-row"><span style="flex:1;min-width:0">音量<span style="display:block;font-size:11px;color:var(--muted)">拖到 0 就彻底无声。这一格只记在这台设备上，不随备份导出带到别的手机里</span></span><input type="range" id="gameSfxVol" min="0" max="100" step="5" style="flex:none;width:130px"></div><button class="soft-btn" id="gameSfxTest" style="flex:none;width:auto;padding:5px 10px">试听三声</button><p class="data-note">这一格只管小游戏里的声音，是<b>这台设备</b>的一份开关（不分联系人，也不随备份带到别的手机）。TA 发来消息 ∶ 我发出消息 ∶ 来电振铃那三种提示音是<b>按人各一份</b>，在聊天页右上角 → TA 的设置 → 声音 → 提示音 里改——两件事的归属不同，所以没并在一起。</p></div>
         </div>
 
+        <!-- 心讯取卡来源（2026-10-25，用户「都说了不用这么复杂：就是分为只用牌面图鉴，
+             其他都是字卡库+牌面图鉴+聊天情绪+逻辑连接词，都是追加开启使用」＋「这个是用来限制
+             联系人和用户的，但是我自己打开字卡抽屉里根本没有牌面图鉴+聊天情绪+逻辑连接词，
+             只有字卡库」）：抽屉里**始终**摆全部来源（牌面图鉴 118／聊天情绪 294／逻辑连接词 97
+             都可搜），这四枚开关决定「哪些来源能真的互发」——没开启的在抽屉里标「未开启」并锁住。
+             四枚开关的行由 js/xinxun.js 的 xnRenderSrcRows 现画（设置页与心讯设置面板共用），
+             回显 xnSrcRenderAll，写手唯一 xnSrcSet；四枚全 false＝只用字卡库（改前行为逐字不变）。 -->
+        <div class="setting-card fold" data-tab="play" data-fold="xnmode">
+          <button type="button" class="fold-hd"><span class="fold-ti">心讯</span><span class="fold-sum" id="sumXnMode"></span><i class="fold-ar">›</i></button>
+          <div class="fold-bd">
+            <div class="setting-subhead">取卡来源</div>
+            <div id="xnModeRowSet"></div>
+            <p class="data-note" id="xnModeNote">默认四项都不开＝只用字卡库。三枚「追加」可多选；「只用牌面图鉴」开着时，下面三项不生效。字卡抽屉里始终能搜到全部来源，没开启的会标「未开启」、不能推到牌桌。</p>
+          </div>
+        </div>
+
         <!-- 「TA 的世界」那一格 2026-10-11 整格下线（用户「把【TA 的世界】移出来到【更多】里」，BUGS #300）。
              它最后剩的一件事是「使用大全」那行入口，现住在「更多」那一页页头（html/view-more.html 里
              那枚 #hubEntry；小字 id 沿用 hubEntrySub＝写手 js/hub.js 一处不改名，同信箱角标
@@ -1984,7 +2094,7 @@
             <p class="ds-hint">上面四枚<b>可多选</b>：勾上哪页，这张图就透在哪页的卡片缝里（没选图时都不起作用）；四枚全不勾＝哪页都不铺，图还在。「其它页面」＝信箱·设置·统计·收藏·朋友圈·播放器·游戏这些不走底部导航的页。</p>
             <label class="ds-knob"><span>压暗</span><input type="range" id="deskBgVeil" min="0" max="90" step="2"><output id="deskBgVeilOut">44%</output></label>
             <label class="ds-knob"><span>提亮</span><input type="range" id="deskBgWash" min="0" max="90" step="2"><output id="deskBgWashOut">0%</output></label>
-            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。自传照片时<b>按这张图自己的暗端自动定档</b>（浅图 0~45%、深图与花图 80% 上下——那一档照片会明显退成柔色，这是「字要读得出」的代价），之后随你拖。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。</p>
+            <p class="ds-hint">「提亮」给壁纸垫一层<b>白纱</b>——照片太花、铺开之后页面上的字看不清时往右拖，垫到五六成整页都读得出，壁纸退成一层柔色。上传后默认不垫（0），照片按原样铺；字在花图上看不清时自己往右拖（深图与花图建议五六成）。「压暗」是另一头的口味：往黑里压，对墨字可读性是反方向（压得越多、字越难读），只在想要暗调时用。</p>
             <label class="ds-knob"><span>缩放</span><input type="range" id="deskBgZoom" min="100" max="200" step="5"><output id="deskBgZoomOut">100%</output></label>
             <label class="ds-knob"><span>模糊</span><input type="range" id="deskBgBlur" min="0" max="40" step="1"><output id="deskBgBlurOut">0px</output></label>
             <div class="ds-knob ds-size"><span>取景</span><div class="contact-chip-row" id="deskBgSizeRow"><button type="button" class="contact-chip" data-size="cover">铺满</button><button type="button" class="contact-chip" data-size="contain">整张</button></div></div>
@@ -2370,6 +2480,16 @@
               <div class="ap-color-row"><span>引用文字</span><input type="color" id="apQuoteInk" class="ap-color" value="#717174"><span class="ap-color-reset" id="apQuoteInkRst" title="恢复默认">×</span></div>
               <p class="data-note">管消息里那块「引用：…」——它的底、左边那道竖条、块里的字。点 × 恢复默认。</p>
             </div>
+            <!-- 撤回消息 · 展开文字色（#1882，用户「聊天设置外观的美化里，需要可以编辑（这一类）
+                 撤回的消息展开的文字的颜色」）：点「查看」展开出来的那段原文自己就是一颗 .bubble，
+                 字色一向跟着这位 TA 的气泡文字色走——用户要的是给这一族单开一枚。
+                 存 recallInk＝'auto' 或 #rrggbb，与情绪字卡专色（#983）同一个存储体、同一手写入路；
+                 auto＝不写属性＝继续跟气泡文字色（与改前逐字节相同）。 -->
+            <div class="ap-sec">
+              <div class="ap-sec-t">撤回消息</div>
+              <div class="ap-color-row"><span>展开文字</span><input type="color" id="apRecallInk" class="ap-color" value="#8a8a8e"><span class="ap-color-reset" id="apRecallInkRst" title="恢复自动">×</span><em class="ap-bare-state" id="apRecallInkState">自动</em></div>
+              <p class="data-note">管点「查看」后展开出来的那段原文（只影响字，图不受颜色影响）。不选＝跟着这一位 TA 的气泡文字颜色走；这里选了色就以它为准。点 × 恢复自动。</p>
+            </div>
             <!-- 情绪字卡字色（2026-10-21 #983，用户「还是不能调整聊天消息底部的情绪字卡这一行字的颜色」）：
                  情绪行（.emo-line／.emo-tag／撤回钮）此前只能跟着「气泡外文字」整族一起改，
                  用户要的是给这一行单开一枚。存 emoInk＝'auto' 或 #rrggbb，与其它裸字色同一个存储体；
@@ -2459,7 +2579,7 @@
           <div class="fold-bd">
             <div class="ap-sec">
               <!-- 内置渐变背景预设（2026-10-24）：八款与桌面背景卡同一份配方（js/bgpresets.js）。
-                   点一块落进 chatBg 现成链路（亮度→压暗默认→深色翻转全骑上传那条），当前那块亮环。 -->
+                   点一块落进 chatBg 现成链路（亮度→深色翻转全骑上传那条），当前那块亮环。 -->
               <div class="ap-sec-t">预设背景</div>
               <div class="ap-bg-presets" id="apBgPresets"></div>
               <p class="data-note">点一块当场换上；想回到跟主题用下面那枚「清除」。</p>
@@ -2472,23 +2592,44 @@
                    顶上那张预览也垫同一层，拖到哪预览当场变。 -->
               <div id="apDimWrap" hidden>
                 <label class="ap-knob"><span>压暗</span><input type="range" id="apBgVeil" min="0" max="100" step="1" value="0" aria-label="背景压暗"><output id="apBgVeilOut">0%</output></label>
-                <p class="data-note">往右拖＝给整张背景图垫一层墨纱，0 是不压。消息区与输入栏一起压。选图时会按平均亮度自动定一档，定完仍可改。</p>
+                <p class="data-note">往右拖＝给整张背景图垫一层墨纱，0 是不压。消息区与输入栏一起压。选图后默认不压（0），想压自己拖。</p>
               </div>
             </div>
-            <!-- 两枚透明度滑杆：整节只在**这一位传了聊天背景图之后**才出现（没图时这两行背后只有画布色，
-                 拖到底也看不出差别＝桌面美化台那根虚化杆的死法，BUGS #071 二批；本仓不留一枚「看着能调实则不变」的控件）。
+            <!-- 栏边（2026-10-25 十五批，用户「聊天设置和心讯设置的美化里，需要可以新增取消顶部栏和
+                 底部栏边缘分割线，只留矢量图，并且可以调整透明度，自由美化」）：
+                 两枚分割线开关**常驻**——那条发丝线跟背景图无关，没传图时也看得见；
+                 收掉后两条栏只剩图标与字，配合下面「透明度」拖到 100 就是「只剩控件浮在背景上」。
+                 落 chatAppearance[cid]（这一位 TA 各一份，与两栏透明度同一册）；写手是 settings.js
+                 里那条 [#apHeadLine]／[#apCompLine] 的自有路径，不走全局 data-ap-set。 -->
+            <div class="ap-sec">
+              <div class="ap-sec-t">栏边</div>
+              <div class="ap-row"><span>顶栏分割线</span><div class="contact-chip-row" style="margin:0" id="apHeadLine"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div>
+              <div class="ap-row"><span>输入栏分割线</span><div class="contact-chip-row" style="margin:0" id="apCompLine"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div>
+              <p class="data-note">「隐藏」＝顶栏下沿／输入栏上沿那条发丝线收掉，两条栏只剩图标与字；栏底仍是自己的纱。有背景图时再把下面「透明度」拖到 100，栏底也让开，只剩控件浮在背景上。</p>
+            </div>
+            <!-- 两枚透明度滑杆（2026-10-25 十五批起常驻）：没有背景图时让开的是页面底色，拖到 100＝
+                 栏底与分割线一起让开、只剩图标与字浮在页面上；有图时露出的是那张图。
+                 没图这一档由 applyAppearance 另挂 data-ap-barclear，css/chat.css 给 .chat-area 让出栏高——
+                 记录不会从半透的栏底下滚过去（#1807 报过的那一手）。
                  0＝不透：名字那一行是一层实底，滚过的正文一个字都不透上来（BUGS #314 的「实」档落回 .94 白纱＝
-                 实际还是半透，用户这次报的正是这一手，详见 css/chat.css 那一段）。 -->
-            <div class="ap-sec" id="apVeilSec" hidden>
+                 实际还是半透，详见 css/chat.css 那一段）。 -->
+            <div class="ap-sec" id="apVeilSec">
               <div class="ap-sec-t">透明度</div>
               <label class="ap-knob"><span>聊天栏</span><input type="range" id="apHeadVeil" min="0" max="100" step="1" value="0" aria-label="聊天栏透明"><output id="apHeadVeilOut">0%</output></label>
               <label class="ap-knob"><span>输入栏</span><input type="range" id="apCompVeil" min="0" max="100" step="1" value="0" aria-label="输入栏透明"><output id="apCompVeilOut">0%</output></label>
               <!-- 栏里透什么（2026-10-24 #1803）：用户原话「开全透明不会透字，只有壁纸是透的，碰到字的还是实心，
                    需要两种模式：一种真的只透壁纸，一种可以透字」。默认＝只透壁纸（#974 那套几何，记录从栏下让开，
                    栏里只剩壁纸）；「也透字」＝记录改从两条栏底下滚过，半透的栏就能透出下面的字。
-                   写法照上面那条按 TA 存的委托（js/settings.js 那条 [#apChatFont] 同款），不走全局 data-ap-set。 -->
-              <div class="ap-row"><span>栏里透什么</span><div class="contact-chip-row" style="margin:0" id="apBarsSee"><button type="button" class="contact-chip" data-v="wall">只透壁纸</button><button type="button" class="contact-chip" data-v="text">连字一起透</button></div></div>
-              <p class="data-note">拖多少＝这两行让背景图透上来多少，0 是完全不透。「只透壁纸」＝两条栏里只看得见背景图，聊天记录永远不从栏底下过；「连字一起透」＝聊天记录会从顶栏与输入栏底下滚过去，透得多就能连字一起看见（想糊开就开「磨砂玻璃」）。</p>
+                   写法照上面那条按 TA 存的委托（js/settings.js 那条 [#apChatFont] 同款），不走全局 data-ap-set。
+                   2026-10-25 十五批：这一组只在**有背景图**时出现（没图时「只透壁纸」没有壁纸可透、
+                   「连字一起透」也没有第二层可看），而上面两根本身自此常驻——没图拖到 100 就是
+                   「栏底让开、只剩图标与字浮在页面色上」（记录不会从栏下滚过，几何见 css/chat.css 的
+                   data-ap-barclear 那条）。 -->
+              <div id="apBarsSeeSec">
+                <div class="ap-row"><span>栏里透什么</span><div class="contact-chip-row" style="margin:0" id="apBarsSee"><button type="button" class="contact-chip" data-v="wall">只透壁纸</button><button type="button" class="contact-chip" data-v="text">连字一起透</button></div></div>
+                <p class="data-note">拖多少＝这两行让背景图透上来多少，0 是完全不透。「只透壁纸」＝两条栏里只看得见背景图，聊天记录永远不从栏底下过；「连字一起透」＝聊天记录会从顶栏与输入栏底下滚过去，透得多就能连字一起看见（想糊开就开「磨砂玻璃」）。</p>
+              </div>
+              <p class="data-note">没有背景图时，这两根杆让开的是页面底色：拖到 100＝栏底与分割线一起让开，只剩图标与字。</p>
             </div>
             <!-- 壁纸位置与放大（2026-10-20 #881）：与上面两杆同一个口径——只在**这一位传了背景图**后才出现。
                  位置用 background-position 的百分比，放大只在 >100% 时把 size 换成 <n>% auto（100%＝cover 原样）。
@@ -2987,7 +3128,7 @@
         <div class="rh-foot mono">言字卡 · REPLY RHYTHM</div>
       </div>
     </section>
-    <input type="file" id="chatImageInput" accept="image/*" multiple hidden><input type="file" id="avatarInput" accept="image/*" hidden><input type="file" id="chatBgInput" accept="image/*" hidden><input type="file" id="deskBgInput" accept="image/*" hidden><input type="file" id="xnBgInput" accept="image/*" hidden><input type="file" id="xnCardInput" accept="image/*" hidden><input type="file" id="momentImageInput" accept="image/*" multiple hidden><input type="file" id="momentsCoverInput" accept="image/*" hidden><input type="file" id="momentsAvatarInput" accept="image/*" hidden><input type="file" id="cardsImgInput" accept="image/*" multiple hidden><input type="file" id="cardsAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm" multiple hidden><input type="file" id="cardsInput" accept="application/json,.json" hidden><input type="file" id="txtCardsInput" accept=".txt,text/plain" hidden><input type="file" id="dataInput" accept="application/json,.json" hidden>
+    <input type="file" id="chatImageInput" accept="image/*" multiple hidden><input type="file" id="avatarInput" accept="image/*" hidden><input type="file" id="chatBgInput" accept="image/*" hidden><input type="file" id="deskBgInput" accept="image/*" hidden><input type="file" id="xnBgInput" accept="image/*" hidden><input type="file" id="momentImageInput" accept="image/*" multiple hidden><input type="file" id="momentsCoverInput" accept="image/*" hidden><input type="file" id="momentsAvatarInput" accept="image/*" hidden><input type="file" id="cardsImgInput" accept="image/*" multiple hidden><input type="file" id="cardsAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.webm" multiple hidden><input type="file" id="cardsInput" accept="application/json,.json" hidden><input type="file" id="txtCardsInput" accept=".txt,text/plain" hidden><input type="file" id="dataInput" accept="application/json,.json" hidden>
 <!-- sheet.html：撤回内容改为消息内联展开，原撤回弹窗已移除；本 Part 保留以防 html_order 引用 -->
 
 <!-- appModal：全站唯一的通用输入弹窗。壳由 js/utils.js 的 openModal 驱动（填一行文字∶点确定回一句），
@@ -3041,13 +3182,30 @@
      挂在这里（app-shell 末尾）而不是某个视图里＝字卡库·系统预设字卡两处共用同一块，
      不为第二个入口再画一块。面板只管「那串字从哪儿拿」，拆行·去空·跳过同文·落库·重画·提示
      仍走 js/cards.js 的 _clSubmit 那一份实现。 -->
-<div class="fs-sheet-mask" id="cardLinesMask" hidden>
+<div class="fs-sheet-mask fs-sheet-full" id="cardLinesMask" hidden>
   <div class="fs-sheet">
     <div class="fs-sheet-bar">
       <div class="fs-sheet-t"><span class="fs-sheet-ti" id="cardLinesTi">加字卡</span><span class="fs-sheet-en">CARDS</span></div>
       <button type="button" class="fs-sheet-close" id="cardLinesClose" aria-label="关闭">×</button>
     </div>
     <div class="fs-sheet-body">
+      <!-- 目标分组行（#1885，2026-10-25 用户「【添加字卡】打开的页面，无法直接选择字卡分组」）：
+           旧版落点只写在标题里、改不了——想换一组得关掉面板、回列表点进那一组、再点一次添加。
+           现在这行把「这一档能加的组」整份列出来（与分组 chips 同一把尺：非预置·同分类·同作用域·按人筛），
+           点一枚当场换落点；末尾还能就地新建一组（内联一行输入，不再叠一层问名面板——
+           #cardsNameMask 的 z-index 15 压不过这块全屏面板 z-index 20）。 -->
+      <div class="cl-grp">
+        <div class="cl-grp-head">
+          <span class="cl-grp-l">加进哪一组</span>
+          <button type="button" class="cl-grp-new" id="clGrpNew">＋ 新建分组</button>
+        </div>
+        <div class="fchips cl-grp-row" id="clGrpRow"></div>
+        <div class="cl-newrow" id="clGrpNewRow" hidden>
+          <input type="text" id="clGrpNewInput" maxlength="24" autocomplete="off" placeholder="新分组名" aria-label="新分组名">
+          <button type="button" class="soft-btn" id="clGrpNewOk">创建</button>
+          <button type="button" class="soft-btn" id="clGrpNewNo">取消</button>
+        </div>
+      </div>
       <textarea id="cardLinesInput" class="fs-sheet-ta" rows="6" placeholder="一行一张字卡" aria-label="字卡内容，一行一张"></textarea>
       <div class="fs-sheet-note">可一次粘贴多行，一行进一张；这一组里已经有一模一样的自动跳过。</div>
       <div class="fs-sheet-acts"><button type="button" class="soft-btn" id="cardLinesYes">添加</button><button type="button" class="soft-btn" id="cardLinesNo">取消</button></div>
@@ -3102,7 +3260,15 @@
             <button type="button" class="fchip" data-chatleft="switch" aria-pressed="false">切换会话</button>
           </span>
         </div>
-        <div class="tb-prev" id="hbPreview" aria-label="聊天页顶栏现在的样子"></div>
+        <!-- 顶栏快捷方式分「名字左边／名字右边」两排（BUGS #1888，用户「自定义快捷方式按钮只能放在最右边，
+             应该可以自由调整」）。#hbPreview 沿用原名＝右排（旧门与探针认这个 id），左排另起 #hbPreviewLeft；
+             两排都由 js/hub.js 的 _renderBarPreview 现画，药丸右缘那枚 ⇄ 换侧。 -->
+        <div class="hb-prev-wrap">
+          <span class="hb-prev-cap">名字左边</span>
+          <div class="tb-prev" id="hbPreviewLeft" aria-label="聊天页顶栏左侧的快捷方式"></div>
+          <span class="hb-prev-cap">名字右边</span>
+          <div class="tb-prev" id="hbPreview" aria-label="聊天页顶栏右侧的快捷方式"></div>
+        </div>
         <div class="fs-sheet-note" id="hbNote"></div>
         <div class="tb-list" id="hbList"></div>
       </div>
@@ -3483,21 +3649,18 @@
           <button type="button" class="dv-pick-cancel" id="dvCancelBtn">不抽了</button>
         </div>
         <div class="dv-drawn" id="dvDrawn"></div>
-        <!-- 洗牌（2026-10-24）：一摞牌面朝下的牌堆，左右搓一搓＝真洗一次（有动画），洗够了点「摊牌」。
-             旧写法只有三张牌背来回摆 880ms、洗完自动摊牌——用户「没有我自己洗牌的功能，也没有动画」。
-             两档都由用户搓、用户摊牌（用户定档「ta 的牌我也可以选择，我洗牌」）：让 TA 抽那一档摊牌后
-             由他从这一摞里现抽、逐张翻出来；抽哪几张仍按他自己那份档，不由用户点。 -->
+        <!-- 洗牌（2026-10-24）：一摞牌面朝下的牌堆，进来先自己洗一次（有清楚的搓牌动画），
+             洗完**自动摊成一张牌桌**——不用再点「摊牌」，也不要求反复洗（占卜一次只洗一遍）。
+             洗牌时点一下牌堆可以再搓一下，摊牌时间照旧不变。 -->
         <div class="dv-shuffle" id="dvShuffle">
-          <div class="dv-stack" id="dvDeck" role="button" tabindex="0" aria-label="按住左右滑动洗牌">
+          <div class="dv-stack" id="dvDeck" role="button" tabindex="0" aria-label="点一下再搓一次牌">
             <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
           </div>
-          <p class="dv-shuffle-hint" id="dvShuffleHint">左右搓一搓 · 洗好了点「摊牌」</p>
-          <button type="button" class="dv-spread-btn" id="dvSpreadBtn">摊牌</button>
+          <p class="dv-shuffle-hint" id="dvShuffleHint">洗牌中…</p>
         </div>
-        <div class="dv-rows" id="dvRows">
-          <div class="dv-row-backs" id="dvRow1"></div>
-          <div class="dv-row-backs" id="dvRow2"></div>
-        </div>
+        <!-- 摊在桌上的一副牌：牌背由 js/divine.js 现建（只铺 DV_TABLE_N 张，点哪张翻哪张）。
+             与递牌页同一个意思：牌桌是主角，不是两排横向滚动的牌背目录。 -->
+        <div class="dv-table" id="dvTable" aria-label="摊在桌上的牌"></div>
         <button type="button" class="dv-finish" id="dvFinish" hidden>抽够了</button>
       </div>
 
@@ -3583,6 +3746,15 @@
       <span>洗牌</span>
     </button>
   </div>
+  <!-- 「让 TA 抽」里面再分两档（2026-10-25 用户「我说的保留2种模式是『让 TA 抽』里保留两种模式，
+       一种是 ta 直接抽，一种是我让 ta 抽 ta 才抽，暂停方便我洗牌」）：只在「让 TA 抽」选中时露面。
+       他直接抽＝撒完/洗完自己开抽；等我叫＝他等着，洗够了按「让他抽」。 -->
+  <div class="dl-tasub" id="dealTaSub" hidden>
+    <div class="dl-modes" role="group" aria-label="让 TA 抽的方式">
+      <button type="button" class="dl-mode" data-deal-taauto="1" aria-pressed="true">他直接抽</button>
+      <button type="button" class="dl-mode" data-deal-taauto="0" aria-pressed="false">等我叫</button>
+    </div>
+  </div>
   <p class="dl-sub" id="dealSub">从他那一叠字卡里抽 · 抽到几张都算这一把</p>
 
   <!-- ① 这一把已经抽到的：每张一行（小纸片＋整句） -->
@@ -3598,13 +3770,19 @@
   </div>
   <p class="dl-note" id="dealNote" aria-live="polite">撒牌中…</p>
   <!-- ②.6 想说的话（全屏才露；半屏说话走底下聊天输入栏）：
-       回车＝把这句话记进「这一场」，和当前这一轮的牌一起排队，结束才发出去。 -->
+       回车或右侧「记下」＝把这句话记进「这一场」，和当前这一轮的牌一起排队，结束并发送时
+       并进同一张牌卡（2026-10-25 用户「圈起来的地方没有发送消息的功能」＋「消息要合并进卡片」）。 -->
   <div class="dl-msgbar" id="dealMsgBar">
     <input type="text" id="dealMsgInput" class="dl-msg-in" maxlength="300" autocomplete="off"
            placeholder="在场里说一句？（结束才发出去）" aria-label="在场里说一句">
+    <button type="button" class="dl-msg-send" id="dealMsgSend">记下</button>
   </div>
   <!-- ③ 这一轮怎么收：半屏＝发送至聊天；全屏＝收进这一场。全屏旁边另有「结束并发送」。 -->
   <div class="dl-takebar" id="dealTakeBar" hidden>
+    <!-- 「让他抽」独立一枚（2026-10-25 用户「等我叫模式没有我洗好牌叫联系人抽牌的按钮」）：
+         旧写法借主钮的位子——主钮一有牌就改写「发送至聊天」，叫他那一步整个消失。
+         现在它常量在这一排，只在「让 TA 抽 ＋ 等我叫 ＋ 这一轮还没人抽」时露面。 -->
+    <button type="button" class="dl-call" id="dealCall" data-deal-call="1" hidden>让他抽</button>
     <button type="button" class="dl-take" id="dealTake">收下这张</button>
     <button type="button" class="dl-end" id="dealEnd" hidden>结束并发送</button>
   </div>
@@ -3646,9 +3824,28 @@
      ＋「这个页面发出卡片的卡片，也需要可以美化」）：
      ①顶栏「美化」由画笔换成 24×24 线稿调色板（旧画笔在 15px 下读成钢笔尖）；
      ②有背景图时顶栏与底栏改成真的玻璃条（46%~60% 底纱＋18px 背景虚化），壁纸透得出来；
-     ③美化面板新增「牌面」＝四种卡底色／自己的牌面图＋浓度／圆角，落 data.xinxun.card，
+     ③美化面板新增「牌面」＝四种卡底色／透出背景（半透明＋14px 磨砂）／圆角，落 data.xinxun.card，
        牌桌、手牌、心愿、卡册四处一起换，不影响传讯聊天气泡；
-     ④面板顶部那块预览不再只是一块色板：顶栏／一张牌／底栏同屏，换什么当场看得到。 -->
+     ④面板顶部那块预览不再只是一块色板：顶栏／一张牌／底栏同屏，换什么当场看得到。
+     九批补记（用户「这卡片里的你搞的什么？我是要半透明可以透出背景图片的那种」）：
+       撤掉「牌面图＋浓度」那一路（卡面贴一张自己的图会被读成卡里印了个 logo）；
+       牌面改为**透出背景**一根杆——卡底色按这个比例变半透明，背后这一页的背景图直接透上来，
+       再叠 14px 磨砂保字；0＝实心纸面，出厂 40。
+     2026-10-24 十一批（用户「心讯里发送的卡片，右上角有折痕是什么意思」→「这个功能显示太丑了，
+     能不能设计别的功能单独记录」）：牌面右上角那道折痕（同一张牌这一场又出了）整块撤掉，
+     牌上不再有任何重复记号；重复改记在卡册每一页的页脚「重复出的牌」（一行内容 ×N），
+     页头同时补一句「重复 N 次」。规则见 js/xinxun.js 的 _xnDupGroups。
+     2026-10-24 十二批（用户「继续」＝把重复记录再单独提出来）：卡册头下面多两枚胶囊
+     「每一场／重复」——每一场只留各场原来的卡与页头那句「重复 N 次」，不再挂页脚清单；
+     重复那一栏只列有重复的场次与重复内容（×N），不止一场时顶上多一行整本账。
+     栏位只活本页（_xnBookTab），每次开卡册回「每一场」。
+     2026-10-25 十三批（用户「心讯右上角没有设置矢量图／没有切换模式的功能按钮／需要把设置放一个
+     【聊天页面顶部栏右上角的设置矢量图】把相关设置和美化设置都收纳进去」）：顶栏那枚调色板
+     换成聊天页同形制的设置图标（三枚实心点），点开的 #xnLookMask 改叫「心讯设置」——
+     顶部新增「来源」一档（取卡来源四枚开关，与 设置 → 玩法 → 心讯 同一份），回牌／显示／背景／牌面
+     顺着排在下面；「美化」不再单独占一枚钮。id 与函数名沿用 xnLook*（内部标识不动）。
+     十四批（用户「心讯设置打开怎么不是全屏，而且没有tag分类，现在太杂了」）：整块改成整屏全屏档，
+     顶下一排五档 tag（模式／回牌／显示／背景／牌面），一屏只画当前那一档、节标不画。 -->
 <section class="view" id="xinxunView">
   <!-- 背景层（2026-10-24 二批）：只画心讯这一页。图片、预设与三根杆都落 data.xinxun.bg，
        不碰聊天背景与桌面壁纸；没有图时这层不占屏（class 由 js/xinxun.js 的 xnApplyLook 挂）。 -->
@@ -3669,28 +3866,29 @@
           <path d="M18.4 14.6c1.9.7 3.1 2.4 3.1 4.6"/>
         </svg>
       </button>
-      <!-- 美化／卡册（2026-10-24）：与切换联系人同一形制的矢量图标钮，不再用纯文字。
-           美化＝调色板（2026-10-24 九批重画：旧画笔的笔身与笔头在 15px 下读成一支钢笔/笔尖；
-           这一枚现在管背景与牌面两族，调色板才是「美化」；圆点用 fill=currentColor、
-           描边仍走 24×24 线稿 1.8）。卡册＝书册，只画图标本身：右上角那枚报页数的
-           小圆点 2026-10-24 按用户定档「不用显示数字」撤净，页数进卡册页里看。 -->
-      <button type="button" class="xn-ico-btn" id="xnLookBtn" aria-label="美化" title="美化">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 3a9 9 0 0 0 0 18c1.04 0 1.88-.84 1.88-1.88 0-.49-.19-.93-.5-1.26-.29-.31-.47-.72-.47-1.17 0-.95.77-1.72 1.72-1.72h1.72A5.65 5.65 0 0 0 22 9.35C22 5.84 17.52 3 12 3Z"/>
-          <g fill="currentColor" stroke="none">
-            <circle cx="7.5" cy="12" r="1.15"/>
-            <circle cx="9.6" cy="7.6" r="1.15"/>
-            <circle cx="14.4" cy="7.2" r="1.15"/>
-            <circle cx="17" cy="11.2" r="1.15"/>
-          </g>
-        </svg>
-      </button>
+      <!-- 卡册／设置（2026-10-24；设置图标 2026-10-25 十三批；顺序 2026-10-25 十五批）：
+           与切换联系人同一形制的矢量图标钮。**设置永远贴最右、卡册在它左边**（用户
+           「心讯的顶部导航栏，应该设置在最右，卡册放设置左边」）——右列是 flex，
+           DOM 顺序就是屏上顺序，改顺序只动这里，不碰 JS 与 CSS。
+           设置＝与聊天页顶栏右上角那枚「会话外观」同一形制的三枚实心点（24×24、15px）；
+           点开 #xnLookMask＝「心讯设置」：模式／回牌／显示／背景／牌面全在这一块里——
+           用户「心讯右上角没有设置矢量图／没有切换模式的功能按钮／把相关设置和美化设置都收纳进去」，
+           顶栏从此不再单独留一枚「美化」（调色板图标随这一批撤下）。
+           id 沿用 xnLookBtn（内部标识不动：常驻探针与注释按它指路）。
+           卡册＝书册，只画图标本身：右上角那枚报页数的小圆点 2026-10-24 按用户定档
+           「不用显示数字」撤净，页数进卡册页里看。 -->
       <button type="button" class="xn-ico-btn" id="xnAlbumBtn" aria-label="卡册" title="卡册">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+      </button>
+      <button type="button" class="xn-ico-btn" id="xnLookBtn" aria-label="设置" title="心讯设置">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.9"/>
+          <circle cx="12" cy="12" r="1.9"/>
+          <circle cx="19" cy="12" r="1.9"/>
         </svg>
       </button>
     </div>
@@ -3739,7 +3937,7 @@
       <div class="xn-wcap" id="xnWishCap">点一张推过去 · 不满意就换一手</div>
       <div class="xn-wishrow" id="xnWishRow"></div>
       <button type="button" class="xn-libbar" id="xnLibBtn">
-        <span class="xn-libname">你的字卡</span>
+        <span class="xn-libname" id="xnLibName">你的字卡</span>
         <span class="xn-libn" id="xnLibCount">0 张</span>
         <span class="xn-libgo">打开字卡抽屉 ›</span>
       </button>
@@ -3755,11 +3953,13 @@
   </div>
 
   <!-- 字卡抽屉（2026-10-24）：主屏不再平铺整本库；搜索/分类/分组/多选都在这里，
-       选一张或多张都推到心讯牌桌（多张＝合并推）。 -->
+       选一张或多张都推到心讯牌桌（多张＝合并推）。
+       2026-10-25：抽屉里除了字卡库，还可以混进/只放占卜的牌面图鉴（塔罗 78 ＋ 雷诺曼 40）；
+       标题、搜索占位与池子都由 js/xinxun.js 的 xnOpenDrawer 按「心讯模式」写（#xnDrawerTitle）。 -->
   <div class="xn-drawer" id="xnDrawer" hidden>
     <div class="xn-drawerhd">
       <button type="button" class="xn-back" id="xnDrawerBack">‹ 心讯</button>
-      <b>你的字卡</b>
+      <b id="xnDrawerTitle">你的字卡</b>
       <span class="xn-pickn" id="xnPickCount">已选 0 张</span>
     </div>
     <div class="xn-drawertop">
@@ -3797,82 +3997,221 @@
     <div class="xn-albumhd">
       <button type="button" class="xn-back" id="xnAlbumBack">‹ 心讯</button>
       <b>卡册</b>
-      <span id="xnAlbumSub"></span>
+    </div>
+    <!-- 卡册两栏（2026-10-24 十二批，用户「继续」＝把重复记录再单独提出来）：
+         每一场＝各场原来的卡；重复＝只列有重复的场次与重复出的内容（×N）。
+         页头那句「重复 N 次」留在每一场里当指路；清单只在这一栏出现＝同一个读数不说两遍。
+         栏位只活本页（_xnBookTab），每次开卡册回「每一场」；两枚胶囊 34px 高＝手机可点。 -->
+    <div class="xn-albumtabs" id="xnAlbumTabs" role="group" aria-label="卡册视图">
+      <button type="button" class="xn-booktab" data-xn-booktab="all" aria-pressed="true">每一场</button>
+      <button type="button" class="xn-booktab" data-xn-booktab="dup" aria-pressed="false">重复</button>
+      <!-- 时间排序（2026-10-25 #1919，用户「心讯的卡册里，需要可以手动更换 逆时间 还是正时间排序」）：
+           卡册原先是写死的逆时间（最新一场在最上面）。这一枚是**偏好**不是筛选——落
+           data.xinxun.bookOrder，开卡册不重置（与 _xnBookTab 每次回「每一场」刻意不同）。
+           文本写当前档（逆时间／正时间），aria-pressed＝「现在是逆时间」，点一下换另一档。 -->
+      <button type="button" class="xn-booktab xn-bookorder" id="xnBookOrder" data-xn-bookorder="desc" aria-pressed="true" aria-label="卡册时间排序">逆时间</button>
     </div>
     <div class="xn-albumbody" id="xnAlbumBody"></div>
   </div>
 
-  <!-- 心讯美化（2026-10-24 二批）：入口＝本页顶栏「美化」。只改这一页的背景——
-       预设与聊天/桌面共用 js/bgpresets.js 那一份名单；上传走全站同一取数口 fileData＋_bgUploadEdge；
-       三根杆落 data.xinxun.bg（压暗/虚化/放大），选图时按平均亮度自动定一档压暗、预设不压暗。
+  <!-- 单张牌（2026-10-25 单张牌批，用户「心讯里我和联系人发送的字卡，无法点击；需要可以点击打开完整的
+       独立的卡片，并且能看到内容是哪个分组的」）：牌桌上点一张**已翻开**的牌（我出的本来就正面、
+       TA 递的点一下先翻开、再点一下打开）、或卡册里点任一小卡，都打开这一面。
+       整屏档复用 .fs-sheet-full（与心讯设置同一副几何，不另造弹层）；牌面由 js/xinxun.js 的
+       xnCardViewOpen 交给 xnPaintCard 现画（五处画手同一套，不复制第二份），下面几行写清
+       分组／分类／谁出的／时间。遮罩盖在卡册（z-index 40）与抽屉（45）之上。
+       ×／Esc／点空处三路关闭；关闭时停掉这张牌正在放的语音（与牌桌共用 _xnAudio 单例）。 -->
+  <div class="fs-sheet-mask fs-sheet-full xn-cv-mask" id="xnCvMask" hidden>
+    <div class="fs-sheet" id="xnCvSheet" role="dialog" aria-modal="true" aria-label="这一张牌">
+      <div class="fs-sheet-bar">
+        <div class="fs-sheet-t"><span class="fs-sheet-ti">这一张牌</span><span class="fs-sheet-en">CARD</span></div>
+        <button type="button" class="fs-sheet-close" id="xnCardViewClose" aria-label="关闭这张牌">×</button>
+      </div>
+      <div class="fs-sheet-body xn-cv-body">
+        <div class="xn-cv-stage"><div class="xn-cv-face" id="xnCvFace"></div></div>
+        <div class="xn-cv-meta" id="xnCvMeta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 心讯设置（2026-10-24 二批；2026-10-25 十三批整块改叫「设置」，入口＝顶栏那枚设置图标）：
+       相关设置（模式／回牌／显示）与美化（背景／牌面）同住这一块——
+       用户「心讯右上角没有设置矢量图／没有切换模式的功能按钮／把相关设置和美化设置都收纳进去」。
+       背景那几组只改这一页：预设与聊天/桌面共用 js/bgpresets.js 那一份名单；
+       上传走全站同一取数口 fileData＋_bgUploadEdge；三根杆落 data.xinxun.bg（压暗/虚化/放大），
+       选图后默认不压暗（0）、想压自己拖杆。
        九批（2026-10-24）：再加「牌面」一组（底色/牌面图/浓度/圆角，落 data.xinxun.card）——
        牌桌、手牌、心愿、卡册四处一起换；旧档缺 card 由 defaults 递归补齐，读侧 xnCardView 夹脏值。
        预览也不再只是一块色板：顶栏／一张牌／底栏同屏，换什么当场看得到。
        贴底壳复用 .fs-sheet-*，面板挂在 #xinxunView 里＝切页即随视图一起收，不用另找地方关。 -->
-  <div class="fs-sheet-mask" id="xnLookMask" hidden>
+  <div class="fs-sheet-mask fs-sheet-full" id="xnLookMask" hidden>
     <div class="fs-sheet" id="xnLookSheet">
       <div class="fs-sheet-bar">
-        <div class="fs-sheet-t"><span class="fs-sheet-ti">心讯美化</span><span class="fs-sheet-en">XINXUN LOOK</span></div>
-        <button type="button" class="fs-sheet-close" id="xnLookClose" aria-label="关闭心讯美化">×</button>
+        <div class="fs-sheet-t"><span class="fs-sheet-ti">心讯设置</span><span class="fs-sheet-en">XINXUN SETTINGS</span></div>
+        <button type="button" class="fs-sheet-close" id="xnLookClose" aria-label="关闭心讯设置">×</button>
+      </div>
+      <!-- 分类 tag（2026-10-25 十四批，用户「心讯设置打开怎么不是全屏，而且没有tag分类，现在太杂了」）：
+           整屏全屏档＝遮罩挂 .fs-sheet-full（几何复用 base.css 那一族，不另造弹层）；
+           顶下这一条五档 tag＝来源／回牌／显示／背景／牌面，一屏只画当前那一档、节标不画
+           （与统计页那一族同一读法，同一件事不说两遍）；五档等宽铺满，320 也一眼全见。
+           档位只活本页（_xnSetTab），每次打开回「来源」。 -->
+      <div class="xn-settabs" id="xnSetTabs" role="tablist" aria-label="心讯设置分类">
+        <button type="button" class="xn-settab" data-xn-set="mode" role="tab" aria-selected="true">来源</button>
+        <button type="button" class="xn-settab" data-xn-set="reply" role="tab" aria-selected="false">回牌</button>
+        <button type="button" class="xn-settab" data-xn-set="display" role="tab" aria-selected="false">显示</button>
+        <button type="button" class="xn-settab" data-xn-set="bg" role="tab" aria-selected="false">背景</button>
+        <button type="button" class="xn-settab" data-xn-set="face" role="tab" aria-selected="false">牌面</button>
       </div>
       <div class="fs-sheet-body xn-look">
-        <div class="xn-lookprev" id="xnLookPrev">
-          <div class="xn-lookprev-bg" id="xnLookPrevBg"></div>
-          <div class="xn-lookprev-ui" aria-hidden="true">
-            <div class="xn-pv-nav"><span>‹ 传讯</span><b>心讯</b><span class="xn-pv-dot"></span></div>
-            <div class="xn-pv-card"><p>夜里的风很轻</p><span>你 出</span></div>
-            <div class="xn-pv-bar"><span>放回去</span></div>
-          </div>
+        <!-- 取卡来源（2026-10-25）：与「设置 → 玩法 → 心讯」同一份，四枚开关的行由
+             js/xinxun.js 的 xnRenderSrcRows 现画（这份源件不抄第二份名单）；回显 xnSrcRenderAll，
+             写手仍只有 xnSrcSet 一处。抽屉始终摆全部来源，没开启的标「未开启」并锁住。 -->
+        <div class="xn-pane" data-xn-pane="mode" role="tabpanel">
+          <div class="xn-srcrows" id="xnModeRow" aria-label="心讯取卡来源"></div>
+          <p class="data-note">这四枚开关与 设置 → 玩法 → 心讯 是同一份：只决定哪些来源能互发，牌桌上已经摊开的牌不动；抽屉里没开启的来源会标「未开启」。</p>
         </div>
-        <div class="fs-sheet-note" id="xnLookState">这一页现在跟主题走（没有背景图）</div>
+        <!-- 回牌档（2026-10-25 用户「一次性发送了多条消息，联系人也是我发多少 ta 就发多少……
+             需要可以两种模式切换，一种是一人一句字卡，一种是每次不管我发多少字卡，联系人都发 1~3 张」）：
+             这一节管的是 TA 这一轮回几张，与「你推几张」彻底解耦。
+             一人一句＝每轮固定一张；随机张数＝每轮在下面两根杆的区间里现掷（出厂 1~3）。
+             数据落 data.xinxun.replyMode／replyMin／replyMax，回显与写手都在 js/xinxun.js。 -->
+        <div class="xn-pane" data-xn-pane="reply" role="tabpanel" hidden>
+          <div class="contact-chip-row xn-replymodes" id="xnReplyModes" role="group" aria-label="TA 回牌方式">
+            <button type="button" class="contact-chip" data-xn-replymode="one" aria-pressed="false">一人一句</button>
+            <button type="button" class="contact-chip" data-xn-replymode="random" aria-pressed="true">随机张数</button>
+          </div>
+          <div id="xnReplyRange">
+            <label class="ap-knob"><span>最少</span><input type="range" id="xnReplyMin" min="1" max="10" step="1" value="1" aria-label="TA 每轮最少回几张"><output id="xnReplyMinOut">1 张</output></label>
+            <label class="ap-knob"><span>最多</span><input type="range" id="xnReplyMax" min="1" max="10" step="1" value="3" aria-label="TA 每轮最多回几张"><output id="xnReplyMaxOut">3 张</output></label>
+          </div>
+          <p class="data-note" id="xnReplyNote">不管这一轮你推几张，TA 每轮在 1~3 张里随机回一个数。</p>
+        </div>
         <!-- 时间轴开关（2026-10-24 用户「时间轴功能可以在心讯页面的美化里，自由设置开启或关闭」）：
              只影响显示：日期条与秒级时间照旧在 DOM 里，关掉由 .xn-no-timeline 收起，打开当场回来；
              记录（data.xinxun.sessions）一个字不动。开关面复用全站 .hub-tg 那一枚岛形。 -->
-        <div class="ap-sec">
-          <div class="ap-sec-t">显示</div>
+        <div class="xn-pane" data-xn-pane="display" role="tabpanel" hidden>
           <button type="button" class="xn-lookrow" id="xnTimelineRow" role="switch" aria-checked="true">
             <span class="xn-lookrow-t">时间轴</span>
             <span class="hub-tg" id="xnTimelineTg" aria-hidden="true"></span>
           </button>
           <p class="data-note">开着＝牌桌与卡册显示「今天／昨天／M月D日」和每张牌的秒级时间；关掉只收起显示，记录照旧。</p>
         </div>
-        <div class="ap-sec">
-          <div class="ap-sec-t">预设背景</div>
+        <!-- 背景（2026-10-24 二批）：预览框 #xnLookPrevWrap 只有「背景」与「牌面」两档要看——
+             同一枚 DOM 由 js/xinxun.js 的 xnSetTabSet 在切档时搬到当前档最上面，不复制第二份。 -->
+        <div class="xn-pane" data-xn-pane="bg" role="tabpanel" hidden>
+          <div class="xn-lookprev-wrap" id="xnLookPrevWrap">
+            <div class="xn-lookprev" id="xnLookPrev">
+              <div class="xn-lookprev-bg" id="xnLookPrevBg"></div>
+              <div class="xn-lookprev-ui" aria-hidden="true">
+                <div class="xn-pv-nav"><span>‹ 传讯</span><b>心讯</b><span class="xn-pv-dot"></span></div>
+                <div class="xn-pv-card bk" aria-hidden="true"><i class="edge"></i><i class="bk-art"></i><b>言</b></div>
+                <div class="xn-pv-card fr"><i class="edge"></i><p>夜里的风很轻</p><span>你 出</span></div>
+                <div class="xn-pv-bar"><span>放回去</span></div>
+              </div>
+            </div>
+            <div class="fs-sheet-note" id="xnLookState">这一页现在跟主题走（没有背景图）</div>
+          </div>
           <div class="ap-bg-presets" id="xnBgPresets"></div>
           <p class="data-note">点一块当场换上。深色三款与聊天背景、桌面壁纸那两处一样不列出来；想要深底就自己传图，再用下面的「压暗」调。</p>
-        </div>
-        <div class="ap-btnrow">
-          <button type="button" class="ap-btn pri" id="xnBgUpload">选择图片</button>
-          <button type="button" class="ap-btn" id="xnBgClear" disabled>清除</button>
-        </div>
-        <div id="xnLookKnobs" hidden>
-          <div class="ap-sec">
-            <div class="ap-sec-t">调一调</div>
+          <div class="ap-btnrow">
+            <button type="button" class="ap-btn pri" id="xnBgUpload">选择图片</button>
+            <button type="button" class="ap-btn" id="xnBgClear" disabled>清除</button>
+          </div>
+          <div id="xnLookKnobs" hidden>
             <label class="ap-knob"><span>压暗</span><input type="range" id="xnBgVeil" min="0" max="90" step="1" value="0" aria-label="心讯背景压暗"><output id="xnBgVeilOut">0%</output></label>
             <label class="ap-knob"><span>虚化</span><input type="range" id="xnBgBlur" min="0" max="24" step="1" value="0" aria-label="心讯背景虚化"><output id="xnBgBlurOut">0px</output></label>
             <label class="ap-knob"><span>放大</span><input type="range" id="xnBgZoom" min="100" max="200" step="5" value="100" aria-label="心讯背景放大"><output id="xnBgZoomOut">100%</output></label>
-            <p class="data-note">选图时会按平均亮度自动定一档压暗；预设不压暗。三根杆只动背景，牌面与字不跟着变。</p>
+            <p class="data-note">选图后默认不压暗（0）；想压自己拖杆。三根杆只动背景，牌面与字不跟着变。</p>
           </div>
+          <!-- 顶栏与底栏（2026-10-25 十五批，用户「聊天设置和心讯设置的美化里，需要可以新增取消
+               顶部栏和底部栏边缘分割线，只留矢量图，并且可以调整透明度，自由美化」；
+               十六批 2026-10-25 用户「问题依旧没有解决，就是莫名其妙白色的光源」）：
+               十六批把「透明度」改成「底色」——旧写法有背景图时给顶栏铺 60%→46% 的白渐变＋
+               blur(18px) saturate(1.55)，0% 档整条就是一块白色光带（实测栏带 214,224,232 ∶
+               栏外 171,186,202，下沿一条硬边）；100% 档底色虽已归零，saturate 仍把栏带往蓝紫拉一档。
+               现在：两条栏**默认完全无底色**（只留图标与字，背景原样透出），滤镜整族撤掉；
+               两根杆改叫「底色」：0%＝无底色／全透，100%＝实心页面色。想要玻璃感再往右加，
+               加出来的是一层平的页面色，不再有白渐变、不再有色偏。
+               落 data.xinxun.bars（键名照旧 headVeil／footVeil，语义＝底色 0~100）；
+               读侧唯一口径 xnBarView()，写侧 xnBarSet()。
+               「底栏」同时管下半截（.xn-mine，常驻的「TA在想什么」那一块）与最底下那条
+               「放回去」（.xn-bar）——两者在同一条下沿上，只改一半会读成一高一低两条线。 -->
+          <div class="ap-sec" id="xnBarsSec">
+            <div class="ap-sec-t">顶栏与底栏</div>
+            <div class="ap-row"><span>顶栏分割线</span><div class="contact-chip-row" style="margin:0" id="xnHeadLine"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div>
+            <div class="ap-row"><span>底栏分割线</span><div class="contact-chip-row" style="margin:0" id="xnFootLine"><button type="button" class="contact-chip" data-v="on">显示</button><button type="button" class="contact-chip" data-v="off">隐藏</button></div></div>
+            <div id="xnBarVeilWrap">
+              <label class="ap-knob"><span>顶栏底色</span><input type="range" id="xnHeadVeil" min="0" max="100" step="1" value="0" aria-label="顶栏底色"><output id="xnHeadVeilOut">0%</output></label>
+              <div id="xnFootVeilWrap">
+                <label class="ap-knob"><span>底栏底色</span><input type="range" id="xnFootVeil" min="0" max="100" step="1" value="0" aria-label="底栏底色"><output id="xnFootVeilOut">0%</output></label>
+              </div>
+            </div>
+            <p class="data-note">「隐藏」＝那条发丝线收掉；「底色」0%＝完全透出背景（只留图标与字），100%＝实心页面色。两条栏默认都没有底色，想要玻璃感再往右加。</p>
+          </div>
+          <p class="data-note">背景只铺心讯这一页：传讯聊天、字卡库和桌面都不受影响。</p>
         </div>
-        <!-- 牌面（2026-10-24 九批，用户「这个页面发出卡片的卡片，也需要可以美化」）：
-             底色四款（素白/米白/雾蓝/浅灰）＋自己的牌面图（浓度）＋圆角。
+        <!-- 牌面（2026-10-24 九批；2026-10-25 #1928 扩成「牌面工作室」，用户「做，但做成可以
+             自由美化，然后自由切换样式」）：
+             顶上「样式」＝六套一键值（素白/宣纸/雾面/玻璃/极简/圆章），当前值与哪套全等就亮哪套；
+             动过下面任何一格＝自动变「自定义」，不再假装还是某一套。
+             纸与色（底色四款＋透出＋圆角）／牌背五款／纸感与细节（纸纹·内框·保字晕）／
+             图片卡满幅／浮起三档，全部可自由组合；落 data.xinxun.card 的九格，读侧唯一 xnCardView()。
              与背景一样只服务心讯这一页；卡里的墨字仍走全站 --ink，不另造第二套字色。
              「墨色」刻意不列：本站实心墨只留给第一下（导航/横幅一律淡墨面），
-             一整面深卡在这里会读成另一套主题；想要深底就传一张深色牌面图，用浓度压。 -->
-        <div class="ap-sec">
-          <div class="ap-sec-t">牌面</div>
-          <div class="xn-skins" id="xnCardSkins" role="group" aria-label="牌面底色"></div>
-          <div class="ap-btnrow">
-            <button type="button" class="ap-btn" id="xnCardUpload">选择牌面图</button>
-            <button type="button" class="ap-btn" id="xnCardImgClear" disabled>清除</button>
+             一整面深卡在这里会读成另一套主题。 -->
+        <div class="xn-pane" data-xn-pane="face" role="tabpanel" hidden>
+          <div class="xn-stylehead">
+            <div class="ap-sec-t">样式</div>
+            <span class="xn-stylenow" id="xnCardStyleNow">素白</span>
           </div>
-          <div id="xnCardImgKnobs" hidden>
-            <label class="ap-knob"><span>图浓度</span><input type="range" id="xnCardConc" min="0" max="100" step="1" value="55" aria-label="牌面图浓度"><output id="xnCardConcOut">55%</output></label>
+          <div class="contact-chip-row xn-cardstyles" id="xnCardStyles" role="group" aria-label="牌面样式"></div>
+          <p class="data-note">点一套当场换；下面任何一格动过，就变成「自定义」。</p>
+
+          <div class="ap-sec">
+            <div class="ap-sec-t">纸与色</div>
+            <div class="xn-skins" id="xnCardSkins" role="group" aria-label="牌面底色"></div>
+            <label class="ap-knob"><span>透出背景</span><input type="range" id="xnCardSee" min="0" max="80" step="1" value="40" aria-label="牌面透出背景"><output id="xnCardSeeOut">40%</output></label>
+            <label class="ap-knob"><span>圆角</span><input type="range" id="xnCardR" min="0" max="14" step="1" value="3" aria-label="牌面圆角"><output id="xnCardROut">3px</output></label>
           </div>
-          <label class="ap-knob"><span>圆角</span><input type="range" id="xnCardR" min="0" max="14" step="1" value="3" aria-label="牌面圆角"><output id="xnCardROut">3px</output></label>
-          <p class="data-note">牌桌、手牌、心愿、卡册四处一起换。牌面图只铺卡面（浓度调低一点，字更清楚），不改传讯聊天的气泡与字卡库。</p>
+
+          <div class="ap-sec">
+            <div class="ap-sec-t">牌背</div>
+            <div class="contact-chip-row xn-cardpicks" id="xnCardBacks" role="group" aria-label="牌背样式"></div>
+            <p class="data-note">角帖＝四角对帖＋大字言；环徽＝双框双环；菱徽＝站内菱形母题；圆章＝旧款；净面只留言。</p>
+          </div>
+
+          <div class="ap-sec">
+            <div class="ap-sec-t">纸感与细节</div>
+            <button type="button" class="xn-lookrow" id="xnCardTextureRow" role="switch" aria-checked="false">
+              <span class="xn-lookrow-t">纸纹</span>
+              <span class="hub-tg off" id="xnCardTextureTg" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="xn-lookrow" id="xnCardFrameRow" role="switch" aria-checked="true">
+              <span class="xn-lookrow-t">内框</span>
+              <span class="hub-tg" id="xnCardFrameTg" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="xn-lookrow" id="xnCardGuardRow" role="switch" aria-checked="false">
+              <span class="xn-lookrow-t">保字晕</span>
+              <span class="hub-tg off" id="xnCardGuardTg" aria-hidden="true"></span>
+            </button>
+            <p class="data-note">纸纹＝引递牌那两张 SVG 纤维/云斑，不新增图片；内框＝卡里那圈发丝线；保字晕＝给透出卡上的字加一层白色柔晕，不垫色块，照片再花也读得清。</p>
+          </div>
+
+          <div class="ap-sec">
+            <div class="ap-sec-t">图片卡</div>
+            <button type="button" class="xn-lookrow" id="xnCardImgRow" role="switch" aria-checked="false">
+              <span class="xn-lookrow-t">满幅显示</span>
+              <span class="hub-tg off" id="xnCardImgTg" aria-hidden="true"></span>
+            </button>
+            <p class="data-note">开着＝牌桌上的图片卡铺满整张牌、不加图框；关着＝图留在卡里，四周留白。</p>
+          </div>
+
+          <div class="ap-sec">
+            <div class="ap-sec-t">浮起</div>
+            <div class="contact-chip-row xn-cardpicks" id="xnCardShadows" role="group" aria-label="牌面浮起"></div>
+          </div>
+          <p class="data-note">「透出背景」＝卡面半透明，背后这一页的背景图会透上来，磨砂随透出档自动加深（40%≈14px）；0＝实心纸面。牌桌、手牌、心愿卡一起换；卡册整页保持实底（读账用）。</p>
         </div>
-        <p class="data-note">背景只铺心讯这一页：传讯聊天、字卡库和桌面都不受影响。</p>
       </div>
     </div>
   </div>
@@ -4150,7 +4489,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
           </button>
           <button type="button" class="pl-ico-btn" id="plPermBtn" aria-label="播放器设置">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"></path><path d="M1 14h6M9 8h6M17 16h6"></path></svg>
+            <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
           </button>
         </div>
       </div>
@@ -4199,7 +4538,7 @@
       </div>
       <!-- 歌词（#330）：开着「歌词」＝上面那块封面换下、这一块上；逐句高亮在 js/player.js 的 _plLrcFollow -->
       <div class="pl-f-lrc" id="plfLrc" hidden></div>
-      <div class="pl-f-tx"><b id="plfName"></b><small id="plfArtist"></small></div>
+      <div class="pl-f-tx"><b id="plfName"></b><small id="plfArtist"></small><small id="plfMood" class="pl-f-mood" hidden></small></div>
       <!-- 「谁在陪你听」：两条发丝线之间的 byline 带（#608 胶囊 → #1768 byline）。
            有人＝双头像＋名＋「在陪你听」＋跳动记（暂停时停拍）＋›，点整条＝结束一起听（data-pl-endco 不变）；
            无人＝同一副骨架，第二枚头像留虚线空位，文案「邀 TA 一起听」（data-pl-invitenow 不变）。
