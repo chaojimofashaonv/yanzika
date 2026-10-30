@@ -117,6 +117,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== location.origin) return;
 
+  // 非 GET 一律放行（2026-10-27 BUGS #2126）：下面「页面导航」那条判据里有一句 url.pathname.endsWith('/')，
+  // 它**不分方法**——一条发往 "/" 的 POST 会被当成导航、回一份缓存的 index.html，屏上还是 200，
+  // 服务器一个字也没收到＝「假成功」（比报错更难查）。这条不是某一功能专属：缓存里没有写请求，
+  // 换新无从谈起，SW 本来就不该碰 POST/PUT/DELETE。
+  // ⚠ 当年是反馈表那条 POST 把它逼出来的（FEATURES #2127）；2026-10-27 反馈改成纯说明页、站内不再
+  //   发任何请求，这一行**照旧留着**——它守的是「SW 不吞写请求」这件事本身，不是那张表。
+  if (event.request.method !== 'GET') return;
+
   // 页面导航：#545 起走「成套判定」——拿到最新那一页还不够，还得它引的那两件也在缓存里才肯交给屏上。
   // 单独把新页放出去＝把「有顶栏没内容」的空壳送上门（那一屏的来由见 html/head.html 里 #545 那段）。
   if (event.request.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
@@ -178,8 +186,13 @@ async function fetchTimeout(request, ms) {
   const ac = (typeof AbortController === 'function') ? new AbortController() : null;
   let t = 0;
   if (ac) t = setTimeout(() => { try { ac.abort(); } catch (e) {} }, ms);
+  // 2026-10-28 流量账：这一发正是「每次打开都重下整页入口」，压缩后 85KB×每一次导航。
+  //   Netlify 上入口是 public,max-age=0,must-revalidate＝no-cache 仍是每次都问服务器，没变就回 304
+  //   （0 字节），变了照旧拿新页，比 reload 省掉整页。github.io 上边缘缓存约 10 分钟，304 可能把
+  //   上一版原样吐回来（#614 那一坑），所以那一族仍旧 reload、不碰。
+  const mode = /\.github\.io$/i.test(location.hostname) ? 'reload' : 'no-cache';
   try {
-    const r = await fetch(request, ac ? { cache: 'reload', signal: ac.signal } : { cache: 'reload' });
+    const r = await fetch(request, ac ? { cache: mode, signal: ac.signal } : { cache: mode });
     if (t) clearTimeout(t);
     return r;
   } catch (e) {
@@ -322,19 +335,34 @@ async function codeCacheFirst(request) {
   return new Response('Offline', { status: 503 });
 }
 
+// 2026-10-28 流量账：后台那一发从 cache:'reload' 改成 cache:'no-cache' ＋ 一小时节流。
+//   reload 是**无条件**重下：每一张牌面（32～47KB）每打开一次就整张再下一次，命中缓存也照走；
+//   实测线上 402MB/小时里绝大部分是这一发（254 张牌面 × 每次打开）。no-cache 仍然强制向服务器
+//   确认一次（内容真变了照样拿到新版，不会把旧图写回，FIX #038 的初衷不变），但内容没变时服务器
+//   回 304、0 字节；一小时内重复命中连这一发也不发。SW 实例被回收后 _revAt 归零＝下次重新确认一次，
+//   无害（正是想要的：实例活着就别重复问）。
+const REV_TTL = 60 * 60 * 1000;
+const _revAt = new Map();
+
+function revLater(request) {
+  const k = request.url;
+  if (Date.now() - (_revAt.get(k) || 0) < REV_TTL) return;
+  _revAt.set(k, Date.now());
+  fetch(request, { cache: 'no-cache' }).then((response) => {
+    if (response.ok) {
+      caches.open(STATIC_CACHE).then((cache) => cache.put(request, response));
+    }
+  }).catch(() => {});
+}
+
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) {
-    // 后台更新缓存（FIX #038: cache:'reload' 绕过 HTTP 缓存，否则后台更新会写回旧图）
-    fetch(request, { cache: 'reload' }).then(response => {
-      if (response.ok) {
-        caches.open(STATIC_CACHE).then(cache => cache.put(request, response));
-      }
-    }).catch(() => {});
+    revLater(request);
     return cached;
   }
   try {
-    const response = await fetch(request, { cache: 'reload' });
+    const response = await fetch(request, { cache: 'no-cache' });
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, response.clone());
